@@ -1,0 +1,16 @@
+C:\Users\user\Desktop\CollaborationSystem\backend\src\CollaborationSystem.Application\obj\Debug\net10.0\CollaborationSystem.Application.csproj.AssemblyReference.cache
+C:\Users\user\Desktop\CollaborationSystem\backend\src\CollaborationSystem.Application\obj\Debug\net10.0\CollaborationSystem.Application.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\user\Desktop\CollaborationSystem\backend\src\CollaborationSystem.Application\obj\Debug\net10.0\CollaborationSystem.Application.AssemblyInfoInputs.cache
+C:\Users\user\Desktop\CollaborationSystem\backend\src\CollaborationSystem.Application\obj\Debug\net10.0\CollaborationSystem.Application.AssemblyInfo.cs
+C:\Users\user\Desktop\CollaborationSystem\backend\src\CollaborationSystem.Application\obj\Debug\net10.0\CollaborationSystem.Application.csproj.CoreCompileInputs.cache
+C:\Users\user\Desktop\CollaborationSystem\backend\src\CollaborationSystem.Application\obj\Debug\net10.0\CollaborationSystem.Application.sourcelink.json
+C:\Users\user\Desktop\CollaborationSystem\backend\src\CollaborationSystem.Application\bin\Debug\net10.0\CollaborationSystem.Application.deps.json
+C:\Users\user\Desktop\CollaborationSystem\backend\src\CollaborationSystem.Application\bin\Debug\net10.0\CollaborationSystem.Application.dll
+C:\Users\user\Desktop\CollaborationSystem\backend\src\CollaborationSystem.Application\bin\Debug\net10.0\CollaborationSystem.Application.pdb
+C:\Users\user\Desktop\CollaborationSystem\backend\src\CollaborationSystem.Application\bin\Debug\net10.0\CollaborationSystem.Domain.dll
+C:\Users\user\Desktop\CollaborationSystem\backend\src\CollaborationSystem.Application\bin\Debug\net10.0\CollaborationSystem.Domain.pdb
+C:\Users\user\Desktop\CollaborationSystem\backend\src\CollaborationSystem.Application\obj\Debug\net10.0\Collabor.C1EAC5BB.Up2Date
+C:\Users\user\Desktop\CollaborationSystem\backend\src\CollaborationSystem.Application\obj\Debug\net10.0\CollaborationSystem.Application.dll
+C:\Users\user\Desktop\CollaborationSystem\backend\src\CollaborationSystem.Application\obj\Debug\net10.0\refint\CollaborationSystem.Application.dll
+C:\Users\user\Desktop\CollaborationSystem\backend\src\CollaborationSystem.Application\obj\Debug\net10.0\CollaborationSystem.Application.pdb
+C:\Users\user\Desktop\CollaborationSystem\backend\src\CollaborationSystem.Application\obj\Debug\net10.0\ref\CollaborationSystem.Application.dll
