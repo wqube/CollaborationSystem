@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Т-Банк · Проекты</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header class="app-header">
+        <div class="logo" onclick="location.href='projects.html'">
+            <span class="logo-icon">Т</span>
+            <span>Т-Банк Идеи</span>
+        </div>
+        <div class="flex items-center gap-4">
+            <span class="text-small">Иван Петров</span>
+            <div class="user-avatar" onclick="alert('GET /api/v1/users/me')">ИП</div>
+        </div>
+    </header>
+
+    <div class="container" style="margin-top: 40px;">
+        <div class="flex justify-between items-center mb-6">
+            <h1 style="font-size: 28px;">Мои проекты</h1>
+            <button class="btn btn-primary" onclick="alert('POST /api/v1/projects\n{ name, description }')">
+                [+] Новый проект
+            </button>
+        </div>
+
+        <!-- Список проектов (соответствует GET /api/v1/projects -> ProjectSummary[]) -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px;">
+            <!-- Проект 1 -->
+            <div class="card" onclick="location.href='board.html?projectId=7ca7d640-d843-45b2-9701-0b0efb8c4af1'" style="cursor: pointer;">
+                <div style="display: flex; justify-content: space-between; align-items: start;">
+                    <div>
+                        <div style="width: 48px; height: 48px; background: var(--t-yellow); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 20px; margin-bottom: 16px;">K</div>
+                        <h3 style="font-size: 18px; margin-bottom: 8px;">Core Platform</h3>
+                        <p style="color: var(--t-gray); font-size: 14px;">Проект команды Core Platform</p>
+                    </div>
+                    <span class="badge badge-new">Admin</span>
+                </div>
+                <div style="margin-top: 20px; display: flex; gap: 16px;">
+                    <div><span style="font-weight: 700;">4</span> <span style="color: var(--t-gray);">New</span></div>
+                    <div><span style="font-weight: 700;">2</span> <span style="color: var(--t-gray);">InProgress</span></div>
+                </div>
+                <div style="margin-top: 12px; font-size: 12px; color: var(--t-gray);">
+                    lastAccess: 2026-04-09T18:30:00Z
+                </div>
+            </div>
+
+            <!-- Проект 2 -->
+            <div class="card" onclick="location.href='board.html?projectId=b8e2a123-4567-89ab-cdef-0123456789ab'" style="cursor: pointer;">
+                <div style="display: flex; justify-content: space-between; align-items: start;">
+                    <div>
+                        <div style="width: 48px; height: 48px; background: var(--t-black); color: white; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 20px; margin-bottom: 16px;">M</div>
+                        <h3 style="font-size: 18px; margin-bottom: 8px;">Mobile App</h3>
+                        <p style="color: var(--t-gray); font-size: 14px;">iOS / Android разработка</p>
+                    </div>
+                    <span class="badge" style="background: var(--t-light-gray);">Member</span>
+                </div>
+                <div style="margin-top: 20px; display: flex; gap: 16px;">
+                    <div><span style="font-weight: 700;">2</span> <span style="color: var(--t-gray);">New</span></div>
+                    <div><span style="font-weight: 700;">5</span> <span style="color: var(--t-gray);">InProgress</span></div>
+                </div>
+                <div style="margin-top: 12px; font-size: 12px; color: var(--t-gray);">
+                    lastAccess: 2026-04-08T10:15:00Z
+                </div>
+            </div>
+
+            <!-- Проект 3 -->
+            <div class="card" onclick="location.href='board.html?projectId=c9f3b234-5678-90ab-cdef-1234567890bc'" style="cursor: pointer;">
+                <div style="display: flex; justify-content: space-between; align-items: start;">
+                    <div>
+                        <div style="width: 48px; height: 48px; background: #E8F5E9; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 20px; margin-bottom: 16px;">S</div>
+                        <h3 style="font-size: 18px; margin-bottom: 8px;">Support Tools</h3>
+                        <p style="color: var(--t-gray); font-size: 14px;">Внутренние инструменты поддержки</p>
+                    </div>
+                    <span class="badge" style="background: var(--t-light-gray);">Member</span>
+                </div>
+                <div style="margin-top: 20px; display: flex; gap: 16px;">
+                    <div><span style="font-weight: 700;">0</span> <span style="color: var(--t-gray);">New</span></div>
+                    <div><span style="font-weight: 700;">3</span> <span style="color: var(--t-gray);">InProgress</span></div>
+                </div>
+                <div style="margin-top: 12px; font-size: 12px; color: var(--t-gray);">
+                    lastAccess: 2026-04-07T14:20:00Z
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Т-Банк · Новая идея</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header class="app-header">
+        <div class="flex items-center gap-4">
+            <div class="logo" onclick="location.href='projects.html'">
+                <span class="logo-icon">Т</span>
+                <span>Т-Банк Идеи</span>
+            </div>
+            <span style="color: var(--t-gray);">/</span>
+            <a href="board.html" style="color: var(--t-black); text-decoration: none;">Core Platform</a>
+            <span style="color: var(--t-gray);">/</span>
+            <span>Новое предложение</span>
+        </div>
+        <div class="user-avatar">ИП</div>
+    </header>
+
+    <!-- Форма создания (POST /api/v1/projects/{id}/suggestions -> CreateSuggestionRequest) -->
+    <div class="container" style="margin-top: 40px; max-width: 700px;">
+        <div class="card">
+            <h1 style="margin-bottom: 24px;">[+] Предложить идею</h1>
+            
+            <div class="form-group">
+                <label>Текст предложения</label>
+                <textarea rows="6" placeholder="Опишите ваше предложение по улучшению процесса..." id="suggestionText">Добавить обязательный шаблон ретро перед встречей</textarea>
+            </div>
+
+            <!-- Черновик (PUT /api/v1/projects/{id}/drafts/suggestion/{draftId}) -->
+            <div style="background: #FFF9E6; padding: 12px 16px; border-radius: var(--radius); margin: 20px 0; display: flex; align-items: center; gap: 10px;">
+                <span>[*]</span>
+                <span style="font-size: 14px;">Draft saved: 2026-04-09T19:12:00Z</span>
+            </div>
+
+            <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px;">
+                <button class="btn btn-outline" onclick="location.href='board.html'">Отмена</button>
+                <button class="btn btn-secondary" onclick="alert('PUT /api/v1/.../drafts/suggestion/{id}\n{ text }')">
+                    Сохранить черновик
+                </button>
+                <button class="btn btn-primary" onclick="alert('POST /api/v1/projects/{id}/suggestions\n{ text }'); location.href='board.html'">
+                    Опубликовать
+                </button>
+            </div>
+            
+            <div style="margin-top: 16px; font-size: 12px; color: var(--t-gray);">
+                POST /api/v1/projects/{projectId}/suggestions — CreateSuggestionRequest { text }
+            </div>
+        </div>
+    </div>
+</body>
+</html>

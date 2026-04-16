@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Т-Банк · Настройки проекта</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header class="app-header">
+        <div class="flex items-center gap-4">
+            <div class="logo" onclick="location.href='projects.html'">
+                <span class="logo-icon">Т</span>
+                <span>Т-Банк Идеи</span>
+            </div>
+            <span style="color: var(--t-gray);">/</span>
+            <a href="board.html" style="color: var(--t-black); text-decoration: none;">Core Platform</a>
+            <span style="color: var(--t-gray);">/</span>
+            <span>Настройки</span>
+        </div>
+        <div class="user-avatar">ИП</div>
+    </header>
+
+    <!-- Настройки проекта (GET /api/v1/projects/{id} + PATCH в future scope) -->
+    <div class="container" style="margin-top: 40px; max-width: 700px;">
+        <div class="card">
+            <h1 style="margin-bottom: 24px;">[*] Настройки проекта</h1>
+
+            <!-- Project Details -->
+            <div class="form-group">
+                <label>ID проекта</label>
+                <input type="text" value="7ca7d640-d843-45b2-9701-0b0efb8c4af1" disabled style="background: var(--t-light-gray);">
+            </div>
+
+            <div class="form-group">
+                <label>Название проекта</label>
+                <input type="text" value="Core Platform">
+            </div>
+
+            <div class="form-group">
+                <label>Описание</label>
+                <textarea rows="3">Проект команды Core Platform</textarea>
+            </div>
+
+            <div class="form-group">
+                <label>Создан</label>
+                <input type="text" value="2026-04-01T10:00:00Z" disabled style="background: var(--t-light-gray);">
+            </div>
+
+            <div class="form-group">
+                <label>Создатель (userId)</label>
+                <input type="text" value="3f11a6dc-79a6-43f7-ac88-bb78dd70d712" disabled style="background: var(--t-light-gray);">
+            </div>
+
+            <!-- Future Scope Settings -->
+            <div style="background: #F0F0F0; padding: 16px; border-radius: var(--radius); margin: 24px 0;">
+                <h4 style="margin-bottom: 12px;">[Future Scope]</h4>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                    <div class="form-group">
+                        <label>Лимит голосов</label>
+                        <input type="number" value="3" disabled>
+                    </div>
+                    <div class="form-group">
+                        <label>Период сброса (дней)</label>
+                        <input type="number" value="14" disabled>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Расписание встреч (Outlook)</label>
+                    <input type="text" value="Каждый вторник 15:00" disabled>
+                </div>
+            </div>
+
+            <hr style="border: none; border-top: 1px solid var(--t-border); margin: 24px 0;">
+
+            <!-- Участники проекта (GET /api/v1/projects/{id} -> members) -->
+            <h3 style="margin-bottom: 16px;">[@] Участники проекта</h3>
+
+            <!-- Добавление участника (POST /api/v1/projects/{id}/members) -->
+            <div class="form-group">
+                <label>Добавить участника</label>
+                <div style="display: flex; gap: 10px;">
+                    <input type="text" placeholder="userId (UUID)" value="37b64aa3-970a-4d27-9966-b0f17d89f10a">
+                    <select style="width: auto;">
+                        <option>Member</option>
+                        <option>Admin</option>
+                    </select>
+                    <button class="btn btn-primary" onclick="alert('POST /api/v1/projects/{id}/members\n{ userId, role }')">
+                        Добавить
+                    </button>
+                </div>
+            </div>
+
+            <!-- Список участников (ProjectMemberDto[]) -->
+            <div style="margin-top: 20px;">
+                <!-- Member 1 (Admin) -->
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; background: var(--t-light-gray); border-radius: var(--radius); margin-bottom: 8px;">
+                    <div class="flex items-center gap-3">
+                        <div style="width: 36px; height: 36px; background: var(--t-black); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px;">ИП</div>
+                        <div>
+                            <strong>Иван Петров</strong>
+                            <br><span style="font-size: 13px; color: var(--t-gray);">ivan.petrov@example.local</span>
+                            <br><span style="font-size: 11px; color: var(--t-gray);">userId: 3f11a6dc...d712</span>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <select style="width: auto; padding: 6px 28px 6px 12px;" onchange="alert('PATCH /api/v1/.../members/{userId}\n{ role: ' + this.value + ' }')">
+                            <option selected>Admin</option>
+                            <option>Member</option>
+                        </select>
+                        <button class="btn btn-outline btn-danger" onclick="alert('DELETE /api/v1/projects/{id}/members/{userId}')">[X]</button>
+                    </div>
+                </div>
+
+                <!-- Member 2 (Member) -->
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; background: var(--t-light-gray); border-radius: var(--radius); margin-bottom: 8px;">
+                    <div class="flex items-center gap-3">
+                        <div style="width: 36px; height: 36px; background: var(--t-dark-gray); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px;">МС</div>
+                        <div>
+                            <strong>Мария Сидорова</strong>
+                            <br><span style="font-size: 13px; color: var(--t-gray);">maria.sidorova@example.local</span>
+                            <br><span style="font-size: 11px; color: var(--t-gray);">userId: 4f22b7ed...e823</span>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <select style="width: auto; padding: 6px 28px 6px 12px;" onchange="alert('PATCH /api/v1/.../members/{userId}')">
+                            <option>Admin</option>
+                            <option selected>Member</option>
+                        </select>
+                        <button class="btn btn-outline btn-danger" onclick="alert('DELETE /api/v1/projects/{id}/members/{userId}')">[X]</button>
+                    </div>
+                </div>
+
+                <!-- Member 3 -->
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; background: var(--t-light-gray); border-radius: var(--radius); margin-bottom: 8px;">
+                    <div class="flex items-center gap-3">
+                        <div style="width: 36px; height: 36px; background: #1976D2; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px;">АС</div>
+                        <div>
+                            <strong>Анна Соколова</strong>
+                            <br><span style="font-size: 13px; color: var(--t-gray);">anna.sokolova@example.local</span>
+                            <br><span style="font-size: 11px; color: var(--t-gray);">userId: 37b64aa3...f10a</span>
+                            <br><span style="font-size: 11px; color: var(--t-gray);">joined: 2026-04-09T19:10:00Z</span>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <select style="width: auto; padding: 6px 28px 6px 12px;" onchange="alert('PATCH /api/v1/.../members/{userId}')">
+                            <option>Admin</option>
+                            <option selected>Member</option>
+                        </select>
+                        <button class="btn btn-outline btn-danger" onclick="alert('DELETE /api/v1/projects/{id}/members/{userId}')">[X]</button>
+                    </div>
+                </div>
+            </div>
+
+            <hr style="border: none; border-top: 1px solid var(--t-border); margin: 24px 0;">
+
+            <div style="display: flex; gap: 12px; justify-content: flex-end;">
+                <button class="btn btn-outline" onclick="location.href='board.html'">Отмена</button>
+                <button class="btn btn-primary" onclick="alert('Settings saved (future scope)'); location.href='board.html'">
+                    Сохранить
+                </button>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
