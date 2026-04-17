@@ -35,6 +35,7 @@ npm run dev
 
 # сборка проекта
 npm run build
+```
 
 ---
 
@@ -51,6 +52,7 @@ src/
 │   └── ui/             # UI Kit
 ├── styles/             # глобальные стили
 └── main.tsx            # точка входа
+```
 
 ---
 
