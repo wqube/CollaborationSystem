@@ -8,12 +8,34 @@
 - Время: ISO 8601 UTC, например `2026-04-09T18:30:00Z`
 
 ### Авторизация
-- Механизм: Bearer Token
-- Заголовок: Authorization: Bearer <accessToken>
 
----
-7
-### Пагинация (единый формат)
+- Основной механизм для MVP: `JWT Bearer`
+- Заголовок доступа: `Authorization: Bearer <accessToken>`
+- `accessToken` используется для доступа к защищенным endpoint-ам
+- `refreshToken` используется для обновления access token
+- Refresh token должен быть серверно управляемым и отзываться через logout
+- Пароль из `LoginRequest` используется только для проверки учетных данных; в хранилище должен находиться только `password_hash`
+- Для MVP допускается только одна активная refresh-сессия на пользователя
+- Новый login инвалидирует предыдущую refresh-сессию пользователя
+- При refresh сервер выдает новую пару токенов и отзывает предыдущий refresh token
+- Рекомендуемый TTL для MVP: `accessToken = 15 минут`, `refreshToken = 7 дней`
+
+Все пользователи аутентифицируются с использованием корпоративной (доменной) учетной записи.
+
+В MVP допускается упрощённая реализация (DevLogin), при которой:
+- пользователь вводит email и пароль;
+- сервер проверяет учетные данные в локальном хранилище или мок-данных;
+- при успешной аутентификации выдается JWT.
+
+Регистрация пользователей через API не предусмотрена.
+Список пользователей управляется вне системы (или эмулируется на сервере).
+
+В системе отсутствует endpoint для регистрации пользователей (например, POST /auth/register).
+Создание пользователей выполняется вне системы (в корпоративном каталоге).
+
+### Пагинация
+
+Для коллекционных endpoint-ов, где это уместно, используется общий формат:
 
 ```json
 {
@@ -25,7 +47,22 @@
 ```
 
 ### Сортировка
-`?sortBy=createdAt&order=desc`
+
+Общий формат query-параметров:
+
+```text
+?sortBy=createdAt&order=desc
+```
+
+Для списка предложений по умолчанию применяется бизнес-сортировка:
+
+- сначала по `score` по убыванию;
+- при равенстве по `createdAt` по возрастанию.
+
+### Семантика score
+
+- `score = количество голосов Up - количество голосов Down`
+- Значение `score` является вычисляемым и не хранится как отдельное обязательное поле БД
 
 ## 2. Контрактные типы
 
@@ -55,7 +92,68 @@
 ["Member", "Admin"]
 ```
 
+#### `AuthMode`
+
+```json
+["DevLogin", "SSO"]
+```
+
 ### 2.2 DTO
+
+#### `UserDto`
+
+```json
+{
+  "id": "3f11a6dc-79a6-43f7-ac88-bb78dd70d712",
+  "displayName": "Иван Петров",
+  "email": "ivan.petrov@example.local"
+}
+```
+Пользователь из корпоративного каталога (домена).
+Не создаётся через API. Данные синхронизируются с внешней системой (пока что эмулируются).
+
+#### `LoginRequest`
+
+```json
+{
+  "email": "ivan.petrov@example.local",
+  "password": "password"
+}
+```
+
+#### `RefreshTokenRequest`
+
+```json
+{
+  "refreshToken": "refresh-token-value"
+}
+```
+
+#### `LoginResponse`
+
+```json
+{
+  "accessToken": "jwt-access-token",
+  "refreshToken": "refresh-token-value",
+  "expiresIn": 3600,
+  "user": {
+    "id": "3f11a6dc-79a6-43f7-ac88-bb78dd70d712",
+    "displayName": "Иван Петров",
+    "email": "ivan.petrov@example.local"
+  }
+}
+```
+
+#### `CurrentUserResponse`
+
+```json
+{
+  "id": "3f11a6dc-79a6-43f7-ac88-bb78dd70d712",
+  "displayName": "Иван Петров",
+  "email": "ivan.petrov@example.local",
+  "authMode": "DevLogin" // или "SSO"
+}
+```
 
 #### `ProjectSummary`
 
@@ -63,7 +161,7 @@
 {
   "id": "7ca7d640-d843-45b2-9701-0b0efb8c4af1",
   "name": "Core Platform",
-  "description": "Проект команды vmesm",
+  "description": "Проект команды Core Platform",
   "role": "Admin",
   "lastAccessedAt": "2026-04-09T18:30:00Z"
 }
@@ -143,16 +241,16 @@
 }
 ```
 
-#### `CommentDto` (убрали children, из-за чего облегчился payload, дерево комментариев будет построена на фронте)
+#### `CommentDto`
 
 ```json
 {
-  "id": "uuid",
-  "suggestionId": "uuid",
+  "id": "4da7d53c-3389-4bf1-ac11-d4e2720fccd9",
+  "suggestionId": "d68650b5-dfc5-45be-b525-8b0c64c4e54a",
   "parentCommentId": null,
-  "text": "Комментарий",
+  "text": "Поддерживаю, это сократит время встречи.",
   "author": {
-    "id": "uuid",
+    "id": "3f11a6dc-79a6-43f7-ac88-bb78dd70d712",
     "displayName": "Иван Петров"
   },
   "createdAt": "2026-04-09T18:45:00Z",
@@ -176,16 +274,6 @@
 }
 ```
 
-#### `UserDto`
-
-```json
-{
-  "id": "uuid",
-  "displayName": "Иван Петров",
-  "email": "ivan.petrov@example.com"
-}
-```
-
 #### `CreateProjectRequest`
 
 ```json
@@ -203,6 +291,7 @@
   "role": "Member"
 }
 ```
+userId должен соответствовать пользователю из корпоративного каталога (GET /users)
 
 #### `UpdateProjectMemberRoleRequest`
 
@@ -224,7 +313,14 @@
 
 ```json
 {
-  "text": "Добавить обязательный шаблон ретро и owner для action items",
+  "text": "Добавить обязательный шаблон ретро и owner для action items"
+}
+```
+
+#### `UpdateSuggestionStatusRequest`
+
+```json
+{
   "status": "InProgress"
 }
 ```
@@ -272,17 +368,6 @@
 }
 ```
 
-#### `CurrentUserResponse`
-
-```json
-{
-  "id": "3f11a6dc-79a6-43f7-ac88-bb78dd70d712",
-  "displayName": "Иван Петров",
-  "email": "ivan.petrov@example.local",
-  "authMode": "DevLogin"
-}
-```
-
 ## 3. Ошибки
 
 Общий формат ошибки:
@@ -296,6 +381,7 @@
 ```
 
 Основные коды:
+
 - `400 Bad Request` — ошибка валидации или некорректное состояние запроса
 - `401 Unauthorized` — пользователь не аутентифицирован
 - `403 Forbidden` — недостаточно прав
@@ -306,12 +392,15 @@
 
 ### 4.1 `POST /api/v1/auth/login`
 
-Назначение: залогинить пользователя.
+Назначение: аутентифицировать пользователя и выдать токены доступа.
 
-Параметры:
+Тело запроса: `LoginRequest`.
+
+Пример запроса:
+
 ```json
 {
-  "email": "ivan.petrov@example.com",
+  "email": "ivan.petrov@example.local",
   "password": "password"
 }
 ```
@@ -320,35 +409,100 @@
 
 ```json
 {
-  "accessToken": "jwt",
-  "refreshToken": "refresh",
+  "accessToken": "jwt-access-token",
+  "refreshToken": "refresh-token-value",
   "expiresIn": 3600,
   "user": {
-    "id": "uuid",
+    "id": "3f11a6dc-79a6-43f7-ac88-bb78dd70d712",
     "displayName": "Иван Петров",
-    "email": "ivan.petrov@example.com"
+    "email": "ivan.petrov@example.local"
   }
 }
 ```
 
-Ошибки: `401`.
+Ошибки: `400`, `401`.
 
 ### 4.2 `POST /api/v1/auth/refresh`
 
-Назначение: обновить access токен пользователя.
+Назначение: обновить access token по refresh token.
 
-Параметры:
+Тело запроса: `RefreshTokenRequest`.
+
+Пример запроса:
+
 ```json
 {
-  "refreshToken": "refresh"
+  "refreshToken": "refresh-token-value"
 }
 ```
 
+Пример ответа:
+
+```json
+{
+  "accessToken": "new-jwt-access-token",
+  "refreshToken": "new-refresh-token-value",
+  "expiresIn": 3600
+}
+```
+
+Ошибки: `400`, `401`.
+
 ### 4.3 `POST /api/v1/auth/logout`
 
-### 4.4 `GET /api/v1/users/me`
+Назначение: завершить текущую refresh-сессию пользователя.
 
-Назначение: получить текущего пользователя.
+Тело запроса: `RefreshTokenRequest`.
+
+Пример запроса:
+
+```json
+{
+  "refreshToken": "refresh-token-value"
+}
+```
+
+Пример ответа: `204 No Content`
+
+Ошибки: `400`, `401`.
+
+### 4.4 `GET /api/v1/users`
+
+Назначение: получить список пользователей из корпоративного каталога (для добавления в проекты).
+
+Query params:
+
+- `search` — номер страницы, опционально
+- `page` — номер страницы, опционально
+- `pageSize` — размер страницы, опционально
+
+Пример ответа:
+
+```json
+{
+  "items": [
+    {
+      "id": "3f11a6dc-79a6-43f7-ac88-bb78dd70d712",
+      "displayName": "Иван Петров",
+      "email": "ivan.petrov@example.local"
+    },
+    {
+      "id": "37b64aa3-970a-4d27-9966-b0f17d89f10a",
+      "displayName": "Анна Соколова",
+      "email": "anna.sokolova@example.local"
+    }
+  ],
+  "page": 1,
+  "pageSize": 20,
+  "total": 2
+}
+```
+
+Ошибки: `401`
+
+### 4.5 `GET /api/v1/users/me`
+
+Назначение: получить текущего пользователя из корпоративного каталога.
 
 Пример ответа:
 
@@ -363,29 +517,37 @@
 
 Ошибки: `401`.
 
-### 4.5 `GET /api/v1/projects`
+### 4.6 `GET /api/v1/projects`
 
 Назначение: вернуть список проектов, доступных текущему пользователю.
 
-Параметры: нет.
+Query params:
+
+- `page` — номер страницы, опционально
+- `pageSize` — размер страницы, опционально
 
 Пример ответа:
 
 ```json
-[
-  {
-    "id": "7ca7d640-d843-45b2-9701-0b0efb8c4af1",
-    "name": "Core Platform",
-    "description": "Проект команды Core Platform",
-    "role": "Admin",
-    "lastAccessedAt": "2026-04-09T18:30:00Z"
-  }
-]
+{
+  "items": [
+    {
+      "id": "7ca7d640-d843-45b2-9701-0b0efb8c4af1",
+      "name": "Core Platform",
+      "description": "Проект команды Core Platform",
+      "role": "Admin",
+      "lastAccessedAt": "2026-04-09T18:30:00Z"
+    }
+  ],
+  "page": 1,
+  "pageSize": 10,
+  "total": 1
+}
 ```
 
 Ошибки: `401`.
 
-### 4.6 `POST /api/v1/projects`
+### 4.7 `POST /api/v1/projects`
 
 Назначение: создать новый проект. Создатель автоматически становится администратором.
 
@@ -415,12 +577,13 @@
 
 Ошибки: `400`, `401`.
 
-### 4.7 `GET /api/v1/projects/{projectId}`
+### 4.8 `GET /api/v1/projects/{projectId}`
 
 Назначение: получить карточку проекта и его участников.
 
 Path params:
-- `projectId` — идентификатор проекта.
+
+- `projectId` — идентификатор проекта
 
 Пример ответа:
 
@@ -445,13 +608,14 @@ Path params:
 
 Ошибки: `401`, `403`, `404`.
 
-### 4.8 `POST /api/v1/projects/{projectId}/members`
+### 4.9 `POST /api/v1/projects/{projectId}/members`
 
 Назначение: добавить участника в проект.
 
 Доступ: только администратор проекта.
 
 Path params:
+
 - `projectId`
 
 Тело запроса: `AddProjectMemberRequest`.
@@ -479,13 +643,14 @@ Path params:
 
 Ошибки: `400`, `401`, `403`, `404`, `409`.
 
-### 4.9 `PATCH /api/v1/projects/{projectId}/members/{userId}`
+### 4.10 `PATCH /api/v1/projects/{projectId}/members/{userId}`
 
 Назначение: изменить роль участника проекта.
 
 Доступ: только администратор проекта.
 
 Path params:
+
 - `projectId`
 - `userId`
 
@@ -513,13 +678,14 @@ Path params:
 
 Ошибки: `400`, `401`, `403`, `404`.
 
-### 4.10 `DELETE /api/v1/projects/{projectId}/members/{userId}`
+### 4.11 `DELETE /api/v1/projects/{projectId}/members/{userId}`
 
 Назначение: удалить участника из проекта.
 
 Доступ: только администратор проекта.
 
 Path params:
+
 - `projectId`
 - `userId`
 
@@ -527,14 +693,16 @@ Path params:
 
 Ошибки: `401`, `403`, `404`.
 
-### 4.11 `GET /api/v1/projects/{projectId}/suggestions`
+### 4.12 `GET /api/v1/projects/{projectId}/suggestions`
 
 Назначение: получить список предложений проекта по статусу.
 
 Path params:
+
 - `projectId`
 
 Query params:
+
 - `status` — один из `New`, `InProgress`, `Accepted`, `Rejected`
 - `page` — номер страницы, опционально
 - `pageSize` — размер страницы, опционально
@@ -542,30 +710,36 @@ Query params:
 Пример ответа:
 
 ```json
-[
-  {
-    "id": "d68650b5-dfc5-45be-b525-8b0c64c4e54a",
-    "projectId": "7ca7d640-d843-45b2-9701-0b0efb8c4af1",
-    "text": "Добавить обязательный шаблон ретро перед встречей",
-    "status": "New",
-    "author": {
-      "id": "3f11a6dc-79a6-43f7-ac88-bb78dd70d712",
-      "displayName": "Иван Петров"
-    },
-    "score": 5,
-    "createdAt": "2026-04-09T18:30:00Z",
-    "updatedAt": "2026-04-09T18:30:00Z"
-  }
-]
+{
+  "items": [
+    {
+      "id": "d68650b5-dfc5-45be-b525-8b0c64c4e54a",
+      "projectId": "7ca7d640-d843-45b2-9701-0b0efb8c4af1",
+      "text": "Добавить обязательный шаблон ретро перед встречей",
+      "status": "New",
+      "author": {
+        "id": "3f11a6dc-79a6-43f7-ac88-bb78dd70d712",
+        "displayName": "Иван Петров"
+      },
+      "score": 5,
+      "createdAt": "2026-04-09T18:30:00Z",
+      "updatedAt": "2026-04-09T18:30:00Z"
+    }
+  ],
+  "page": 1,
+  "pageSize": 10,
+  "total": 1
+}
 ```
 
 Ошибки: `400`, `401`, `403`, `404`.
 
-### 4.12 `POST /api/v1/projects/{projectId}/suggestions`
+### 4.13 `POST /api/v1/projects/{projectId}/suggestions`
 
 Назначение: создать новое предложение в проекте.
 
 Path params:
+
 - `projectId`
 
 Тело запроса: `CreateSuggestionRequest`.
@@ -598,11 +772,12 @@ Path params:
 
 Ошибки: `400`, `401`, `403`, `404`.
 
-### 4.13 `GET /api/v1/projects/{projectId}/suggestions/{suggestionId}`
+### 4.14 `GET /api/v1/projects/{projectId}/suggestions/{suggestionId}`
 
 Назначение: получить карточку предложения.
 
 Path params:
+
 - `projectId`
 - `suggestionId`
 
@@ -635,16 +810,17 @@ Path params:
 
 Ошибки: `401`, `403`, `404`.
 
-### 4.14 `PATCH /api/v1/projects/{projectId}/suggestions/{suggestionId}`
+### 4.15 `PATCH /api/v1/projects/{projectId}/suggestions/{suggestionId}`
 
-Назначение: изменить текст предложения и при необходимости статус.
+Назначение: изменить текст предложения.
 
 Доступ:
-- автор предложения может менять текст;
-- администратор проекта может менять статус;
-- конкретная политика разграничения будет реализована на следующем этапе, но контракт поддерживает оба поля.
+
+- только автор предложения;
+- для MVP допускается редактирование текста только отдельно от смены статуса.
 
 Path params:
+
 - `projectId`
 - `suggestionId`
 
@@ -654,7 +830,49 @@ Path params:
 
 ```json
 {
+  "text": "Добавить обязательный шаблон ретро и owner для action items"
+}
+```
+
+Пример ответа:
+
+```json
+{
+  "id": "d68650b5-dfc5-45be-b525-8b0c64c4e54a",
+  "projectId": "7ca7d640-d843-45b2-9701-0b0efb8c4af1",
   "text": "Добавить обязательный шаблон ретро и owner для action items",
+  "status": "New",
+  "author": {
+    "id": "3f11a6dc-79a6-43f7-ac88-bb78dd70d712",
+    "displayName": "Иван Петров"
+  },
+  "score": 5,
+  "createdAt": "2026-04-09T18:30:00Z",
+  "updatedAt": "2026-04-09T19:20:00Z"
+}
+```
+
+Ошибки: `400`, `401`, `403`, `404`, `409`.
+
+### 4.16 `PATCH /api/v1/projects/{projectId}/suggestions/{suggestionId}/status`
+
+Назначение: изменить статус предложения.
+
+Доступ:
+
+- только администратор проекта.
+
+Path params:
+
+- `projectId`
+- `suggestionId`
+
+Тело запроса: `UpdateSuggestionStatusRequest`.
+
+Пример запроса:
+
+```json
+{
   "status": "InProgress"
 }
 ```
@@ -679,11 +897,12 @@ Path params:
 
 Ошибки: `400`, `401`, `403`, `404`, `409`.
 
-### 4.15 `PUT /api/v1/projects/{projectId}/suggestions/{suggestionId}/vote`
+### 4.17 `PUT /api/v1/projects/{projectId}/suggestions/{suggestionId}/vote`
 
 Назначение: создать новый голос или заменить существующий.
 
 Path params:
+
 - `projectId`
 - `suggestionId`
 
@@ -709,11 +928,12 @@ Path params:
 
 Ошибки: `400`, `401`, `403`, `404`.
 
-### 4.16 `DELETE /api/v1/projects/{projectId}/suggestions/{suggestionId}/vote`
+### 4.18 `DELETE /api/v1/projects/{projectId}/suggestions/{suggestionId}/vote`
 
 Назначение: отменить текущий голос пользователя.
 
 Path params:
+
 - `projectId`
 - `suggestionId`
 
@@ -729,11 +949,14 @@ Path params:
 
 Ошибки: `401`, `403`, `404`.
 
-### 4.17 `GET /api/v1/projects/{projectId}/suggestions/{suggestionId}/comments`
+### 4.19 `GET /api/v1/projects/{projectId}/suggestions/{suggestionId}/comments`
 
-Назначение: получить дерево комментариев предложения.
+Назначение: получить все комментарии предложения плоским списком.
+
+Комментарий на клиенте собирается в дерево по `parentCommentId`.
 
 Path params:
+
 - `projectId`
 - `suggestionId`
 
@@ -751,33 +974,31 @@ Path params:
       "displayName": "Иван Петров"
     },
     "createdAt": "2026-04-09T18:45:00Z",
-    "updatedAt": "2026-04-09T18:45:00Z",
-    "children": [
-      {
-        "id": "a644f68a-9754-42c7-9cd4-549617e0bca1",
-        "suggestionId": "d68650b5-dfc5-45be-b525-8b0c64c4e54a",
-        "parentCommentId": "4da7d53c-3389-4bf1-ac11-d4e2720fccd9",
-        "text": "Согласен, нужен еще шаблон action items.",
-        "author": {
-          "id": "37b64aa3-970a-4d27-9966-b0f17d89f10a",
-          "displayName": "Анна Соколова"
-        },
-        "createdAt": "2026-04-09T18:50:00Z",
-        "updatedAt": "2026-04-09T18:50:00Z",
-        "children": []
-      }
-    ]
+    "updatedAt": "2026-04-09T18:45:00Z"
+  },
+  {
+    "id": "a644f68a-9754-42c7-9cd4-549617e0bca1",
+    "suggestionId": "d68650b5-dfc5-45be-b525-8b0c64c4e54a",
+    "parentCommentId": "4da7d53c-3389-4bf1-ac11-d4e2720fccd9",
+    "text": "Согласен, нужен еще шаблон action items.",
+    "author": {
+      "id": "37b64aa3-970a-4d27-9966-b0f17d89f10a",
+      "displayName": "Анна Соколова"
+    },
+    "createdAt": "2026-04-09T18:50:00Z",
+    "updatedAt": "2026-04-09T18:50:00Z"
   }
 ]
 ```
 
 Ошибки: `401`, `403`, `404`.
 
-### 4.18 `POST /api/v1/projects/{projectId}/suggestions/{suggestionId}/comments`
+### 4.20 `POST /api/v1/projects/{projectId}/suggestions/{suggestionId}/comments`
 
 Назначение: создать комментарий или ответ на комментарий.
 
 Path params:
+
 - `projectId`
 - `suggestionId`
 
@@ -805,18 +1026,18 @@ Path params:
     "displayName": "Иван Петров"
   },
   "createdAt": "2026-04-09T18:45:00Z",
-  "updatedAt": "2026-04-09T18:45:00Z",
-  "children": []
+  "updatedAt": "2026-04-09T18:45:00Z"
 }
 ```
 
 Ошибки: `400`, `401`, `403`, `404`.
 
-### 4.19 `PATCH /api/v1/projects/{projectId}/comments/{commentId}`
+### 4.21 `PATCH /api/v1/projects/{projectId}/comments/{commentId}`
 
 Назначение: отредактировать собственный комментарий.
 
 Path params:
+
 - `projectId`
 - `commentId`
 
@@ -843,18 +1064,18 @@ Path params:
     "displayName": "Иван Петров"
   },
   "createdAt": "2026-04-09T18:45:00Z",
-  "updatedAt": "2026-04-09T19:10:00Z",
-  "children": []
+  "updatedAt": "2026-04-09T19:10:00Z"
 }
 ```
 
 Ошибки: `400`, `401`, `403`, `404`.
 
-### 4.20 `DELETE /api/v1/projects/{projectId}/comments/{commentId}`
+### 4.22 `DELETE /api/v1/projects/{projectId}/comments/{commentId}`
 
 Назначение: удалить собственный комментарий.
 
 Path params:
+
 - `projectId`
 - `commentId`
 
@@ -862,41 +1083,51 @@ Path params:
 
 Ошибки: `401`, `403`, `404`.
 
-### 4.21 `GET /api/v1/projects/{projectId}/drafts`
+### 4.23 `GET /api/v1/projects/{projectId}/drafts`
 
 Назначение: получить черновики текущего пользователя в проекте.
 
 Path params:
+
 - `projectId`
 
 Query params:
+
 - `type` — опционально, `Suggestion` или `Comment`
+- `page` — номер страницы, опционально
+- `pageSize` — размер страницы, опционально
 
 Пример ответа:
 
 ```json
-[
-  {
-    "id": "f14855cd-0bfd-49cf-b59e-b41f5e8ef2aa",
-    "projectId": "7ca7d640-d843-45b2-9701-0b0efb8c4af1",
-    "type": "Comment",
-    "payload": {
-      "suggestionId": "d68650b5-dfc5-45be-b525-8b0c64c4e54a",
-      "parentCommentId": "4da7d53c-3389-4bf1-ac11-d4e2720fccd9",
-      "text": "Согласен, но нужно еще шаблон action items."
-    },
-    "updatedAt": "2026-04-09T19:00:00Z"
-  }
-]
+{
+  "items": [
+    {
+      "id": "f14855cd-0bfd-49cf-b59e-b41f5e8ef2aa",
+      "projectId": "7ca7d640-d843-45b2-9701-0b0efb8c4af1",
+      "type": "Comment",
+      "payload": {
+        "suggestionId": "d68650b5-dfc5-45be-b525-8b0c64c4e54a",
+        "parentCommentId": "4da7d53c-3389-4bf1-ac11-d4e2720fccd9",
+        "text": "Согласен, но нужно еще шаблон action items."
+      },
+      "updatedAt": "2026-04-09T19:00:00Z"
+    }
+  ],
+  "page": 1,
+  "pageSize": 20,
+  "total": 1
+}
 ```
 
 Ошибки: `401`, `403`, `404`.
 
-### 4.22 `PUT /api/v1/projects/{projectId}/drafts/suggestion/{draftId}`
+### 4.24 `PUT /api/v1/projects/{projectId}/drafts/suggestion/{draftId}`
 
 Назначение: создать или обновить черновик предложения.
 
 Path params:
+
 - `projectId`
 - `draftId`
 
@@ -926,11 +1157,12 @@ Path params:
 
 Ошибки: `400`, `401`, `403`, `404`.
 
-### 4.23 `PUT /api/v1/projects/{projectId}/drafts/comment/{draftId}`
+### 4.25 `PUT /api/v1/projects/{projectId}/drafts/comment/{draftId}`
 
 Назначение: создать или обновить черновик комментария.
 
 Path params:
+
 - `projectId`
 - `draftId`
 
@@ -964,11 +1196,12 @@ Path params:
 
 Ошибки: `400`, `401`, `403`, `404`.
 
-### 4.24 `DELETE /api/v1/projects/{projectId}/drafts/{draftId}`
+### 4.26 `DELETE /api/v1/projects/{projectId}/drafts/{draftId}`
 
 Назначение: удалить черновик текущего пользователя.
 
 Path params:
+
 - `projectId`
 - `draftId`
 
@@ -980,15 +1213,9 @@ Path params:
 
 - Роль администратора проекта хранится в membership-модели, отдельная таблица `project_admins` не требуется.
 - Агрегированный `score` предложения вычисляется из активных голосов.
+- Комментарии в API возвращаются плоским списком с `parentCommentId`; дерево строится на клиенте.
+- Для MVP комментарии возвращаются без пагинации, целиком по предложению.
 - Черновики моделируются как отдельная сущность с `type` и `payload`.
+- В MVP `drafts.payload` хранится как JSON для ускорения реализации.
+- Refresh token должен быть связан с серверной auth-session.
 - Настройка количества голосов, расписание встреч и внешние интеграции вынесены в future scope.
-
-## 6. Future Scope
-
-В следующих дедлайнах планируется расширить API:
-- настройками лимита голосов;
-- периодическим сбросом голосов;
-- расписанием встреч;
-- Jira links;
-- Outlook-синхронизацией;
-- реальной доменной интеграцией пользователей.
