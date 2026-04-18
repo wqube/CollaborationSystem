@@ -734,7 +734,48 @@ Query params:
 
 Ошибки: `400`, `401`, `403`, `404`.
 
-### 4.13 `POST /api/v1/projects/{projectId}/suggestions`
+### 4.13 `GET /api/v1/projects/{projectId}/dashboard`
+
+Назначение: оптимизированный endpoint для ProjectPage.
+
+Path params:
+
+- `projectId`
+
+Query params:
+- `status` — фильтр предложений по статусу, один из New, InProgress, Accepted, Rejected; опционально, по умолчанию New
+- `page` — номер страницы для списка предложений, опционально
+- `pageSize` — размер страницы для списка предложений, опционально
+
+Пример ответа:
+```json
+{
+  "project": {
+    "id": "...",
+    "name": "Core Platform",
+    "description": "...",
+    "role": "Admin",
+    "lastAccessedAt": "..."
+  },
+  "membersPreview": [
+    {
+      "userId": "...",
+      "displayName": "Иван Петров",
+      "role": "Admin"
+    }
+  ],
+  "suggestions": {
+    "items": [],
+    "page": 1,
+    "pageSize": 10,
+    "total": 123
+  }
+}
+```
+
+Ошибки: `401`, `403`, `404`
+
+### 4.14 `POST /api/v1/projects/{projectId}/suggestions`
 
 Назначение: создать новое предложение в проекте.
 
@@ -772,7 +813,7 @@ Path params:
 
 Ошибки: `400`, `401`, `403`, `404`.
 
-### 4.14 `GET /api/v1/projects/{projectId}/suggestions/{suggestionId}`
+### 4.15 `GET /api/v1/projects/{projectId}/suggestions/{suggestionId}`
 
 Назначение: получить карточку предложения.
 
@@ -810,7 +851,7 @@ Path params:
 
 Ошибки: `401`, `403`, `404`.
 
-### 4.15 `PATCH /api/v1/projects/{projectId}/suggestions/{suggestionId}`
+### 4.16 `PATCH /api/v1/projects/{projectId}/suggestions/{suggestionId}`
 
 Назначение: изменить текст предложения.
 
@@ -854,7 +895,7 @@ Path params:
 
 Ошибки: `400`, `401`, `403`, `404`, `409`.
 
-### 4.16 `PATCH /api/v1/projects/{projectId}/suggestions/{suggestionId}/status`
+### 4.17 `PATCH /api/v1/projects/{projectId}/suggestions/{suggestionId}/status`
 
 Назначение: изменить статус предложения.
 
@@ -897,7 +938,7 @@ Path params:
 
 Ошибки: `400`, `401`, `403`, `404`, `409`.
 
-### 4.17 `PUT /api/v1/projects/{projectId}/suggestions/{suggestionId}/vote`
+### 4.18 `PUT /api/v1/projects/{projectId}/suggestions/{suggestionId}/vote`
 
 Назначение: создать новый голос или заменить существующий.
 
@@ -928,7 +969,7 @@ Path params:
 
 Ошибки: `400`, `401`, `403`, `404`.
 
-### 4.18 `DELETE /api/v1/projects/{projectId}/suggestions/{suggestionId}/vote`
+### 4.19 `DELETE /api/v1/projects/{projectId}/suggestions/{suggestionId}/vote`
 
 Назначение: отменить текущий голос пользователя.
 
@@ -949,7 +990,7 @@ Path params:
 
 Ошибки: `401`, `403`, `404`.
 
-### 4.19 `GET /api/v1/projects/{projectId}/suggestions/{suggestionId}/comments`
+### 4.20 `GET /api/v1/projects/{projectId}/suggestions/{suggestionId}/comments`
 
 Назначение: получить все комментарии предложения плоским списком.
 
@@ -993,7 +1034,7 @@ Path params:
 
 Ошибки: `401`, `403`, `404`.
 
-### 4.20 `POST /api/v1/projects/{projectId}/suggestions/{suggestionId}/comments`
+### 4.21 `POST /api/v1/projects/{projectId}/suggestions/{suggestionId}/comments`
 
 Назначение: создать комментарий или ответ на комментарий.
 
@@ -1032,7 +1073,7 @@ Path params:
 
 Ошибки: `400`, `401`, `403`, `404`.
 
-### 4.21 `PATCH /api/v1/projects/{projectId}/comments/{commentId}`
+### 4.22 `PATCH /api/v1/projects/{projectId}/suggestions/{suggestionId}/comments/{commentId}`
 
 Назначение: отредактировать собственный комментарий.
 
@@ -1070,7 +1111,7 @@ Path params:
 
 Ошибки: `400`, `401`, `403`, `404`.
 
-### 4.22 `DELETE /api/v1/projects/{projectId}/comments/{commentId}`
+### 4.23 `DELETE /api/v1/projects/{projectId}/suggestions/{suggestionId}/comments/{commentId}`
 
 Назначение: удалить собственный комментарий.
 
@@ -1083,7 +1124,7 @@ Path params:
 
 Ошибки: `401`, `403`, `404`.
 
-### 4.23 `GET /api/v1/projects/{projectId}/drafts`
+### 4.24 `GET /api/v1/projects/{projectId}/drafts`
 
 Назначение: получить черновики текущего пользователя в проекте.
 
@@ -1122,7 +1163,7 @@ Query params:
 
 Ошибки: `401`, `403`, `404`.
 
-### 4.24 `PUT /api/v1/projects/{projectId}/drafts/suggestion/{draftId}`
+### 4.25 `PUT /api/v1/projects/{projectId}/drafts/suggestion/{draftId}`
 
 Назначение: создать или обновить черновик предложения.
 
@@ -1157,7 +1198,7 @@ Path params:
 
 Ошибки: `400`, `401`, `403`, `404`.
 
-### 4.25 `PUT /api/v1/projects/{projectId}/drafts/comment/{draftId}`
+### 4.26 `PUT /api/v1/projects/{projectId}/drafts/comment/{draftId}`
 
 Назначение: создать или обновить черновик комментария.
 
@@ -1196,7 +1237,7 @@ Path params:
 
 Ошибки: `400`, `401`, `403`, `404`.
 
-### 4.26 `DELETE /api/v1/projects/{projectId}/drafts/{draftId}`
+### 4.27 `DELETE /api/v1/projects/{projectId}/drafts/{draftId}`
 
 Назначение: удалить черновик текущего пользователя.
 
