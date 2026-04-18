@@ -20,6 +20,16 @@
 - При refresh сервер выдает новую пару токенов и отзывает предыдущий refresh token
 - Рекомендуемый TTL для MVP: `accessToken = 15 минут`, `refreshToken = 7 дней`
 
+Все пользователи аутентифицируются с использованием корпоративной учетной записи.
+
+В MVP допускается упрощенная реализация `DevLogin`, при которой:
+- пользователь вводит email и пароль;
+- сервер проверяет учетные данные в локальном хранилище или мок-данных;
+- при успешной аутентификации выдается JWT.
+
+Регистрация пользователей через API не предусмотрена.
+Список пользователей управляется вне системы и для MVP может эмулироваться на сервере.
+
 ### Пагинация
 
 Для коллекционных endpoint-ов, где это уместно, используется общий формат:
@@ -79,6 +89,12 @@
 ["Member", "Admin"]
 ```
 
+#### `AuthMode`
+
+```json
+["DevLogin", "SSO"]
+```
+
 ### 2.2 DTO
 
 #### `UserDto`
@@ -90,6 +106,9 @@
   "email": "ivan.petrov@example.local"
 }
 ```
+
+Пользователь из корпоративного каталога.
+Не создается через API.
 
 #### `LoginRequest`
 
@@ -271,6 +290,8 @@
 }
 ```
 
+`userId` должен соответствовать пользователю из корпоративного каталога, доступному через `GET /api/v1/users`.
+
 #### `UpdateProjectMemberRoleRequest`
 
 ```json
@@ -444,7 +465,43 @@
 
 Ошибки: `400`, `401`.
 
-### 4.4 `GET /api/v1/users/me`
+### 4.4 `GET /api/v1/users`
+
+Назначение: получить список пользователей из корпоративного каталога для добавления в проекты.
+
+Доступ: аутентифицированный пользователь.
+
+Query params:
+
+- `search` — поисковая строка по имени или email, опционально
+- `page` — номер страницы, опционально
+- `pageSize` — размер страницы, опционально
+
+Пример ответа:
+
+```json
+{
+  "items": [
+    {
+      "id": "3f11a6dc-79a6-43f7-ac88-bb78dd70d712",
+      "displayName": "Иван Петров",
+      "email": "ivan.petrov@example.local"
+    },
+    {
+      "id": "37b64aa3-970a-4d27-9966-b0f17d89f10a",
+      "displayName": "Анна Соколова",
+      "email": "anna.sokolova@example.local"
+    }
+  ],
+  "page": 1,
+  "pageSize": 20,
+  "total": 2
+}
+```
+
+Ошибки: `401`.
+
+### 4.5 `GET /api/v1/users/me`
 
 Назначение: получить текущего пользователя.
 
@@ -461,7 +518,7 @@
 
 Ошибки: `401`.
 
-### 4.5 `GET /api/v1/projects`
+### 4.6 `GET /api/v1/projects`
 
 Назначение: вернуть список проектов, доступных текущему пользователю.
 
@@ -491,7 +548,7 @@ Query params:
 
 Ошибки: `401`.
 
-### 4.6 `POST /api/v1/projects`
+### 4.7 `POST /api/v1/projects`
 
 Назначение: создать новый проект. Создатель автоматически становится администратором.
 
@@ -521,7 +578,7 @@ Query params:
 
 Ошибки: `400`, `401`.
 
-### 4.7 `GET /api/v1/projects/{projectId}`
+### 4.8 `GET /api/v1/projects/{projectId}`
 
 Назначение: получить карточку проекта и его участников.
 
@@ -552,7 +609,7 @@ Path params:
 
 Ошибки: `401`, `403`, `404`.
 
-### 4.8 `POST /api/v1/projects/{projectId}/members`
+### 4.9 `POST /api/v1/projects/{projectId}/members`
 
 Назначение: добавить участника в проект.
 
@@ -587,7 +644,7 @@ Path params:
 
 Ошибки: `400`, `401`, `403`, `404`, `409`.
 
-### 4.9 `PATCH /api/v1/projects/{projectId}/members/{userId}`
+### 4.10 `PATCH /api/v1/projects/{projectId}/members/{userId}`
 
 Назначение: изменить роль участника проекта.
 
@@ -622,7 +679,7 @@ Path params:
 
 Ошибки: `400`, `401`, `403`, `404`.
 
-### 4.10 `DELETE /api/v1/projects/{projectId}/members/{userId}`
+### 4.11 `DELETE /api/v1/projects/{projectId}/members/{userId}`
 
 Назначение: удалить участника из проекта.
 
@@ -637,9 +694,9 @@ Path params:
 
 Ошибки: `401`, `403`, `404`.
 
-### 4.11 `GET /api/v1/projects/{projectId}/suggestions`
+### 4.12 `GET /api/v1/projects/{projectId}/suggestions`
 
-Назначение: получить список предложений проекта по статусу.
+Назначение: получить полный список предложений проекта.
 
 Path params:
 
@@ -647,9 +704,12 @@ Path params:
 
 Query params:
 
-- `status` — один из `New`, `InProgress`, `Accepted`, `Rejected`
+- `status` — фильтр по статусу, один из `New`, `InProgress`, `Accepted`, `Rejected`, опционально
+- `search` — текстовый поиск по содержимому предложения, опционально
+- `sort` — поле сортировки, одно из `createdAt`, `updatedAt`, `score`, опционально
+- `order` — направление сортировки, `asc` или `desc`, опционально
 - `page` — номер страницы, опционально
-- `pageSize` — размер страницы, опционально
+- `pageSize` — размер страницы, опционально, по умолчанию `10`, максимум `100`
 
 Пример ответа:
 
@@ -678,7 +738,64 @@ Query params:
 
 Ошибки: `400`, `401`, `403`, `404`.
 
-### 4.12 `POST /api/v1/projects/{projectId}/suggestions`
+### 4.13 `GET /api/v1/projects/{projectId}/dashboard`
+
+Назначение: агрегированный endpoint для страницы проекта с коротким preview предложений.
+
+Path params:
+
+- `projectId`
+
+Query params:
+
+- `status` — фильтр preview предложений по статусу, по умолчанию `New`
+- `page` — номер страницы для preview списка предложений, опционально
+- `pageSize` — размер страницы для preview списка предложений, опционально
+
+Пример ответа:
+
+```json
+{
+  "project": {
+    "id": "7ca7d640-d843-45b2-9701-0b0efb8c4af1",
+    "name": "Core Platform",
+    "description": "Проект команды Core Platform",
+    "role": "Admin",
+    "lastAccessedAt": "2026-04-09T18:30:00Z"
+  },
+  "membersPreview": [
+    {
+      "userId": "3f11a6dc-79a6-43f7-ac88-bb78dd70d712",
+      "displayName": "Иван Петров",
+      "role": "Admin"
+    }
+  ],
+  "suggestions": {
+    "items": [
+      {
+        "id": "d68650b5-dfc5-45be-b525-8b0c64c4e54a",
+        "projectId": "7ca7d640-d843-45b2-9701-0b0efb8c4af1",
+        "text": "Добавить обязательный шаблон ретро перед встречей",
+        "status": "New",
+        "author": {
+          "id": "3f11a6dc-79a6-43f7-ac88-bb78dd70d712",
+          "displayName": "Иван Петров"
+        },
+        "score": 5,
+        "createdAt": "2026-04-09T18:30:00Z",
+        "updatedAt": "2026-04-09T18:30:00Z"
+      }
+    ],
+    "page": 1,
+    "pageSize": 10,
+    "total": 1
+  }
+}
+```
+
+Ошибки: `401`, `403`, `404`.
+
+### 4.14 `POST /api/v1/projects/{projectId}/suggestions`
 
 Назначение: создать новое предложение в проекте.
 
@@ -716,7 +833,7 @@ Path params:
 
 Ошибки: `400`, `401`, `403`, `404`.
 
-### 4.13 `GET /api/v1/projects/{projectId}/suggestions/{suggestionId}`
+### 4.15 `GET /api/v1/projects/{projectId}/suggestions/{suggestionId}`
 
 Назначение: получить карточку предложения.
 
@@ -754,7 +871,7 @@ Path params:
 
 Ошибки: `401`, `403`, `404`.
 
-### 4.14 `PATCH /api/v1/projects/{projectId}/suggestions/{suggestionId}`
+### 4.16 `PATCH /api/v1/projects/{projectId}/suggestions/{suggestionId}`
 
 Назначение: изменить текст предложения.
 
@@ -798,7 +915,7 @@ Path params:
 
 Ошибки: `400`, `401`, `403`, `404`, `409`.
 
-### 4.15 `PATCH /api/v1/projects/{projectId}/suggestions/{suggestionId}/status`
+### 4.17 `PATCH /api/v1/projects/{projectId}/suggestions/{suggestionId}/status`
 
 Назначение: изменить статус предложения.
 
@@ -841,7 +958,7 @@ Path params:
 
 Ошибки: `400`, `401`, `403`, `404`, `409`.
 
-### 4.16 `PUT /api/v1/projects/{projectId}/suggestions/{suggestionId}/vote`
+### 4.18 `PUT /api/v1/projects/{projectId}/suggestions/{suggestionId}/vote`
 
 Назначение: создать новый голос или заменить существующий.
 
@@ -872,7 +989,7 @@ Path params:
 
 Ошибки: `400`, `401`, `403`, `404`.
 
-### 4.17 `DELETE /api/v1/projects/{projectId}/suggestions/{suggestionId}/vote`
+### 4.19 `DELETE /api/v1/projects/{projectId}/suggestions/{suggestionId}/vote`
 
 Назначение: отменить текущий голос пользователя.
 
@@ -893,7 +1010,7 @@ Path params:
 
 Ошибки: `401`, `403`, `404`.
 
-### 4.18 `GET /api/v1/projects/{projectId}/suggestions/{suggestionId}/comments`
+### 4.20 `GET /api/v1/projects/{projectId}/suggestions/{suggestionId}/comments`
 
 Назначение: получить все комментарии предложения плоским списком.
 
@@ -937,7 +1054,7 @@ Path params:
 
 Ошибки: `401`, `403`, `404`.
 
-### 4.19 `POST /api/v1/projects/{projectId}/suggestions/{suggestionId}/comments`
+### 4.21 `POST /api/v1/projects/{projectId}/suggestions/{suggestionId}/comments`
 
 Назначение: создать комментарий или ответ на комментарий.
 
@@ -976,7 +1093,7 @@ Path params:
 
 Ошибки: `400`, `401`, `403`, `404`.
 
-### 4.20 `PATCH /api/v1/projects/{projectId}/comments/{commentId}`
+### 4.22 `PATCH /api/v1/projects/{projectId}/comments/{commentId}`
 
 Назначение: отредактировать собственный комментарий.
 
@@ -1014,7 +1131,7 @@ Path params:
 
 Ошибки: `400`, `401`, `403`, `404`.
 
-### 4.21 `DELETE /api/v1/projects/{projectId}/comments/{commentId}`
+### 4.23 `DELETE /api/v1/projects/{projectId}/comments/{commentId}`
 
 Назначение: удалить собственный комментарий.
 
@@ -1027,7 +1144,7 @@ Path params:
 
 Ошибки: `401`, `403`, `404`.
 
-### 4.22 `GET /api/v1/projects/{projectId}/drafts`
+### 4.24 `GET /api/v1/projects/{projectId}/drafts`
 
 Назначение: получить черновики текущего пользователя в проекте.
 
@@ -1066,7 +1183,7 @@ Query params:
 
 Ошибки: `401`, `403`, `404`.
 
-### 4.23 `PUT /api/v1/projects/{projectId}/drafts/suggestion/{draftId}`
+### 4.25 `PUT /api/v1/projects/{projectId}/drafts/suggestion/{draftId}`
 
 Назначение: создать или обновить черновик предложения.
 
@@ -1101,7 +1218,7 @@ Path params:
 
 Ошибки: `400`, `401`, `403`, `404`.
 
-### 4.24 `PUT /api/v1/projects/{projectId}/drafts/comment/{draftId}`
+### 4.26 `PUT /api/v1/projects/{projectId}/drafts/comment/{draftId}`
 
 Назначение: создать или обновить черновик комментария.
 
@@ -1140,7 +1257,7 @@ Path params:
 
 Ошибки: `400`, `401`, `403`, `404`.
 
-### 4.25 `DELETE /api/v1/projects/{projectId}/drafts/{draftId}`
+### 4.27 `DELETE /api/v1/projects/{projectId}/drafts/{draftId}`
 
 Назначение: удалить черновик текущего пользователя.
 
