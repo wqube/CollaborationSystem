@@ -703,9 +703,12 @@ Path params:
 
 Query params:
 
-- `status` — один из `New`, `InProgress`, `Accepted`, `Rejected`
-- `page` — номер страницы, опционально
-- `pageSize` — размер страницы, опционально
+- `status`: фильтр предложений по статусу, один из New, InProgress, Accepted, Rejected; опционально
+- `search`: текстовый поиск по содержимому предложения; опционально
+- `sort`: поле сортировки списка предложений, одно из createdAt, updatedAt, score; опционально, по умолчанию createdAt
+- `order`: направление сортировки, asc или desc; опционально, по умолчанию desc
+- `page`: номер страницы списка предложений; опционально
+- `pageSize`: размер страницы списка предложений; опционально, по умолчанию 10, максимум 100
 
 Пример ответа:
 
@@ -736,7 +739,7 @@ Query params:
 
 ### 4.13 `GET /api/v1/projects/{projectId}/dashboard`
 
-Назначение: оптимизированный endpoint для ProjectPage.
+Назначение: агрегированный endpoint для UI.
 
 Path params:
 
@@ -799,6 +802,8 @@ Path params:
 {
   "id": "d68650b5-dfc5-45be-b525-8b0c64c4e54a",
   "projectId": "7ca7d640-d843-45b2-9701-0b0efb8c4af1",
+  "sort": createdAt | score | updatedAt
+  "order": asc | desc
   "text": "Добавить обязательный шаблон ретро перед встречей",
   "status": "New",
   "author": {
@@ -821,6 +826,9 @@ Path params:
 
 - `projectId`
 - `suggestionId`
+
+Query params:
+- `includeComments` - вернуть комментарии сразу вместе с предложением в одном запросе (boolean, optional, default false)
 
 Пример ответа:
 
@@ -1135,8 +1143,8 @@ Path params:
 Query params:
 
 - `type` — опционально, `Suggestion` или `Comment`
-- `page` — номер страницы, опционально
-- `pageSize` — размер страницы, опционально
+- `page` — номер страницы, опционально (default 1)
+- `pageSize` — размер страницы, опционально (default 20)
 
 Пример ответа:
 
