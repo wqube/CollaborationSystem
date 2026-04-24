@@ -18,7 +18,7 @@ export function AppRouter() {
 
       <Route element={<Layout />}>
         {/* Root redirect */}
-        {/* <Route path="/profile" element={<ProfilePage />} /> */}
+        <Route path="/profile" element={<ProfilePage />} />
 
         <Route path="/" element={<Navigate to="/projects" replace />} />
 
