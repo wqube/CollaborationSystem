@@ -1,0 +1,62 @@
+.voteBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: white;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: var(--black);
+}
+
+.voteBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Sizes */
+.sm {
+  width: 28px;
+  height: 28px;
+  font-size: 16px;
+}
+
+.md {
+  width: 36px;
+  height: 36px;
+  font-size: 20px;
+}
+
+.lg {
+  width: 48px;
+  height: 48px;
+  font-size: 28px;
+}
+
+/* Hover states */
+.voteBtn:hover:not(:disabled):not(.active-up):not(.active-down) {
+  background: var(--light-gray);
+}
+
+/* Active states */
+.active-up {
+  background: var(--green);
+  color: white;
+  border-color: var(--green);
+}
+
+.active-up:hover:not(:disabled) {
+  background: #008f59;
+}
+
+.active-down {
+  background: var(--red);
+  color: white;
+  border-color: var(--red);
+}
+
+.active-down:hover:not(:disabled) {
+  background: #c41030;
+}
