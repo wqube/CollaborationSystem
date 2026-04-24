@@ -1,73 +1,146 @@
-# React + TypeScript + Vite
+# Collaboration System (Frontend)
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+## Описание проекта
 
-Currently, two official plugins are available:
+Frontend часть системы для работы с предложениями по улучшению процессов разработки.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+Система позволяет:
+- создавать предложения по улучшению процессов
+- голосовать за предложения (за / против)
+- обсуждать предложения в комментариях
+- отслеживать статус внедрения предложений
+- работать с проектами и настройками проекта
 
-## React Compiler
+---
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Стек технологий
 
-## Expanding the ESLint configuration
+- React
+- TypeScript
+- React Router DOM
+- Vite
+- CSS Modules
+- ESLint / Prettier
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+---
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+## Установка и запуск проекта
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+```bash
+# установка зависимостей
+npm install
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+# запуск dev-сервера
+npm run dev
+
+# сборка проекта
+npm run build
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+---
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## Структура проекта
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+src/
+│
+├── app/                # корневой App
+├── router/             # настройка маршрутов
+├── pages/              # страницы приложения
+├── components/         # переиспользуемые компоненты UI
+│   ├── layout/         # Header, Footer
+│   └── ui/             # UI Kit
+├── styles/             # глобальные стили
+└── main.tsx            # точка входа
 ```
+
+---
+
+## Карта экранов
+### Авторизация
+- /login — страница входа
+
+### Проекты
+- /projects — список проектов
+- /projects/:projectId — дашборд проекта с основной информацией
+- /projects/:projectId/settings — настройки проекта
+
+### Предложения
+- /projects/:projectId/suggestions — полный список предложений проекта
+- /projects/:projectId/suggestions/:suggestionId — детальная страница предложения
+
+
+---
+
+## Роли пользователей
+
+- Пользователь — создаёт предложения, голосует, комментирует
+- Администратор — управляет настройками проекта
+
+---
+
+## UI Kit
+
+В проекте реализованы базовые UI-компоненты:
+
+- Button
+- Card
+- Modal
+- Tabs
+- Table
+- Badge
+- VoteButton
+
+Компоненты реализованы с использованием CSS Modules.
+
+---
+
+## User Flow
+### 1. Авторизация
+Пользователь открывает приложение -> попадает на страницу логина -> проходит авторизацию -> попадает в список проектов.
+
+### 2. Работа с проектами
+Пользователь:
+
+- открывает список проектов
+- выбирает проект
+- попадает внутрь проекта, где отображаются предложения
+
+### 3. Просмотр предложений
+Внутри проекта пользователь:
+
+- видит список предложений
+- может открыть конкретное предложение
+- переходит на страницу детального просмотра
+
+### 4. Работа с предложением
+На странице предложения пользователь может:
+
+- просматривать текст предложения
+- видеть автора
+- голосовать (за / против)
+- просматривать комментарии
+- добавлять комментарии
+
+---
+
+## Архитектура приложения
+- `router/` — конфигурация маршрутизации
+- `pages/` — страницы приложения
+- `components/layout/` — layout-компоненты (Header, Footer)
+- `components/ui/` — UI Kit (Button, Modal и др.)
+
+## Текущий статус проекта
+### Реализовано:
+
+- базовая структура проекта
+- UI Kit (основные компоненты)
+- маршрутизация (React Router)
+- заглушки основных экранов
+- базовая архитектура приложения
+
+### В процессе:
+
+- подключение API
+- реализация бизнес-логики
+- работа с комментариями и голосованием
