@@ -1,6 +1,7 @@
 using CollaborationSystem.Application.DTOs;
 using CollaborationSystem.Application.DTOs.Auth;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Http;
 
 namespace CollaborationSystem.Api.Controllers;
 
@@ -8,13 +9,17 @@ namespace CollaborationSystem.Api.Controllers;
 [Route("api/v1/auth")]
 public class AuthController : ControllerBase
 {
+    private const string RefreshTokenCookieName = "refreshToken";
+    private const int RefreshTokenLifetimeDays = 7;
+
     [HttpPost("login")]
     public ActionResult<AuthResponse> Login([FromBody] LoginRequest request)
     {
+        SetRefreshTokenCookie("dev-refresh-token");
+
         var response = new AuthResponse
         {
             AccessToken = "dev-access-token",
-            RefreshToken = "dev-refresh-token",
             ExpiresIn = 3600,
             User = new UserDto
             {
@@ -28,18 +33,46 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("refresh")]
-    public IActionResult Refresh([FromBody] RefreshTokenRequest request)
+    public ActionResult<RefreshResponse> Refresh()
     {
-        return Ok(new
+        if (!Request.Cookies.TryGetValue(RefreshTokenCookieName, out var refreshToken) ||
+            string.IsNullOrWhiteSpace(refreshToken))
         {
-            accessToken = "new-dev-access-token",
-            refreshToken = request.RefreshToken
+            return Unauthorized();
+        }
+
+        SetRefreshTokenCookie("new-dev-refresh-token");
+
+        return Ok(new RefreshResponse
+        {
+            AccessToken = "new-dev-access-token",
+            ExpiresIn = 3600
         });
     }
 
     [HttpPost("logout")]
     public IActionResult Logout()
     {
+        Response.Cookies.Delete(RefreshTokenCookieName, new CookieOptions
+        {
+            HttpOnly = true,
+            IsEssential = true,
+            SameSite = SameSiteMode.Lax,
+            Secure = Request.IsHttps
+        });
+
         return NoContent();
+    }
+
+    private void SetRefreshTokenCookie(string refreshToken)
+    {
+        Response.Cookies.Append(RefreshTokenCookieName, refreshToken, new CookieOptions
+        {
+            HttpOnly = true,
+            IsEssential = true,
+            SameSite = SameSiteMode.Lax,
+            Secure = Request.IsHttps,
+            Expires = DateTimeOffset.UtcNow.AddDays(RefreshTokenLifetimeDays)
+        });
     }
 }
