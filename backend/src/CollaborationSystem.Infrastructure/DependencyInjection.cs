@@ -21,6 +21,9 @@ public static class DependencyInjection
 
         services.AddHttpContextAccessor();
         services.AddScoped<ICurrentUserService, CurrentUserService>();
+        services.AddSingleton<IDevUserStore, DevUserStore>();
+        services.AddSingleton<IJwtTokenService, JwtTokenService>();
+        services.AddSingleton<IRefreshSessionStore, InMemoryRefreshSessionStore>();
 
         services.AddDbContext<AppDbContext>(options => options.UseNpgsql(connectionString));
 
@@ -39,13 +42,16 @@ public static class DependencyInjection
             {
                 options.TokenValidationParameters = new TokenValidationParameters
                 {
+                    RequireExpirationTime = true,
+                    RequireSignedTokens = true,
                     ValidateIssuer = true,
                     ValidateAudience = true,
                     ValidateLifetime = true,
                     ValidateIssuerSigningKey = true,
                     ValidIssuer = jwtSection["Issuer"],
                     ValidAudience = jwtSection["Audience"],
-                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(signingKey))
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(signingKey)),
+                    ClockSkew = TimeSpan.Zero
                 };
             });
 

@@ -1,3 +1,5 @@
+using CollaborationSystem.Application.Abstractions;
+using CollaborationSystem.Application.DTOs.Auth;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -6,17 +8,24 @@ namespace CollaborationSystem.Api.Controllers;
 [ApiController]
 [Authorize]
 [Route("api/v1/users")]
-public class UsersController : ControllerBase
+public class UsersController(ICurrentUserService currentUserService) : ControllerBase
 {
     [HttpGet("me")]
-    public IActionResult GetCurrentUser()
+    public ActionResult<CurrentUserResponse> GetCurrentUser()
     {
-        return Ok(new
+        var userId = currentUserService.GetRequiredUserId();
+
+        if (userId == Guid.Empty)
         {
-            id = Guid.NewGuid(),
-            displayName = "Demo User",
-            email = "demo@example.com",
-            authMode = "DomainAccount"
+            return Unauthorized();
+        }
+
+        return Ok(new CurrentUserResponse
+        {
+            Id = userId,
+            DisplayName = currentUserService.GetDisplayName() ?? string.Empty,
+            Email = currentUserService.GetEmail() ?? string.Empty,
+            AuthMode = currentUserService.GetAuthMode() ?? "DevLogin"
         });
     }
 }
