@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("CollaborationSystem.Infrastructure")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+38ee6225b26b45ecafbfc5725a8090cfa580936b")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+3efe0855df06d9a468b22de301f6f0ebcfaf9eba")]
 [assembly: System.Reflection.AssemblyProductAttribute("CollaborationSystem.Infrastructure")]
 [assembly: System.Reflection.AssemblyTitleAttribute("CollaborationSystem.Infrastructure")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

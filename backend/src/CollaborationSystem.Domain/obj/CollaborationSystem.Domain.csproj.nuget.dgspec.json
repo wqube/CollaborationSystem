@@ -1,20 +1,21 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\user\\Desktop\\CollaborationSystem\\backend\\src\\CollaborationSystem.Domain\\CollaborationSystem.Domain.csproj": {}
+    "/Users/mikhail/СollaborationSystem/backend/src/CollaborationSystem.Domain/CollaborationSystem.Domain.csproj": {}
   },
   "projects": {
-    "C:\\Users\\user\\Desktop\\CollaborationSystem\\backend\\src\\CollaborationSystem.Domain\\CollaborationSystem.Domain.csproj": {
+    "/Users/mikhail/СollaborationSystem/backend/src/CollaborationSystem.Domain/CollaborationSystem.Domain.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\user\\Desktop\\CollaborationSystem\\backend\\src\\CollaborationSystem.Domain\\CollaborationSystem.Domain.csproj",
+        "projectUniqueName": "/Users/mikhail/СollaborationSystem/backend/src/CollaborationSystem.Domain/CollaborationSystem.Domain.csproj",
         "projectName": "CollaborationSystem.Domain",
-        "projectPath": "C:\\Users\\user\\Desktop\\CollaborationSystem\\backend\\src\\CollaborationSystem.Domain\\CollaborationSystem.Domain.csproj",
-        "packagesPath": "C:\\Users\\user\\Desktop\\CollaborationSystem\\.nuget-packages",
-        "outputPath": "C:\\Users\\user\\Desktop\\CollaborationSystem\\backend\\src\\CollaborationSystem.Domain\\obj\\",
+        "projectPath": "/Users/mikhail/СollaborationSystem/backend/src/CollaborationSystem.Domain/CollaborationSystem.Domain.csproj",
+        "packagesPath": "/Users/mikhail/.nuget/packages/",
+        "outputPath": "/Users/mikhail/СollaborationSystem/backend/src/CollaborationSystem.Domain/obj/",
         "projectStyle": "PackageReference",
         "configFilePaths": [
-          "C:\\Users\\user\\Desktop\\CollaborationSystem\\backend\\NuGet.config"
+          "/Users/mikhail/СollaborationSystem/backend/NuGet.Config",
+          "/Users/mikhail/.nuget/NuGet/NuGet.Config"
         ],
         "originalTargetFrameworks": [
           "net10.0"
@@ -38,7 +39,7 @@
           "auditLevel": "low",
           "auditMode": "all"
         },
-        "SdkAnalysisLevel": "10.0.200"
+        "SdkAnalysisLevel": "10.0.100"
       },
       "frameworks": {
         "net10.0": {
@@ -59,7 +60,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.202/PortableRuntimeIdentifierGraph.json",
+          "runtimeIdentifierGraphPath": "/usr/local/share/dotnet/sdk/10.0.100/PortableRuntimeIdentifierGraph.json",
           "packagesToPrune": {
             "Microsoft.CSharp": "(,4.7.32767]",
             "Microsoft.VisualBasic": "(,10.4.32767]",

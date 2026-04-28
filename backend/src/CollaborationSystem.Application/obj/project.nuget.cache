@@ -1,10 +1,10 @@
 {
   "version": 2,
-  "dgSpecHash": "ZPqLh3EY/gY=",
+  "dgSpecHash": "trV3dFcB5/8=",
   "success": true,
-  "projectFilePath": "C:\\Users\\user\\Desktop\\CollaborationSystem\\backend\\src\\CollaborationSystem.Application\\CollaborationSystem.Application.csproj",
+  "projectFilePath": "/Users/mikhail/СollaborationSystem/backend/src/CollaborationSystem.Application/CollaborationSystem.Application.csproj",
   "expectedPackageFiles": [
-    "C:\\Users\\user\\Desktop\\CollaborationSystem\\.nuget-packages\\microsoft.extensions.dependencyinjection.abstractions\\10.0.0\\microsoft.extensions.dependencyinjection.abstractions.10.0.0.nupkg.sha512"
+    "/Users/mikhail/.nuget/packages/microsoft.extensions.dependencyinjection.abstractions/10.0.0/microsoft.extensions.dependencyinjection.abstractions.10.0.0.nupkg.sha512"
   ],
   "logs": []
 }
