@@ -1,6 +1,9 @@
 using CollaborationSystem.Api.Extensions;
 using CollaborationSystem.Application;
+using CollaborationSystem.Application.DTOs.Auth;
 using CollaborationSystem.Infrastructure;
+using FluentValidation;
+using FluentValidation.AspNetCore;
 using System.Text.Json;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -10,6 +13,8 @@ builder.Services.AddControllers()
     {
         options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
     });
+builder.Services.AddFluentValidationAutoValidation();
+builder.Services.AddValidatorsFromAssemblyContaining<LoginRequestValidator>();
 
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
@@ -20,7 +25,6 @@ builder.Services.AddCors(options =>
     {
         policy
             .WithOrigins("http://localhost:5173")
-            .AllowCredentials()
             .AllowAnyHeader()
             .AllowAnyMethod()
             .AllowCredentials();

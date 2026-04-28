@@ -1,6 +1,44 @@
-@CollaborationSystem.Api_HostAddress = http://localhost:5227
+@host = http://localhost:5227
+@accessToken =
 
-GET {{CollaborationSystem.Api_HostAddress}}/weatherforecast/
+### Health check
+GET {{host}}/health
 Accept: application/json
 
-###
+### Login with dev domain credentials
+# Copy accessToken from the response body to the @accessToken variable above.
+# The response must also set refreshToken as an HttpOnly cookie.
+POST {{host}}/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "test@test.local",
+  "password": "password"
+}
+
+### Get current user from JWT
+GET {{host}}/api/v1/users/me
+Accept: application/json
+Authorization: Bearer {{accessToken}}
+
+### Refresh access token from HttpOnly cookie
+# This request has no body. The refreshToken must be sent by the HTTP client from cookie storage.
+POST {{host}}/api/v1/auth/refresh
+Accept: application/json
+
+### Logout and remove refresh cookie
+POST {{host}}/api/v1/auth/logout
+Accept: application/json
+
+### Negative check: login validation error
+POST {{host}}/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "not-an-email",
+  "password": ""
+}
+
+### Negative check: protected endpoint without access token
+GET {{host}}/api/v1/users/me
+Accept: application/json
