@@ -14,11 +14,21 @@
 - `accessToken` используется для доступа к защищенным endpoint-ам
 - `refreshToken` используется для обновления access token
 - Refresh token должен быть серверно управляемым и отзываться через logout
+- Logout удаляет refreshToken cookie (Set-Cookie с истекшим сроком жизни) и инвалидирует серверную refresh-сессию.
 - Пароль из `LoginRequest` используется только для проверки учетных данных; в хранилище должен находиться только `password_hash`
 - Для MVP допускается только одна активная refresh-сессия на пользователя
 - Новый login инвалидирует предыдущую refresh-сессию пользователя
 - При refresh сервер выдает новую пару токенов и отзывает предыдущий refresh token
 - Рекомендуемый TTL для MVP: `accessToken = 15 минут`, `refreshToken = 7 дней`
+
+- Refresh token передается и хранится только через httpOnly cookie.
+- Он никогда не передается в теле запроса или ответа.
+
+Cookie устанавливается сервером через Set-Cookie:
+- HttpOnly: true
+- Secure: true
+- SameSite: Lax
+- Path: /api/v1/auth
 
 Все пользователи аутентифицируются с использованием корпоративной учетной записи.
 
@@ -119,20 +129,11 @@
 }
 ```
 
-#### `RefreshTokenRequest`
-
-```json
-{
-  "refreshToken": "refresh-token-value"
-}
-```
-
 #### `LoginResponse`
 
 ```json
 {
   "accessToken": "jwt-access-token",
-  "refreshToken": "refresh-token-value",
   "expiresIn": 3600,
   "user": {
     "id": "3f11a6dc-79a6-43f7-ac88-bb78dd70d712",
@@ -404,12 +405,14 @@
 }
 ```
 
+Cookies:
+- refreshToken (httpOnly, secure)
+
 Пример ответа:
 
 ```json
 {
   "accessToken": "jwt-access-token",
-  "refreshToken": "refresh-token-value",
   "expiresIn": 3600,
   "user": {
     "id": "3f11a6dc-79a6-43f7-ac88-bb78dd70d712",
@@ -425,25 +428,22 @@
 
 Назначение: обновить access token по refresh token.
 
-Тело запроса: `RefreshTokenRequest`.
+Тело запроса отсутствует.
 
-Пример запроса:
-
-```json
-{
-  "refreshToken": "refresh-token-value"
-}
-```
+Cookies:
+- refreshToken (httpOnly, secure)
 
 Пример ответа:
 
 ```json
 {
   "accessToken": "new-jwt-access-token",
-  "refreshToken": "new-refresh-token-value",
   "expiresIn": 3600
 }
 ```
+
+- refreshToken извлекается сервером исключительно из httpOnly cookie.
+- Передача refreshToken в теле запроса или заголовках не допускается.
 
 Ошибки: `400`, `401`.
 
@@ -451,15 +451,10 @@
 
 Назначение: завершить текущую refresh-сессию пользователя.
 
-Тело запроса: `RefreshTokenRequest`.
+Тело запроса отсутствует.
 
-Пример запроса:
-
-```json
-{
-  "refreshToken": "refresh-token-value"
-}
-```
+Cookies:
+- refreshToken (httpOnly, secure)
 
 Пример ответа: `204 No Content`
 
