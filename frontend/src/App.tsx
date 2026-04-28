@@ -4,7 +4,7 @@ import { AppRouter } from './router';
 function App() {
   return (
     <SessionRestorer>
-      <AppRouter />;
+      <AppRouter />
     </SessionRestorer>
   );
 }

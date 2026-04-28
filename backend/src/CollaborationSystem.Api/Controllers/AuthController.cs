@@ -23,7 +23,6 @@ public class AuthController : ControllerBase
                 Email = request.Email
             }
         };
-
         return Ok(response);
     }
 
