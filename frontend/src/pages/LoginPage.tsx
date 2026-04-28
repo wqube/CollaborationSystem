@@ -1,11 +1,21 @@
 import { useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/Button/Button';
+import { useAppDispatcher } from '../shared/store/hooks';
+import { setAuth } from '../shared/store/authSlice';
+import { login } from '../shared/api/auth';
 
 export function LoginPage() {
+  const dispatch = useAppDispatcher();
   const navigate = useNavigate();
 
-  const handleLogin = async () => {
-    navigate('/projects');
+  const handleLogin = async (email: string, password: string) => {
+    try {
+      const responce = await login({ email, password });
+      dispatch(setAuth({ token: responce.accessToken, user: responce.user }));
+      navigate('/projects');
+    } catch (error) {
+      console.error('Ошибка авторизации', error);
+    }
   };
 
   return (
@@ -18,7 +28,7 @@ export function LoginPage() {
           <h1 className="login-title">Вход в систему</h1>
           <p className="login-subtitle">Управление идеями команды</p>
 
-          <form onSubmit={handleLogin}>
+          <form>
             <div className="form-group">
               <label>Email</label>
               <input type="email" />
@@ -27,7 +37,7 @@ export function LoginPage() {
               <label>Пароль</label>
               <input type="password" />
             </div>
-            <Button type="submit" variant="primary" size="md" fullWidth>
+            <Button onClick={() => handleLogin('test@test.local', 'password')}>
               Войти
             </Button>
           </form>
