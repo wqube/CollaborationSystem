@@ -1,12 +1,15 @@
 @host = http://localhost:5227
 @accessToken =
+@projectId =
+@memberUserId =
 
 ### Health check
 GET {{host}}/health
 Accept: application/json
 
 ### Login with dev domain credentials
-# Copy accessToken from the response body to the @accessToken variable above.
+
+### Copy accessToken from the response body to the @accessToken variable above.
 # The response must also set refreshToken as an HttpOnly cookie.
 POST {{host}}/api/v1/auth/login
 Content-Type: application/json
@@ -42,3 +45,54 @@ Content-Type: application/json
 ### Negative check: protected endpoint without access token
 GET {{host}}/api/v1/users/me
 Accept: application/json
+
+### Add project member
+### Requires @accessToken of a user who is Admin in @projectId.
+### Use @memberUserId from GET /api/v1/users after BE-3 is implemented.
+POST {{host}}/api/v1/projects/{{projectId}}/members
+Accept: application/json
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "userId": "{{memberUserId}}",
+  "role": "Member"
+}
+
+### Negative check: add the same project member again returns 409 Conflict
+POST {{host}}/api/v1/projects/{{projectId}}/members
+Accept: application/json
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "userId": "{{memberUserId}}",
+  "role": "Member"
+}
+
+### Change project member role
+# Allowed roles: Member, Admin.
+PATCH {{host}}/api/v1/projects/{{projectId}}/members/{{memberUserId}}
+Accept: application/json
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "role": "Admin"
+}
+
+### Remove project member
+DELETE {{host}}/api/v1/projects/{{projectId}}/members/{{memberUserId}}
+Accept: application/json
+Authorization: Bearer {{accessToken}}
+
+### Negative check: project member operation without Admin role returns 403 Forbidden
+### Login as a non-admin project member, copy that token to @accessToken, then run this request.
+PATCH {{host}}/api/v1/projects/{{projectId}}/members/{{memberUserId}}
+Accept: application/json
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "role": "Member"
+}
