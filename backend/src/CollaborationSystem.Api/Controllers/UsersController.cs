@@ -1,5 +1,7 @@
 using CollaborationSystem.Application.Abstractions;
 using CollaborationSystem.Application.DTOs.Auth;
+using CollaborationSystem.Application.DTOs.Suggestions;
+using CollaborationSystem.Application.DTOs.Users;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -8,8 +10,20 @@ namespace CollaborationSystem.Api.Controllers;
 [ApiController]
 [Authorize]
 [Route("api/v1/users")]
-public class UsersController(ICurrentUserService currentUserService) : ControllerBase
+public class UsersController(
+    ICurrentUserService currentUserService,
+    IUserDirectoryService userDirectoryService) : ControllerBase
 {
+    [HttpGet]
+    public async Task<ActionResult<PagedResponse<UserListItemResponse>>> GetUsers(
+        [FromQuery] GetUsersQuery query,
+        CancellationToken cancellationToken)
+    {
+        var response = await userDirectoryService.GetUsersAsync(query, cancellationToken);
+
+        return Ok(response);
+    }
+
     [HttpGet("me")]
     public ActionResult<CurrentUserResponse> GetCurrentUser()
     {
