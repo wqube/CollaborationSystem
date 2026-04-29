@@ -12,7 +12,7 @@ export function LoginPage() {
     try {
       const responce = await login({ email, password });
       dispatch(setAuth({ token: responce.accessToken, user: responce.user }));
-      navigate('/projects');
+      navigate('/projects', { replace: true });
     } catch (error) {
       console.error('Ошибка авторизации', error);
     }

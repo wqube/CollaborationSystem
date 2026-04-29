@@ -1,10 +1,24 @@
 import styles from './Header.module.css';
 import { useNavigate } from 'react-router-dom';
+import { userAppSelector } from '../../shared/store/hooks';
 
 export function Header() {
   const navigate = useNavigate();
-  const userName = 'Фамилия Имя';
-  const userInitials = 'ФИ';
+  const user = userAppSelector((state) => state.auth.user);
+
+  const getInitials = (name: string): string => {
+    return name
+      .trim()
+      .split(/\s+/)
+      .filter((word) => word.length > 0)
+      .map((word) => word[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
+  };
+
+  const userName = user?.displayName || 'Гость';
+  const userInitials = user ? getInitials(user.displayName) : 'Г';
 
   return (
     <header className={styles.app_header}>
