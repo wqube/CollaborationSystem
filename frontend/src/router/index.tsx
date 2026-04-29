@@ -7,20 +7,19 @@ import { ProjectSettingsPage } from '../pages/ProjectSettingsPage';
 import { Layout } from '../components/layout/Layout';
 import { ProfilePage } from '../pages/ProfilePage';
 import { SuggestionListPage } from '../pages/SuggestionListPage';
+import { ProtectedRoute } from '../components/ProtectedRoute/ProtectedRoute';
 
 export function AppRouter() {
   return (
     <Routes>
-      {/* Публичные роуты без Layout */}
+      {/* Публичная страница */}
       <Route path="/auth/login" element={<LoginPage />} />
 
+      {/* Защищенные страницы */}
+      {/* <Route element={<ProtectedRoute />}> */}
       {/* Основное приложение внутри Layout */}
-
       <Route element={<Layout />}>
-        {/* Root redirect */}
         <Route path="/profile" element={<ProfilePage />} />
-
-        <Route path="/" element={<Navigate to="/projects" replace />} />
 
         <Route path="/projects" element={<ProjectListPage />} />
         <Route path="/projects/:projectId" element={<ProjectPage />} />
@@ -42,6 +41,10 @@ export function AppRouter() {
 
         <Route path="/profile" element={<ProfilePage />} />
       </Route>
+      {/* </Route> */}
+
+      {/* Редирект с корня */}
+      <Route path="/" element={<Navigate to="/projects" replace />} />
     </Routes>
   );
 }
