@@ -2,6 +2,7 @@
 @accessToken =
 @projectId =
 @memberUserId =
+@suggestionId =
 
 ### Health check
 GET {{host}}/health
@@ -96,3 +97,94 @@ Authorization: Bearer {{accessToken}}
 {
   "role": "Member"
 }
+
+### Get project suggestions with default business sorting
+### Requires @accessToken of a user who is a member of @projectId.
+### Default sorting is score DESC, createdAt ASC.
+GET {{host}}/api/v1/projects/{{projectId}}/suggestions
+Accept: application/json
+Authorization: Bearer {{accessToken}}
+
+### Get project suggestions with filters, sorting and pagination
+### Allowed status values: New, InProgress, Accepted, Rejected.
+### Allowed sort values: createdAt, updatedAt, score.
+### Allowed order values: asc, desc.
+GET {{host}}/api/v1/projects/{{projectId}}/suggestions?status=New&search=retro&sort=score&order=desc&page=1&pageSize=10
+Accept: application/json
+Authorization: Bearer {{accessToken}}
+
+### Create suggestion
+### Copy id from the response body to the @suggestionId variable above.
+POST {{host}}/api/v1/projects/{{projectId}}/suggestions
+Accept: application/json
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "text": "Add a lightweight retrospective template before team meetings"
+}
+
+### Negative check: create suggestion validation error
+POST {{host}}/api/v1/projects/{{projectId}}/suggestions
+Accept: application/json
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "text": ""
+}
+
+### Get suggestion details
+### Response includes votes[] and currentUserVote.
+GET {{host}}/api/v1/projects/{{projectId}}/suggestions/{{suggestionId}}
+Accept: application/json
+Authorization: Bearer {{accessToken}}
+
+### Update suggestion text
+### Requires @accessToken of the suggestion author.
+PATCH {{host}}/api/v1/projects/{{projectId}}/suggestions/{{suggestionId}}
+Accept: application/json
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "text": "Add a lightweight retrospective template and an owner for action items"
+}
+
+### Negative check: update suggestion text as non-author returns 403 Forbidden
+### Login as a different project member, copy that token to @accessToken, then run this request.
+PATCH {{host}}/api/v1/projects/{{projectId}}/suggestions/{{suggestionId}}
+Accept: application/json
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "text": "Attempt to edit another user's suggestion"
+}
+
+### Update suggestion status
+### Requires @accessToken of a user who is Admin in @projectId.
+PATCH {{host}}/api/v1/projects/{{projectId}}/suggestions/{{suggestionId}}/status
+Accept: application/json
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "status": "InProgress"
+}
+
+### Negative check: update suggestion status without Admin role returns 403 Forbidden
+### Login as a non-admin project member, copy that token to @accessToken, then run this request.
+PATCH {{host}}/api/v1/projects/{{projectId}}/suggestions/{{suggestionId}}/status
+Accept: application/json
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "status": "Accepted"
+}
+
+### Negative check: get missing suggestion returns 404 Not Found
+GET {{host}}/api/v1/projects/{{projectId}}/suggestions/00000000-0000-0000-0000-000000000000
+Accept: application/json
+Authorization: Bearer {{accessToken}}
