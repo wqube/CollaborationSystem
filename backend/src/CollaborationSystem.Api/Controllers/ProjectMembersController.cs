@@ -33,7 +33,7 @@ public class ProjectMembersController(IProjectMemberService projectMemberService
     {
         var result = await projectMemberService.UpdateMemberRoleAsync(projectId, userId, request, cancellationToken);
 
-        return ToMemberActionResult(result, Ok);
+        return ToMemberActionResult(result, member => Ok(member));
     }
 
     [HttpDelete("{userId:guid}")]
