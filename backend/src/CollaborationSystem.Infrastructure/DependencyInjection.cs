@@ -25,7 +25,7 @@ public static class DependencyInjection
         services.AddScoped<ICurrentUserService, CurrentUserService>();
         services.AddSingleton<IDevUserStore, DevUserStore>();
         services.AddSingleton<IJwtTokenService, JwtTokenService>();
-        services.AddSingleton<IRefreshSessionStore, InMemoryRefreshSessionStore>();
+        services.AddScoped<IRefreshSessionStore, DbRefreshSessionStore>();
         services.AddScoped<IProjectMemberService, ProjectMemberService>();
         services.AddScoped<ISuggestionService, SuggestionService>();
 
