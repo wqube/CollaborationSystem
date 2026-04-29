@@ -1,9 +1,11 @@
 import {
   createSlice,
-  type PayloadAction,
   createAsyncThunk,
+  type PayloadAction,
 } from '@reduxjs/toolkit';
-import apiClient from '../api/client';
+
+import { getProjects, createProjectApi } from '../../shared/api/project';
+
 import type { ProjectSummary, CreateProjectRequest } from '../../types/api';
 
 interface ProjectsState {
@@ -18,31 +20,22 @@ const initialState: ProjectsState = {
   error: null,
 };
 
-export const fetchProjects = createAsyncThunk<ProjectSummary[]>(
-  'projects/fetchAll',
-  async () => {
-    const response = await apiClient.get<{ items: ProjectSummary[] }>(
-      '/projects',
-    );
-    return response.data.items;
-  },
-);
+export const fetchProjects = createAsyncThunk('projects/fetchAll', async () => {
+  return await getProjects();
+});
 
 export const createProject = createAsyncThunk<
   ProjectSummary,
   CreateProjectRequest
 >('projects/create', async (newProject) => {
-  const response = await apiClient.post<ProjectSummary>(
-    '/projects',
-    newProject,
-  );
-  return response.data;
+  return await createProjectApi(newProject);
 });
 
 const projectsSlice = createSlice({
   name: 'projects',
   initialState,
   reducers: {},
+
   extraReducers: (builder) => {
     builder
       .addCase(fetchProjects.pending, (state) => {
@@ -60,6 +53,7 @@ const projectsSlice = createSlice({
         state.loading = false;
         state.error = action.error.message || 'Ошибка загрузки проектов';
       })
+
       .addCase(createProject.fulfilled, (state, action) => {
         state.list.push(action.payload);
       });

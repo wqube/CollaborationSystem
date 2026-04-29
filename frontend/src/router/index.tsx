@@ -16,32 +16,32 @@ export function AppRouter() {
       <Route path="/auth/login" element={<LoginPage />} />
 
       {/* Защищенные страницы */}
-      {/* <Route element={<ProtectedRoute />}> */}
-      {/* Основное приложение внутри Layout */}
-      <Route element={<Layout />}>
-        <Route path="/profile" element={<ProfilePage />} />
+      <Route element={<ProtectedRoute />}>
+        {/* Основное приложение внутри Layout */}
+        <Route element={<Layout />}>
+          <Route path="/profile" element={<ProfilePage />} />
 
-        <Route path="/projects" element={<ProjectListPage />} />
-        <Route path="/projects/:projectId" element={<ProjectPage />} />
+          <Route path="/projects" element={<ProjectListPage />} />
+          <Route path="/projects/:projectId" element={<ProjectPage />} />
 
-        <Route
-          path="/projects/:projectId/suggestions"
-          element={<SuggestionListPage />}
-        />
+          <Route
+            path="/projects/:projectId/suggestions"
+            element={<SuggestionListPage />}
+          />
 
-        <Route
-          path="/projects/:projectId/suggestions/:suggestionId"
-          element={<SuggestionDetailPage />}
-        />
+          <Route
+            path="/projects/:projectId/suggestions/:suggestionId"
+            element={<SuggestionDetailPage />}
+          />
 
-        <Route
-          path="/projects/:projectId/settings"
-          element={<ProjectSettingsPage />}
-        />
+          <Route
+            path="/projects/:projectId/settings"
+            element={<ProjectSettingsPage />}
+          />
 
-        <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/profile" element={<ProfilePage />} />
+        </Route>
       </Route>
-      {/* </Route> */}
 
       {/* Редирект с корня */}
       <Route path="/" element={<Navigate to="/projects" replace />} />
