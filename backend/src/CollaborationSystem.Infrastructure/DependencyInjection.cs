@@ -4,6 +4,7 @@ using CollaborationSystem.Infrastructure.Auth;
 using CollaborationSystem.Infrastructure.Identity;
 using CollaborationSystem.Infrastructure.Persistence;
 using CollaborationSystem.Infrastructure.Projects;
+using CollaborationSystem.Infrastructure.Suggestions;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -26,6 +27,7 @@ public static class DependencyInjection
         services.AddSingleton<IJwtTokenService, JwtTokenService>();
         services.AddSingleton<IRefreshSessionStore, InMemoryRefreshSessionStore>();
         services.AddScoped<IProjectMemberService, ProjectMemberService>();
+        services.AddScoped<ISuggestionService, SuggestionService>();
 
         services.AddDbContext<AppDbContext>(options => options.UseNpgsql(connectionString));
 

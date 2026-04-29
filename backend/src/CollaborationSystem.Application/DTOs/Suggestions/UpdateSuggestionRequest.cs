@@ -1,6 +1,6 @@
 namespace CollaborationSystem.Application.DTOs.Suggestions;
 
-public sealed class CreateSuggestionRequest
+public sealed class UpdateSuggestionRequest
 {
     public string Text { get; set; } = string.Empty;
 }
