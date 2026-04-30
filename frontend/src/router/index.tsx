@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route } from 'react-router-dom';
 import { LoginPage } from '../pages/LoginPage';
 import { ProjectListPage } from '../pages/ProjectListPage';
 import { SuggestionDetailPage } from '../pages/SuggestionDetailPage';
@@ -8,6 +8,7 @@ import { Layout } from '../components/layout/Layout';
 import { ProfilePage } from '../pages/ProfilePage';
 import { SuggestionListPage } from '../pages/SuggestionListPage';
 import { ProtectedRoute } from '../components/ProtectedRoute/ProtectedRoute';
+import { SmartRedirect } from '../components/SmartRedirect/SmartRedirect';
 
 export function AppRouter() {
   return (
@@ -44,7 +45,7 @@ export function AppRouter() {
       </Route>
 
       {/* Редирект с корня */}
-      <Route path="/" element={<Navigate to="/projects" replace />} />
+      <Route path="/" element={<SmartRedirect />} />
     </Routes>
   );
 }
