@@ -23,10 +23,19 @@ apiClient.interceptors.response.use(
   (response) => response,
 
   async (error) => {
-    const originalRequest = error.config as { _retry?: boolean; url?: string; headers?: Record<string, string> };
-    const isAuthEndpoint = typeof originalRequest?.url === 'string' && originalRequest.url.includes('auth/');
+    const originalRequest = error.config as {
+      _retry?: boolean;
+      url?: string;
+      headers?: Record<string, string>;
+    };
+    const isAuthEndpoint = typeof originalRequest?.url === 'string';
+    // originalRequest.url.includes('auth/');
 
-    if (error.response?.status === 401 && !originalRequest?._retry && !isAuthEndpoint) {
+    if (
+      error.response?.status === 401 &&
+      !originalRequest?._retry &&
+      !isAuthEndpoint
+    ) {
       originalRequest._retry = true;
 
       try {
@@ -45,7 +54,7 @@ apiClient.interceptors.response.use(
         return apiClient(originalRequest);
       } catch {
         store.dispatch(clearAuth());
-        window.location.href = '/login';
+        window.location.href = 'auth/login';
       }
     }
 

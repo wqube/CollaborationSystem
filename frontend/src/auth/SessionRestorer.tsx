@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useAppDispatcher } from '../shared/store/hooks';
-import { setAuth } from '../shared/store/authSlice';
+import { clearAuth, setAuth } from '../shared/store/authSlice';
 import apiClient from '../shared/api/client';
 
 interface SessionRestorerProps {
@@ -22,7 +22,7 @@ export const SessionRestorer = ({ children }: SessionRestorerProps) => {
           }),
         );
       } catch {
-        // Сессии нет - идем дальше, роутер сам отправит логин
+        dispatch(clearAuth());
       } finally {
         setIsLoading(false);
       }
