@@ -374,6 +374,241 @@ public sealed class SuggestionService(
         });
     }
 
+    public async Task<SuggestionOperationResult<IReadOnlyList<CommentResponse>>> GetCommentsAsync(
+        Guid projectId,
+        Guid suggestionId,
+        CancellationToken cancellationToken = default)
+    {
+        if (!await ProjectExistsAsync(projectId, cancellationToken))
+        {
+            return SuggestionOperationResult<IReadOnlyList<CommentResponse>>.Failure(
+                SuggestionOperationStatus.ProjectNotFound);
+        }
+
+        var currentUserId = currentUserService.GetRequiredUserId();
+
+        if (!await IsCurrentUserProjectMemberAsync(projectId, currentUserId, cancellationToken))
+        {
+            return SuggestionOperationResult<IReadOnlyList<CommentResponse>>.Failure(
+                SuggestionOperationStatus.Forbidden);
+        }
+
+        var suggestionExists = await dbContext.Suggestions
+            .AsNoTracking()
+            .AnyAsync(x => x.Id == suggestionId && x.ProjectId == projectId, cancellationToken);
+
+        if (!suggestionExists)
+        {
+            return SuggestionOperationResult<IReadOnlyList<CommentResponse>>.Failure(
+                SuggestionOperationStatus.SuggestionNotFound);
+        }
+
+        var comments = await dbContext.Comments
+            .AsNoTracking()
+            .Where(x =>
+                x.ProjectId == projectId &&
+                x.SuggestionId == suggestionId &&
+                x.DeletedAtUtc == null)
+            .OrderBy(x => x.CreatedAtUtc)
+            .Select(x => new CommentResponse
+            {
+                Id = x.Id,
+                ProjectId = x.ProjectId,
+                SuggestionId = x.SuggestionId,
+                ParentCommentId = x.ParentCommentId,
+                Text = x.Text,
+                Author = new SuggestionAuthorResponse
+                {
+                    Id = x.AuthorId,
+                    DisplayName = x.Author == null ? string.Empty : x.Author.DisplayName
+                },
+                CreatedAt = x.CreatedAtUtc,
+                UpdatedAt = x.UpdatedAtUtc
+            })
+            .ToListAsync(cancellationToken);
+
+        return SuggestionOperationResult<IReadOnlyList<CommentResponse>>.Success(comments);
+    }
+
+    public async Task<SuggestionOperationResult<CommentResponse>> CreateCommentAsync(
+        Guid projectId,
+        Guid suggestionId,
+        CreateCommentRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        if (!await ProjectExistsAsync(projectId, cancellationToken))
+        {
+            return SuggestionOperationResult<CommentResponse>.Failure(SuggestionOperationStatus.ProjectNotFound);
+        }
+
+        var currentUserId = currentUserService.GetRequiredUserId();
+
+        if (!await IsCurrentUserProjectMemberAsync(projectId, currentUserId, cancellationToken))
+        {
+            return SuggestionOperationResult<CommentResponse>.Failure(SuggestionOperationStatus.Forbidden);
+        }
+
+        var suggestionExists = await dbContext.Suggestions
+            .AsNoTracking()
+            .AnyAsync(x => x.Id == suggestionId && x.ProjectId == projectId, cancellationToken);
+
+        if (!suggestionExists)
+        {
+            return SuggestionOperationResult<CommentResponse>.Failure(SuggestionOperationStatus.SuggestionNotFound);
+        }
+
+        var author = await dbContext.UsersProfile
+            .AsNoTracking()
+            .FirstOrDefaultAsync(x => x.Id == currentUserId, cancellationToken);
+
+        if (author is null)
+        {
+            return SuggestionOperationResult<CommentResponse>.Failure(SuggestionOperationStatus.UserNotFound);
+        }
+
+        if (request.ParentCommentId.HasValue)
+        {
+            var parentExists = await dbContext.Comments
+                .AsNoTracking()
+                .AnyAsync(x =>
+                    x.Id == request.ParentCommentId.Value &&
+                    x.ProjectId == projectId &&
+                    x.SuggestionId == suggestionId &&
+                    x.DeletedAtUtc == null,
+                    cancellationToken);
+
+            if (!parentExists)
+            {
+                return SuggestionOperationResult<CommentResponse>.Failure(SuggestionOperationStatus.InvalidRequest);
+            }
+        }
+
+        var comment = new Comment
+        {
+            ProjectId = projectId,
+            SuggestionId = suggestionId,
+            AuthorId = currentUserId,
+            ParentCommentId = request.ParentCommentId,
+            Text = request.Text.Trim()
+        };
+
+        dbContext.Comments.Add(comment);
+        await dbContext.SaveChangesAsync(cancellationToken);
+
+        return SuggestionOperationResult<CommentResponse>.Success(new CommentResponse
+        {
+            Id = comment.Id,
+            ProjectId = comment.ProjectId,
+            SuggestionId = comment.SuggestionId,
+            ParentCommentId = comment.ParentCommentId,
+            Text = comment.Text,
+            Author = new SuggestionAuthorResponse
+            {
+                Id = author.Id,
+                DisplayName = author.DisplayName
+            },
+            CreatedAt = comment.CreatedAtUtc,
+            UpdatedAt = comment.UpdatedAtUtc
+        });
+    }
+
+    public async Task<SuggestionOperationResult<CommentResponse>> UpdateCommentAsync(
+        Guid projectId,
+        Guid commentId,
+        UpdateCommentRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        if (!await ProjectExistsAsync(projectId, cancellationToken))
+        {
+            return SuggestionOperationResult<CommentResponse>.Failure(SuggestionOperationStatus.ProjectNotFound);
+        }
+
+        var currentUserId = currentUserService.GetRequiredUserId();
+
+        if (!await IsCurrentUserProjectMemberAsync(projectId, currentUserId, cancellationToken))
+        {
+            return SuggestionOperationResult<CommentResponse>.Failure(SuggestionOperationStatus.Forbidden);
+        }
+
+        var comment = await dbContext.Comments
+            .Include(x => x.Author)
+            .FirstOrDefaultAsync(
+                x => x.Id == commentId && x.ProjectId == projectId && x.DeletedAtUtc == null,
+                cancellationToken);
+
+        if (comment is null)
+        {
+            return SuggestionOperationResult<CommentResponse>.Failure(SuggestionOperationStatus.CommentNotFound);
+        }
+
+        if (comment.AuthorId != currentUserId)
+        {
+            return SuggestionOperationResult<CommentResponse>.Failure(SuggestionOperationStatus.Forbidden);
+        }
+
+        comment.Text = request.Text.Trim();
+        comment.UpdatedAtUtc = DateTime.UtcNow;
+
+        await dbContext.SaveChangesAsync(cancellationToken);
+
+        return SuggestionOperationResult<CommentResponse>.Success(new CommentResponse
+        {
+            Id = comment.Id,
+            ProjectId = comment.ProjectId,
+            SuggestionId = comment.SuggestionId,
+            ParentCommentId = comment.ParentCommentId,
+            Text = comment.Text,
+            Author = new SuggestionAuthorResponse
+            {
+                Id = comment.AuthorId,
+                DisplayName = comment.Author?.DisplayName ?? string.Empty
+            },
+            CreatedAt = comment.CreatedAtUtc,
+            UpdatedAt = comment.UpdatedAtUtc
+        });
+    }
+
+    public async Task<SuggestionOperationResult<bool>> DeleteCommentAsync(
+        Guid projectId,
+        Guid commentId,
+        CancellationToken cancellationToken = default)
+    {
+        if (!await ProjectExistsAsync(projectId, cancellationToken))
+        {
+            return SuggestionOperationResult<bool>.Failure(SuggestionOperationStatus.ProjectNotFound);
+        }
+
+        var currentUserId = currentUserService.GetRequiredUserId();
+
+        if (!await IsCurrentUserProjectMemberAsync(projectId, currentUserId, cancellationToken))
+        {
+            return SuggestionOperationResult<bool>.Failure(SuggestionOperationStatus.Forbidden);
+        }
+
+        var comment = await dbContext.Comments
+            .FirstOrDefaultAsync(
+                x => x.Id == commentId && x.ProjectId == projectId && x.DeletedAtUtc == null,
+                cancellationToken);
+
+        if (comment is null)
+        {
+            return SuggestionOperationResult<bool>.Failure(SuggestionOperationStatus.CommentNotFound);
+        }
+
+        if (comment.AuthorId != currentUserId)
+        {
+            return SuggestionOperationResult<bool>.Failure(SuggestionOperationStatus.Forbidden);
+        }
+
+        comment.DeletedAtUtc = DateTime.UtcNow;
+        comment.UpdatedAtUtc = DateTime.UtcNow;
+        comment.Text = string.Empty;
+
+        await dbContext.SaveChangesAsync(cancellationToken);
+
+        return SuggestionOperationResult<bool>.Success(true);
+    }
+
     private async Task<bool> ProjectExistsAsync(Guid projectId, CancellationToken cancellationToken) =>
         await dbContext.Projects
             .AsNoTracking()

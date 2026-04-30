@@ -41,4 +41,26 @@ public interface ISuggestionService
         Guid projectId,
         Guid suggestionId,
         CancellationToken cancellationToken = default);
+
+    Task<SuggestionOperationResult<IReadOnlyList<CommentResponse>>> GetCommentsAsync(
+        Guid projectId,
+        Guid suggestionId,
+        CancellationToken cancellationToken = default);
+
+    Task<SuggestionOperationResult<CommentResponse>> CreateCommentAsync(
+        Guid projectId,
+        Guid suggestionId,
+        CreateCommentRequest request,
+        CancellationToken cancellationToken = default);
+
+    Task<SuggestionOperationResult<CommentResponse>> UpdateCommentAsync(
+        Guid projectId,
+        Guid commentId,
+        UpdateCommentRequest request,
+        CancellationToken cancellationToken = default);
+
+    Task<SuggestionOperationResult<bool>> DeleteCommentAsync(
+        Guid projectId,
+        Guid commentId,
+        CancellationToken cancellationToken = default);
 }

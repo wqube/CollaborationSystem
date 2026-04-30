@@ -8,5 +8,6 @@ public enum SuggestionOperationStatus
     SuggestionNotFound = 4,
     UserNotFound = 5,
     InvalidRequest = 6,
-    Conflict = 7
+    Conflict = 7,
+    CommentNotFound = 8
 }
