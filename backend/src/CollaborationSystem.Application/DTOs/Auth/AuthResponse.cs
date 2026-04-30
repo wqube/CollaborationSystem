@@ -1,5 +1,3 @@
-using CollaborationSystem.Application.DTOs;
-
 namespace CollaborationSystem.Application.DTOs.Auth;
 
 public sealed class AuthResponse

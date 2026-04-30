@@ -1,14 +1,2 @@
-# OS
-.DS_Store
-.DS_Store?
-._*
-Thumbs.db
-
-# IDE
 .vscode/
-.idea/
-.history/
-
-# Logs
-*.log
-npm-debug.log*
+.DS_Store

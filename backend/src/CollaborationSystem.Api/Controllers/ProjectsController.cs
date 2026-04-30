@@ -1,7 +1,4 @@
-using CollaborationSystem.Application.Abstractions;
 using CollaborationSystem.Application.DTOs.Projects;
-using CollaborationSystem.Application.DTOs.Suggestions;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -10,71 +7,34 @@ namespace CollaborationSystem.Api.Controllers;
 [ApiController]
 [Authorize]
 [Route("api/v1/projects")]
-public class ProjectsController(IProjectService projectService) : ControllerBase
+public class ProjectsController : ControllerBase
 {
     [HttpGet]
-    public async Task<ActionResult<PagedResponse<ProjectSummaryResponse>>> GetProjects(
-        [FromQuery] GetProjectsQuery query,
-        CancellationToken cancellationToken)
+    public IActionResult GetProjects()
     {
-        var response = await projectService.GetProjectsAsync(query, cancellationToken);
-
-        return Ok(response);
+        return Ok(Array.Empty<object>());
     }
 
     [HttpPost]
-    public async Task<ActionResult<ProjectSummaryResponse>> CreateProject(
-        [FromBody] CreateProjectRequest request,
-        CancellationToken cancellationToken)
+    public IActionResult CreateProject([FromBody] CreateProjectRequest request)
     {
-        var createdProject = await projectService.CreateProjectAsync(request, cancellationToken);
+        var projectId = Guid.NewGuid();
 
-        return CreatedAtAction(nameof(GetProjectById), new { projectId = createdProject.Id }, createdProject);
+        return CreatedAtAction(nameof(GetProjectById), new { projectId }, new
+        {
+            id = projectId,
+            request.Name,
+            request.Description,
+            createdAt = DateTime.UtcNow
+        });
     }
 
     [HttpGet("{projectId:guid}")]
-    public async Task<ActionResult<ProjectDetailsResponse>> GetProjectById(
-        Guid projectId,
-        CancellationToken cancellationToken)
+    public IActionResult GetProjectById(Guid projectId)
     {
-        var result = await projectService.GetProjectByIdAsync(projectId, cancellationToken);
-
-        return ToProjectActionResult(result);
-    }
-
-    [HttpGet("{projectId:guid}/dashboard")]
-    public async Task<ActionResult<ProjectDashboardResponse>> GetDashboard(
-        Guid projectId,
-        CancellationToken cancellationToken)
-    {
-        var result = await projectService.GetProjectDashboardAsync(projectId, cancellationToken);
-
-        return ToProjectActionResult(result);
-    }
-
-    private ActionResult<T> ToProjectActionResult<T>(ProjectOperationResult<T> result)
-    {
-        if (result.Status == ProjectOperationStatus.Success && result.Value is not null)
+        return Ok(new
         {
-            return Ok(result.Value);
-        }
-
-        return result.Status switch
-        {
-            ProjectOperationStatus.Forbidden => Forbid(),
-            ProjectOperationStatus.ProjectNotFound => NotFound(CreateProblemDetails(
-                StatusCodes.Status404NotFound,
-                "Project not found.")),
-            _ => BadRequest(CreateProblemDetails(
-                StatusCodes.Status400BadRequest,
-                "Project operation failed."))
-        };
+            id = projectId
+        });
     }
-
-    private static ProblemDetails CreateProblemDetails(int status, string title) =>
-        new()
-        {
-            Status = status,
-            Title = title
-        };
 }

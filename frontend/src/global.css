@@ -1,4 +1,4 @@
-/* ------------------------------Css переменные------------------------------ */
+/* ---------------Css переменные--------------- */
 :root {
   /* Основные цвета */
   --t-yellow: #ffdd2d;
@@ -52,7 +52,7 @@
   --font-bold: 700;
 }
 
-/* ------------------------------Стили по умолчанию------------------------------ */
+/* ---------------Стили по умолчанию--------------- */
 * {
   margin: 0;
   padding: 0;
@@ -97,136 +97,4 @@ select:focus {
   outline: none;
   border-color: var(--yellow);
   box-shadow: 0 0 0 3px rgba(255, 221, 45, 0.2);
-}
-
-/* ------------------------------Стили------------------------------ */
-/* LoginPage */
-.login-container {
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(135deg, var(--t-black) 0%, #2b2b2b 100%);
-}
-
-.login-card {
-  background: white;
-  border-radius: 24px;
-  padding: 48px 40px;
-  width: 100%;
-  max-width: 440px;
-  text-align: center;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
-}
-
-.login-logo {
-  width: 64px;
-  height: 64px;
-  border-radius: 16px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0 auto 24px;
-  font-size: 28px;
-  font-weight: 900;
-  color: var(--t-black);
-}
-
-.login-title {
-  font-size: 24px;
-  font-weight: 700;
-  margin-bottom: 8px;
-}
-
-.login-subtitle {
-  color: var(--t-gray);
-  margin-bottom: 32px;
-}
-
-/* Form elements */
-input,
-textarea,
-select {
-  width: 100%;
-  padding: 14px 16px;
-  border: 1px solid var(--t-border);
-  border-radius: 12px;
-  font-size: 14px;
-  font-family: inherit;
-  transition: border 0.2s;
-  background: white;
-}
-
-input:focus,
-textarea:focus,
-select:focus {
-  outline: none;
-  border-color: var(--t-yellow);
-  box-shadow: 0 0 0 3px rgba(255, 221, 45, 0.2);
-}
-
-.form-group {
-  margin-bottom: 20px;
-  text-align: left;
-}
-
-label {
-  display: block;
-  margin-bottom: 8px;
-  font-weight: 500;
-  font-size: 14px;
-}
-
-/* ProjectListPage */
-.page {
-  max-width: 1200px;
-  margin: 40px auto;
-  padding: 0 20px;
-}
-
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 24px;
-}
-
-.title {
-  font-size: 28px;
-  font-weight: 700;
-}
-
-.createBtn {
-  padding: 10px 24px;
-  border-radius: 30px;
-  background: #ffdd2d;
-  color: #1a1a1a;
-  font-weight: 600;
-  border: none;
-  cursor: pointer;
-  font-size: 14px;
-  transition: background 0.2s;
-}
-.createBtn:hover {
-  background: #ffe566;
-}
-
-.grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 20px;
-}
-
-.loading,
-.empty,
-.error {
-  text-align: center;
-  padding: 40px;
-  color: #8a8a8a;
-}
-
-.error {
-  color: #e31c3d;
-  background: #ffebee;
-  border-radius: 12px;
 }

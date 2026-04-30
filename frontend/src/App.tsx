@@ -1,12 +1,7 @@
-import { SessionRestorer } from './auth/SessionRestorer';
 import { AppRouter } from './router';
 
 function App() {
-  return (
-    <SessionRestorer>
-      <AppRouter />
-    </SessionRestorer>
-  );
+  return <AppRouter />;
 }
 
 export default App;

@@ -3,9 +3,6 @@ using CollaborationSystem.Application.Abstractions;
 using CollaborationSystem.Infrastructure.Auth;
 using CollaborationSystem.Infrastructure.Identity;
 using CollaborationSystem.Infrastructure.Persistence;
-using CollaborationSystem.Infrastructure.Projects;
-using CollaborationSystem.Infrastructure.Suggestions;
-using CollaborationSystem.Infrastructure.Users;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -24,13 +21,6 @@ public static class DependencyInjection
 
         services.AddHttpContextAccessor();
         services.AddScoped<ICurrentUserService, CurrentUserService>();
-        services.AddSingleton<IDevUserStore, DevUserStore>();
-        services.AddSingleton<IJwtTokenService, JwtTokenService>();
-        services.AddScoped<IRefreshSessionStore, DbRefreshSessionStore>();
-        services.AddScoped<IProjectMemberService, ProjectMemberService>();
-        services.AddScoped<IProjectService, ProjectService>();
-        services.AddScoped<IUserDirectoryService, UserDirectoryService>();
-        services.AddScoped<ISuggestionService, SuggestionService>();
 
         services.AddDbContext<AppDbContext>(options => options.UseNpgsql(connectionString));
 
@@ -49,16 +39,13 @@ public static class DependencyInjection
             {
                 options.TokenValidationParameters = new TokenValidationParameters
                 {
-                    RequireExpirationTime = true,
-                    RequireSignedTokens = true,
                     ValidateIssuer = true,
                     ValidateAudience = true,
                     ValidateLifetime = true,
                     ValidateIssuerSigningKey = true,
                     ValidIssuer = jwtSection["Issuer"],
                     ValidAudience = jwtSection["Audience"],
-                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(signingKey)),
-                    ClockSkew = TimeSpan.Zero
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(signingKey))
                 };
             });
 
