@@ -20,4 +20,7 @@ public sealed class CurrentUserService(IHttpContextAccessor httpContextAccessor)
 
     public string? GetEmail() =>
         httpContextAccessor.HttpContext?.User.FindFirstValue(ClaimTypes.Email);
+
+    public string? GetAuthMode() =>
+        httpContextAccessor.HttpContext?.User.FindFirstValue("auth_mode");
 }

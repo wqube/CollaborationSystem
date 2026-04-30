@@ -1,0 +1,52 @@
+.app_header {
+  background: white;
+  border-bottom: 1px solid var(--t-border);
+  padding: 16px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: var(--shadow);
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 700;
+  font-size: 20px;
+  cursor: pointer;
+}
+
+.logo_icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--t-black);
+  font-weight: 900;
+}
+
+.user {
+  gap: 16px;
+  display: flex;
+  cursor: pointer;
+  align-items: center;
+}
+.user_avatar {
+  width: 40px;
+  height: 40px;
+  background: var(--t-black);
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+}
+
+.text_small {
+  font-size: 13px;
+  color: var(--t-gray);
+}

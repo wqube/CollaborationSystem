@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route } from 'react-router-dom';
 import { LoginPage } from '../pages/LoginPage';
 import { ProjectListPage } from '../pages/ProjectListPage';
 import { SuggestionDetailPage } from '../pages/SuggestionDetailPage';
@@ -7,41 +7,45 @@ import { ProjectSettingsPage } from '../pages/ProjectSettingsPage';
 import { Layout } from '../components/layout/Layout';
 import { ProfilePage } from '../pages/ProfilePage';
 import { SuggestionListPage } from '../pages/SuggestionListPage';
+import { ProtectedRoute } from '../components/ProtectedRoute/ProtectedRoute';
+import { SmartRedirect } from '../components/SmartRedirect/SmartRedirect';
 
 export function AppRouter() {
   return (
     <Routes>
-      {/* Публичные роуты без Layout */}
+      {/* Публичная страница */}
       <Route path="/auth/login" element={<LoginPage />} />
 
-      {/* Основное приложение внутри Layout */}
+      {/* Защищенные страницы */}
+      <Route element={<ProtectedRoute />}>
+        {/* Основное приложение внутри Layout */}
+        <Route element={<Layout />}>
+          <Route path="/profile" element={<ProfilePage />} />
 
-      <Route element={<Layout />}>
-        {/* Root redirect */}
-        {/* <Route path="/profile" element={<ProfilePage />} /> */}
+          <Route path="/projects" element={<ProjectListPage />} />
+          <Route path="/projects/:projectId" element={<ProjectPage />} />
 
-        <Route path="/" element={<Navigate to="/projects" replace />} />
+          <Route
+            path="/projects/:projectId/suggestions"
+            element={<SuggestionListPage />}
+          />
 
-        <Route path="/projects" element={<ProjectListPage />} />
-        <Route path="/projects/:projectId" element={<ProjectPage />} />
+          <Route
+            path="/projects/:projectId/suggestions/:suggestionId"
+            element={<SuggestionDetailPage />}
+          />
 
-        <Route
-          path="/projects/:projectId/suggestions"
-          element={<SuggestionListPage />}
-        />
+          <Route
+            path="/projects/:projectId/settings"
+            element={<ProjectSettingsPage />}
+          />
 
-        <Route
-          path="/projects/:projectId/suggestions/:suggestionId"
-          element={<SuggestionDetailPage />}
-        />
-
-        <Route
-          path="/projects/:projectId/settings"
-          element={<ProjectSettingsPage />}
-        />
-
-        <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/profile" element={<ProfilePage />} />
+        </Route>
       </Route>
+
+      {/* Редирект с корня */}
+      <Route path="/" element={<SmartRedirect />} />
     </Routes>
   );
 }

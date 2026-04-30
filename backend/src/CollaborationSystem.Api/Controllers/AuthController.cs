@@ -1,78 +1,133 @@
+using CollaborationSystem.Application.Abstractions;
+using CollaborationSystem.Application.Auth;
 using CollaborationSystem.Application.DTOs;
 using CollaborationSystem.Application.DTOs.Auth;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
 
 namespace CollaborationSystem.Api.Controllers;
 
 [ApiController]
 [Route("api/v1/auth")]
-public class AuthController : ControllerBase
+public class AuthController(
+    IDevUserStore devUserStore,
+    IJwtTokenService jwtTokenService,
+    IRefreshSessionStore refreshSessionStore,
+    IConfiguration configuration) : ControllerBase
 {
-    private const string RefreshTokenCookieName = "refreshToken";
-    private const int RefreshTokenLifetimeDays = 7;
+    private const string DefaultRefreshTokenCookieName = "refreshToken";
+    private const string DefaultRefreshTokenCookiePath = "/api/v1/auth";
 
     [HttpPost("login")]
-    public ActionResult<AuthResponse> Login([FromBody] LoginRequest request)
+    public async Task<ActionResult<AuthResponse>> Login(
+        [FromBody] LoginRequest request,
+        CancellationToken cancellationToken)
     {
-        SetRefreshTokenCookie("dev-refresh-token");
+        var user = await devUserStore.ValidateCredentialsAsync(
+            request.Email,
+            request.Password,
+            cancellationToken);
+
+        if (user is null)
+        {
+            return Unauthorized();
+        }
+
+        var accessToken = jwtTokenService.CreateAccessToken(user);
+        var refreshToken = await refreshSessionStore.CreateSessionAsync(user.Id, cancellationToken);
+        SetRefreshTokenCookie(refreshToken);
 
         var response = new AuthResponse
         {
-            AccessToken = "dev-access-token",
-            ExpiresIn = 3600,
-            User = new UserDto
-            {
-                Id = Guid.NewGuid(),
-                DisplayName = "Demo User",
-                Email = request.Email
-            }
+            AccessToken = accessToken.Token,
+            ExpiresIn = accessToken.ExpiresIn,
+            User = ToUserDto(user)
         };
 
         return Ok(response);
     }
 
     [HttpPost("refresh")]
-    public ActionResult<RefreshResponse> Refresh()
+    public async Task<ActionResult<RefreshResponse>> Refresh(CancellationToken cancellationToken)
     {
-        if (!Request.Cookies.TryGetValue(RefreshTokenCookieName, out var refreshToken) ||
+        if (!Request.Cookies.TryGetValue(GetRefreshTokenCookieName(), out var refreshToken) ||
             string.IsNullOrWhiteSpace(refreshToken))
         {
             return Unauthorized();
         }
 
-        SetRefreshTokenCookie("new-dev-refresh-token");
+        var refreshSession = await refreshSessionStore.ConsumeSessionAsync(refreshToken, cancellationToken);
+
+        if (refreshSession is null)
+        {
+            return Unauthorized();
+        }
+
+        var user = await devUserStore.FindByIdAsync(refreshSession.UserId, cancellationToken);
+
+        if (user is null)
+        {
+            return Unauthorized();
+        }
+
+        var newAccessToken = jwtTokenService.CreateAccessToken(user);
+        var newRefreshToken = await refreshSessionStore.CreateSessionAsync(user.Id, cancellationToken);
+        SetRefreshTokenCookie(newRefreshToken);
 
         return Ok(new RefreshResponse
         {
-            AccessToken = "new-dev-access-token",
-            ExpiresIn = 3600
+            AccessToken = newAccessToken.Token,
+            ExpiresIn = newAccessToken.ExpiresIn
         });
     }
 
     [HttpPost("logout")]
-    public IActionResult Logout()
+    public async Task<IActionResult> Logout(CancellationToken cancellationToken)
     {
-        Response.Cookies.Delete(RefreshTokenCookieName, new CookieOptions
+        if (Request.Cookies.TryGetValue(GetRefreshTokenCookieName(), out var refreshToken) &&
+            !string.IsNullOrWhiteSpace(refreshToken))
         {
-            HttpOnly = true,
-            IsEssential = true,
-            SameSite = SameSiteMode.Lax,
-            Secure = Request.IsHttps
-        });
+            await refreshSessionStore.RevokeSessionAsync(refreshToken, cancellationToken);
+        }
+
+        Response.Cookies.Delete(GetRefreshTokenCookieName(), CreateRefreshTokenCookieOptions());
 
         return NoContent();
     }
 
-    private void SetRefreshTokenCookie(string refreshToken)
+    private void SetRefreshTokenCookie(RefreshToken refreshToken)
     {
-        Response.Cookies.Append(RefreshTokenCookieName, refreshToken, new CookieOptions
+        var expires = new DateTimeOffset(refreshToken.ExpiresAtUtc, TimeSpan.Zero);
+
+        Response.Cookies.Append(
+            GetRefreshTokenCookieName(),
+            refreshToken.Token,
+            CreateRefreshTokenCookieOptions(expires));
+    }
+
+    private string GetRefreshTokenCookieName() =>
+        configuration["Auth:RefreshTokenCookieName"] ?? DefaultRefreshTokenCookieName;
+
+    private string GetRefreshTokenCookiePath() =>
+        configuration["Auth:RefreshTokenCookiePath"] ?? DefaultRefreshTokenCookiePath;
+
+    private CookieOptions CreateRefreshTokenCookieOptions(DateTimeOffset? expires = null) =>
+        new()
         {
             HttpOnly = true,
             IsEssential = true,
             SameSite = SameSiteMode.Lax,
-            Secure = Request.IsHttps,
-            Expires = DateTimeOffset.UtcNow.AddDays(RefreshTokenLifetimeDays)
-        });
-    }
+            Secure = true,
+            Path = GetRefreshTokenCookiePath(),
+            Expires = expires
+        };
+
+    private static UserDto ToUserDto(DevUser user) =>
+        new()
+        {
+            Id = user.Id,
+            DisplayName = user.DisplayName,
+            Email = user.Email
+        };
 }
