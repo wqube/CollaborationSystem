@@ -118,10 +118,22 @@ public class AuthController(
             HttpOnly = true,
             IsEssential = true,
             SameSite = SameSiteMode.Lax,
-            Secure = true,
+            Secure = GetRefreshTokenCookieSecure(),
             Path = GetRefreshTokenCookiePath(),
             Expires = expires
         };
+
+    private bool GetRefreshTokenCookieSecure()
+    {
+        var configuredValue = configuration["Auth:RefreshTokenCookieSecure"];
+
+        if (bool.TryParse(configuredValue, out var secure))
+        {
+            return secure;
+        }
+
+        return !HttpContext.Request.IsHttps ? false : true;
+    }
 
     private static UserDto ToUserDto(DevUser user) =>
         new()

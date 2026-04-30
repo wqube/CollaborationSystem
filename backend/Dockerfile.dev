@@ -1,0 +1,12 @@
+FROM mcr.microsoft.com/dotnet/sdk:10.0-preview
+WORKDIR /app
+
+COPY CollaborationSystem.sln ./
+COPY NuGet.config ./
+COPY src ./src
+
+RUN dotnet restore CollaborationSystem.sln
+
+WORKDIR /app/src/CollaborationSystem.Api
+EXPOSE 8080
+CMD ["dotnet", "run", "--no-restore"]

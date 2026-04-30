@@ -8,10 +8,35 @@ public sealed class CurrentUserService(IHttpContextAccessor httpContextAccessor)
 {
     public Guid GetRequiredUserId()
     {
-        var userId = httpContextAccessor.HttpContext?.User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var user = httpContextAccessor.HttpContext?.User;
 
-        return Guid.TryParse(userId, out var parsedUserId)
-            ? parsedUserId
+        if (user is null)
+        {
+            return Guid.Empty;
+        }
+
+        var candidateValues = new[]
+        {
+            user.FindFirstValue(ClaimTypes.NameIdentifier),
+            user.FindFirstValue("sub"),
+            user.FindFirstValue("nameid"),
+            user.FindFirstValue("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier")
+        };
+
+        foreach (var value in candidateValues)
+        {
+            if (Guid.TryParse(value, out var parsedUserId))
+            {
+                return parsedUserId;
+            }
+        }
+
+        var guidFromAnyClaim = user.Claims
+            .Select(x => x.Value)
+            .FirstOrDefault(x => Guid.TryParse(x, out _));
+
+        return Guid.TryParse(guidFromAnyClaim, out var fallbackUserId)
+            ? fallbackUserId
             : Guid.Empty;
     }
 

@@ -23,10 +23,15 @@ apiClient.interceptors.response.use(
   (response) => response,
 
   async (error) => {
-    if (error.responce?.status === 401) {
+    const originalRequest = error.config as { _retry?: boolean; url?: string; headers?: Record<string, string> };
+    const isAuthEndpoint = typeof originalRequest?.url === 'string' && originalRequest.url.includes('auth/');
+
+    if (error.response?.status === 401 && !originalRequest?._retry && !isAuthEndpoint) {
+      originalRequest._retry = true;
+
       try {
-        const refreshResponce = await apiClient.post('auth/refresh');
-        const newToken = refreshResponce.data.accessToken;
+        const refreshResponse = await apiClient.post('auth/refresh');
+        const newToken = refreshResponse.data.accessToken;
 
         store.dispatch(
           setAuth({
@@ -35,8 +40,9 @@ apiClient.interceptors.response.use(
           }),
         );
 
-        error.config.headers.Authorization = `Bearer ${newToken}`;
-        return apiClient(error.config);
+        originalRequest.headers = originalRequest.headers ?? {};
+        originalRequest.headers.Authorization = `Bearer ${newToken}`;
+        return apiClient(originalRequest);
       } catch {
         store.dispatch(clearAuth());
         window.location.href = '/login';

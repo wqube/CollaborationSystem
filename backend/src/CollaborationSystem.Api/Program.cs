@@ -2,8 +2,10 @@ using CollaborationSystem.Api.Extensions;
 using CollaborationSystem.Application;
 using CollaborationSystem.Application.DTOs.Auth;
 using CollaborationSystem.Infrastructure;
+using CollaborationSystem.Infrastructure.Persistence;
 using FluentValidation;
 using FluentValidation.AspNetCore;
+using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -23,10 +25,15 @@ builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddSwaggerDocumentation();
 builder.Services.AddCors(options =>
 {
+    var configuredOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>();
+    var allowedOrigins = configuredOrigins is { Length: > 0 }
+        ? configuredOrigins
+        : ["http://localhost:5173"];
+
     options.AddPolicy("Frontend", policy =>
     {
         policy
-            .WithOrigins("http://localhost:5173")
+            .WithOrigins(allowedOrigins)
             .AllowAnyHeader()
             .AllowAnyMethod()
             .AllowCredentials();
@@ -34,6 +41,12 @@ builder.Services.AddCors(options =>
 });
 
 var app = builder.Build();
+
+using (var scope = app.Services.CreateScope())
+{
+    var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    dbContext.Database.Migrate();
+}
 
 if (app.Environment.IsDevelopment())
 {
