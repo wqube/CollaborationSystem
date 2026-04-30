@@ -30,4 +30,15 @@ public interface ISuggestionService
         Guid suggestionId,
         UpdateSuggestionStatusRequest request,
         CancellationToken cancellationToken = default);
+
+    Task<SuggestionOperationResult<VoteResponse>> SetVoteAsync(
+        Guid projectId,
+        Guid suggestionId,
+        VoteRequest request,
+        CancellationToken cancellationToken = default);
+
+    Task<SuggestionOperationResult<VoteResponse>> RemoveVoteAsync(
+        Guid projectId,
+        Guid suggestionId,
+        CancellationToken cancellationToken = default);
 }

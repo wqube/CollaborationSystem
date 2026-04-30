@@ -82,20 +82,30 @@ public class SuggestionsController(ISuggestionService suggestionService) : Contr
     }
 
     [HttpPut("{suggestionId:guid}/vote")]
-    public IActionResult Vote(Guid projectId, Guid suggestionId, [FromBody] VoteRequest request)
+    public async Task<ActionResult<VoteResponse>> Vote(
+        Guid projectId,
+        Guid suggestionId,
+        [FromBody] VoteRequest request,
+        CancellationToken cancellationToken)
     {
-        return Ok(new
-        {
+        var result = await suggestionService.SetVoteAsync(
             projectId,
             suggestionId,
-            request.VoteType
-        });
+            request,
+            cancellationToken);
+
+        return ToActionResult(result, value => Ok(value));
     }
 
     [HttpDelete("{suggestionId:guid}/vote")]
-    public IActionResult RemoveVote(Guid projectId, Guid suggestionId)
+    public async Task<ActionResult<VoteResponse>> RemoveVote(
+        Guid projectId,
+        Guid suggestionId,
+        CancellationToken cancellationToken)
     {
-        return NoContent();
+        var result = await suggestionService.RemoveVoteAsync(projectId, suggestionId, cancellationToken);
+
+        return ToActionResult(result, value => Ok(value));
     }
 
     private ActionResult<T> ToActionResult<T>(
