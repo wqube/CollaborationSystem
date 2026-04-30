@@ -32,15 +32,15 @@ apiClient.interceptors.response.use(
       typeof originalRequest?.url === 'string' &&
       originalRequest.url.includes('auth/');
 
-    const isSessionRestore =
-      typeof originalRequest?.url === 'string' &&
-      originalRequest.url.includes('users/me');
+    // const isSessionRestore =
+    //   typeof originalRequest?.url === 'string' &&
+    //   originalRequest.url.includes('users/me');
 
     if (
       error.response?.status === 401 &&
       !originalRequest?._retry &&
-      !isAuthEndpoint &&
-      !isSessionRestore
+      !isAuthEndpoint
+      // !isSessionRestore
     ) {
       originalRequest._retry = true;
 
