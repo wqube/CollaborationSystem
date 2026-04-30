@@ -78,7 +78,8 @@ public class AuthController(
         return Ok(new RefreshResponse
         {
             AccessToken = newAccessToken.Token,
-            ExpiresIn = newAccessToken.ExpiresIn
+            ExpiresIn = newAccessToken.ExpiresIn,
+            User = ToUserDto(user)
         });
     }
 

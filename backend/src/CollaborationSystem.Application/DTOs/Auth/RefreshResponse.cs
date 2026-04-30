@@ -4,4 +4,5 @@ public sealed class RefreshResponse
 {
     public string AccessToken { get; set; } = string.Empty;
     public int ExpiresIn { get; set; }
+    public UserDto User { get; set; } = null!;
 }

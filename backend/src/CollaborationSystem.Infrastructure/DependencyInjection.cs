@@ -34,10 +34,11 @@ public static class DependencyInjection
 
         services.AddDbContext<AppDbContext>(options => options.UseNpgsql(connectionString));
 
-        services.AddIdentity<ApplicationIdentityUser, IdentityRole<Guid>>(options =>
+        services.AddIdentityCore<ApplicationIdentityUser>(options =>
             {
                 options.User.RequireUniqueEmail = true;
             })
+            .AddRoles<IdentityRole<Guid>>()
             .AddEntityFrameworkStores<AppDbContext>()
             .AddDefaultTokenProviders();
 
