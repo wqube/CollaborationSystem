@@ -268,6 +268,112 @@ public sealed class SuggestionService(
             ToSummaryResponse(suggestion, suggestion.Author, CalculateScore(suggestion.Votes)));
     }
 
+    public async Task<SuggestionOperationResult<VoteResponse>> SetVoteAsync(
+        Guid projectId,
+        Guid suggestionId,
+        VoteRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        if (!await ProjectExistsAsync(projectId, cancellationToken))
+        {
+            return SuggestionOperationResult<VoteResponse>.Failure(SuggestionOperationStatus.ProjectNotFound);
+        }
+
+        var currentUserId = currentUserService.GetRequiredUserId();
+
+        if (!await IsCurrentUserProjectMemberAsync(projectId, currentUserId, cancellationToken))
+        {
+            return SuggestionOperationResult<VoteResponse>.Failure(SuggestionOperationStatus.Forbidden);
+        }
+
+        var suggestionExists = await dbContext.Suggestions
+            .AsNoTracking()
+            .AnyAsync(x => x.Id == suggestionId && x.ProjectId == projectId, cancellationToken);
+
+        if (!suggestionExists)
+        {
+            return SuggestionOperationResult<VoteResponse>.Failure(SuggestionOperationStatus.SuggestionNotFound);
+        }
+
+        var existingVote = await dbContext.Votes
+            .FirstOrDefaultAsync(
+                x => x.SuggestionId == suggestionId && x.UserId == currentUserId,
+                cancellationToken);
+
+        if (existingVote is null)
+        {
+            dbContext.Votes.Add(new Vote
+            {
+                SuggestionId = suggestionId,
+                UserId = currentUserId,
+                VoteType = request.VoteType
+            });
+        }
+        else if (existingVote.VoteType != request.VoteType)
+        {
+            existingVote.VoteType = request.VoteType;
+            existingVote.UpdatedAtUtc = DateTime.UtcNow;
+        }
+
+        await dbContext.SaveChangesAsync(cancellationToken);
+
+        var score = await GetSuggestionScoreAsync(suggestionId, cancellationToken);
+
+        return SuggestionOperationResult<VoteResponse>.Success(new VoteResponse
+        {
+            SuggestionId = suggestionId,
+            CurrentUserVote = request.VoteType,
+            Score = score
+        });
+    }
+
+    public async Task<SuggestionOperationResult<VoteResponse>> RemoveVoteAsync(
+        Guid projectId,
+        Guid suggestionId,
+        CancellationToken cancellationToken = default)
+    {
+        if (!await ProjectExistsAsync(projectId, cancellationToken))
+        {
+            return SuggestionOperationResult<VoteResponse>.Failure(SuggestionOperationStatus.ProjectNotFound);
+        }
+
+        var currentUserId = currentUserService.GetRequiredUserId();
+
+        if (!await IsCurrentUserProjectMemberAsync(projectId, currentUserId, cancellationToken))
+        {
+            return SuggestionOperationResult<VoteResponse>.Failure(SuggestionOperationStatus.Forbidden);
+        }
+
+        var suggestionExists = await dbContext.Suggestions
+            .AsNoTracking()
+            .AnyAsync(x => x.Id == suggestionId && x.ProjectId == projectId, cancellationToken);
+
+        if (!suggestionExists)
+        {
+            return SuggestionOperationResult<VoteResponse>.Failure(SuggestionOperationStatus.SuggestionNotFound);
+        }
+
+        var existingVote = await dbContext.Votes
+            .FirstOrDefaultAsync(
+                x => x.SuggestionId == suggestionId && x.UserId == currentUserId,
+                cancellationToken);
+
+        if (existingVote is not null)
+        {
+            dbContext.Votes.Remove(existingVote);
+            await dbContext.SaveChangesAsync(cancellationToken);
+        }
+
+        var score = await GetSuggestionScoreAsync(suggestionId, cancellationToken);
+
+        return SuggestionOperationResult<VoteResponse>.Success(new VoteResponse
+        {
+            SuggestionId = suggestionId,
+            CurrentUserVote = null,
+            Score = score
+        });
+    }
+
     private async Task<bool> ProjectExistsAsync(Guid projectId, CancellationToken cancellationToken) =>
         await dbContext.Projects
             .AsNoTracking()
@@ -403,6 +509,23 @@ public sealed class SuggestionService(
     private static int CalculateScore(IEnumerable<Vote> votes) =>
         votes.Count(x => x.VoteType == VoteType.Up) -
         votes.Count(x => x.VoteType == VoteType.Down);
+
+    private async Task<int> GetSuggestionScoreAsync(Guid suggestionId, CancellationToken cancellationToken)
+    {
+        var upVotes = await dbContext.Votes
+            .AsNoTracking()
+            .CountAsync(
+                x => x.SuggestionId == suggestionId && x.VoteType == VoteType.Up,
+                cancellationToken);
+
+        var downVotes = await dbContext.Votes
+            .AsNoTracking()
+            .CountAsync(
+                x => x.SuggestionId == suggestionId && x.VoteType == VoteType.Down,
+                cancellationToken);
+
+        return upVotes - downVotes;
+    }
 
     private sealed class SuggestionListProjection
     {
