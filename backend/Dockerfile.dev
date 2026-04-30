@@ -6,7 +6,8 @@ COPY NuGet.config ./
 COPY src ./src
 
 RUN dotnet restore CollaborationSystem.sln
+RUN dotnet build CollaborationSystem.sln -c Debug --no-restore
 
 WORKDIR /app/src/CollaborationSystem.Api
 EXPOSE 8080
-CMD ["dotnet", "run", "--no-restore"]
+CMD ["dotnet", "bin/Debug/net10.0/CollaborationSystem.Api.dll"]
