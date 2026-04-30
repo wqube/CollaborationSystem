@@ -127,3 +127,36 @@ git push origin feature/fe-название-задачи
 | Backend  | Малышонков Никита - @Kr1st10     | API, бизнес-логика, база данных   |
 | Backend  | Нурулин Эльмир - @MUZHIKI        | API, бизнес-логика, база данных   |
 | QA       | Заварзин Всеволод - @dlapy       | Тестирование, проверка `develop` перед мержем в `main` |
+
+---
+
+## Dev stand (Docker, one command)
+
+From repository root:
+
+```powershell
+docker compose -f docker-compose.dev.yml up --build
+```
+
+Services:
+- Frontend: `http://localhost:5173`
+- Backend API: `http://localhost:5227`
+- Swagger: `http://localhost:5227/swagger`
+- PostgreSQL: `localhost:5432`
+
+What is automated now:
+- API applies EF Core migrations on startup (`Database.Migrate()`).
+- Backend waits for healthy PostgreSQL via Docker healthcheck.
+- Refresh-token cookie works in local HTTP dev mode (`Auth__RefreshTokenCookieSecure=false`).
+
+Test credentials:
+- `test@test.local / password`
+- `admin@test.local / password`
+
+If authorization still fails:
+1. Open browser DevTools -> Application -> Cookies and check `refreshToken` for `http://localhost:5227`.
+2. Verify API is up: `GET http://localhost:5227/health` must return `{"status":"ok"}`.
+3. Check frontend requests go to `http://localhost:5227/api/v1`.
+4. Recreate containers after changes:
+   `docker compose -f docker-compose.dev.yml down -v`
+   `docker compose -f docker-compose.dev.yml up --build`

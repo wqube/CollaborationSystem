@@ -67,3 +67,14 @@ dotnet run --project .\src\CollaborationSystem.Api
 ## Примечание
 
 Для локальной сборки нужен установленный `.NET 10 SDK`.
+
+## Team dev stand (recommended)
+
+Use root compose file to run full stack in one command:
+
+```powershell
+cd ..
+docker compose -f docker-compose.dev.yml up --build
+```
+
+Backend container automatically runs pending EF Core migrations at startup.

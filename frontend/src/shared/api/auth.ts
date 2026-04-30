@@ -5,7 +5,7 @@ export interface loginRequest {
   password: string;
 }
 
-export interface LoginResponce {
+export interface LoginResponse {
   accessToken: string;
   expiresIn: number;
   user: {
@@ -15,7 +15,7 @@ export interface LoginResponce {
   };
 }
 
-export const login = async (data: loginRequest): Promise<LoginResponce> => {
-  const responce = await apiClient.post<LoginResponce>('auth/login', data);
-  return responce.data;
+export const login = async (data: loginRequest): Promise<LoginResponse> => {
+  const response = await apiClient.post<LoginResponse>('auth/login', data);
+  return response.data;
 };
