@@ -1,6 +1,7 @@
 using System.Text;
 using CollaborationSystem.Application.Abstractions;
 using CollaborationSystem.Infrastructure.Auth;
+using CollaborationSystem.Infrastructure.Drafts;
 using CollaborationSystem.Infrastructure.Identity;
 using CollaborationSystem.Infrastructure.Persistence;
 using CollaborationSystem.Infrastructure.Projects;
@@ -31,6 +32,7 @@ public static class DependencyInjection
         services.AddScoped<IProjectService, ProjectService>();
         services.AddScoped<IUserDirectoryService, UserDirectoryService>();
         services.AddScoped<ISuggestionService, SuggestionService>();
+        services.AddScoped<IDraftService, DraftService>();
 
         services.AddDbContext<AppDbContext>(options => options.UseNpgsql(connectionString));
 
@@ -44,7 +46,12 @@ public static class DependencyInjection
         var jwtSection = configuration.GetSection("Jwt");
         var signingKey = jwtSection["Key"] ?? "super-secret-development-key-change-me";
 
-        services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+        services.AddAuthentication(options =>
+            {
+                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
+            })
             .AddJwtBearer(options =>
             {
                 options.TokenValidationParameters = new TokenValidationParameters
