@@ -66,13 +66,13 @@ apiClient.interceptors.response.use(
         originalRequest.headers = originalRequest.headers ?? {};
         originalRequest.headers.Authorization = `Bearer ${newToken}`;
 
-        delete originalRequest.headers?.['Authorization'];
+        // delete originalRequest.headers?.['Authorization'];
         originalRequest._retry = true;
 
         return apiClient(originalRequest);
       } catch (e) {
         store.dispatch(clearAuth());
-        window.location.href = '/auth/login';
+        // window.location.href = '/auth/login';
         console.log('Refresh failed:', e);
       }
     }
