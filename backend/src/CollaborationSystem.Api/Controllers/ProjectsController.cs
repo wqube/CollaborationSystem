@@ -45,9 +45,10 @@ public class ProjectsController(IProjectService projectService) : ControllerBase
     [HttpGet("{projectId:guid}/dashboard")]
     public async Task<ActionResult<ProjectDashboardResponse>> GetDashboard(
         Guid projectId,
+        [FromQuery] GetProjectDashboardQuery query,
         CancellationToken cancellationToken)
     {
-        var result = await projectService.GetProjectDashboardAsync(projectId, cancellationToken);
+        var result = await projectService.GetProjectDashboardAsync(projectId, query, cancellationToken);
 
         return ToProjectActionResult(result);
     }
