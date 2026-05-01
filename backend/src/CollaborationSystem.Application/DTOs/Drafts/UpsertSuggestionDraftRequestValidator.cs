@@ -6,12 +6,8 @@ public sealed class UpsertSuggestionDraftRequestValidator : AbstractValidator<Up
 {
     public UpsertSuggestionDraftRequestValidator()
     {
-        RuleFor(x => x.Payload.ValueKind)
-            .NotEqual(System.Text.Json.JsonValueKind.Undefined)
-            .WithMessage("'Payload' is required.");
-
-        RuleFor(x => x.Payload.ValueKind)
-            .NotEqual(System.Text.Json.JsonValueKind.Null)
-            .WithMessage("'Payload' cannot be null.");
+        RuleFor(x => x.Text)
+            .NotEmpty()
+            .MaximumLength(5000);
     }
 }
