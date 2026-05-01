@@ -15,6 +15,7 @@ public interface IProjectService
 
     Task<ProjectOperationResult<ProjectDashboardResponse>> GetProjectDashboardAsync(
         Guid projectId,
+        GetProjectDashboardQuery query,
         CancellationToken cancellationToken = default);
 
     Task<ProjectSummaryResponse> CreateProjectAsync(

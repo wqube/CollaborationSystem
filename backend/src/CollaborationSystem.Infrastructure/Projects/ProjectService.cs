@@ -83,35 +83,100 @@ public sealed class ProjectService(
 
     public async Task<ProjectOperationResult<ProjectDashboardResponse>> GetProjectDashboardAsync(
         Guid projectId,
+        GetProjectDashboardQuery query,
         CancellationToken cancellationToken = default)
     {
-        var projectResult = await GetProjectByIdAsync(projectId, cancellationToken);
-
-        if (projectResult.Status != ProjectOperationStatus.Success || projectResult.Value is null)
+        var accessStatus = await GetProjectAccessStatusAsync(projectId, cancellationToken);
+        if (accessStatus != ProjectOperationStatus.Success)
         {
-            return ProjectOperationResult<ProjectDashboardResponse>.Failure(projectResult.Status);
+            return ProjectOperationResult<ProjectDashboardResponse>.Failure(accessStatus);
         }
+
+        var currentUserId = currentUserService.GetRequiredUserId();
+
+        var projectWithRole = await dbContext.ProjectMembers
+            .AsNoTracking()
+            .Where(x => x.ProjectId == projectId && x.UserId == currentUserId)
+            .Select(x => new
+            {
+                x.Role,
+                Project = x.Project!
+            })
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (projectWithRole is null)
+        {
+            return ProjectOperationResult<ProjectDashboardResponse>.Failure(ProjectOperationStatus.Forbidden);
+        }
+
+        var membersPreview = await dbContext.ProjectMembers
+            .AsNoTracking()
+            .Where(x => x.ProjectId == projectId)
+            .OrderByDescending(x => x.Role)
+            .ThenBy(x => x.JoinedAtUtc)
+            .Take(10)
+            .Select(x => new ProjectMemberPreviewResponse
+            {
+                UserId = x.UserId,
+                DisplayName = x.User == null ? string.Empty : x.User.DisplayName,
+                Role = x.Role
+            })
+            .ToListAsync(cancellationToken);
+
+        var suggestionsQuery = dbContext.Suggestions
+            .AsNoTracking()
+            .Where(x => x.ProjectId == projectId);
+
+        if (query.Status.HasValue)
+        {
+            suggestionsQuery = suggestionsQuery.Where(x => x.Status == query.Status.Value);
+        }
+
+        var suggestionsTotal = await suggestionsQuery.CountAsync(cancellationToken);
 
         var suggestions = await dbContext.Suggestions
             .AsNoTracking()
-            .Where(x => x.ProjectId == projectId)
+            .Where(x => x.ProjectId == projectId && (!query.Status.HasValue || x.Status == query.Status.Value))
             .OrderByDescending(x => x.CreatedAtUtc)
-            .Take(10)
+            .ThenByDescending(x => x.Id)
+            .Skip((query.Page - 1) * query.PageSize)
+            .Take(query.PageSize)
             .Select(x => new SuggestionPreviewResponse
             {
                 Id = x.Id,
+                ProjectId = x.ProjectId,
                 Text = x.Text,
                 Status = x.Status,
+                Author = new SuggestionAuthorResponse
+                {
+                    Id = x.AuthorId,
+                    DisplayName = x.Author == null ? string.Empty : x.Author.DisplayName
+                },
                 Score = x.Votes.Count(v => v.VoteType == VoteType.Up) -
                         x.Votes.Count(v => v.VoteType == VoteType.Down),
-                CreatedAtUtc = x.CreatedAtUtc
+                CreatedAt = x.CreatedAtUtc,
+                UpdatedAt = x.UpdatedAtUtc
             })
             .ToListAsync(cancellationToken);
 
         return ProjectOperationResult<ProjectDashboardResponse>.Success(new ProjectDashboardResponse
         {
-            Project = projectResult.Value,
-            SuggestionsPreview = suggestions
+            Project = new ProjectDashboardProjectResponse
+            {
+                Id = projectWithRole.Project.Id,
+                Name = projectWithRole.Project.Name,
+                Description = projectWithRole.Project.Description,
+                Role = projectWithRole.Role,
+                LastAccessedAt = projectWithRole.Project.UpdatedAtUtc
+            },
+            MembersPreview = membersPreview,
+            Suggestions = new PagedResponse<SuggestionSummaryResponse>
+            {
+                Items = suggestions,
+                Page = query.Page,
+                PageSize = query.PageSize,
+                Total = suggestionsTotal
+            }
         });
     }
 
