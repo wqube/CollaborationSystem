@@ -1,10 +1,10 @@
 services:
   postgres:
     image: postgres:16
-    container_name: collaborationsystem-postgres
+    container_name: collaborationsystem-postgres_dev
     restart: unless-stopped
     environment:
-      POSTGRES_DB: collaboration_system
+      POSTGRES_DB: collaboration_system_dev
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
     ports:

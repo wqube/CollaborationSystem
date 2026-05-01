@@ -2,39 +2,82 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/Button/Button';
 import { Badge } from '../components/ui/Badge/Badge';
 import { VoteButton } from '../components/ui/VoteButton/VoteButton';
+import { getSuggestions } from '../shared/api/suggestions';
+import type {
+  SuggestionSummary,
+  SuggestionStatus,
+  SuggestionSort,
+  OrderSort,
+} from '../types/api';
 import styles from '../assets/SuggestionListPage.module.css';
+import { useCallback, useEffect, useState } from 'react';
 
-const MOCK = Array.from({ length: 7 }, (_, i) => ({
-  id: `id-${i}`,
-  text: [
-    'Добавить обязательный шаблон ретро',
-    'Автоматизировать деплой',
-    'Внедрить парное программирование',
-    'Обновить документацию',
-    'Настроить форматирование',
-    'Pre-commit хуки',
-    'Новая версия UI',
-  ][i],
-  author: [
-    'Иван Петров',
-    'Мария Сидорова',
-    'Алексей Иванов',
-    'Ольга Смирнова',
-    'Сергей Козлов',
-    'Елена Смирнова',
-    'Алексей Иванов',
-  ][i],
-  score: [5, 8, 3, 2, 6, 4, -1][i],
-  status: ['New', 'New', 'InProgress', 'New', 'New', 'Accepted', 'Rejected'][
-    i
-  ] as any,
-  date: '2026-04-0' + (9 - i),
-  voted: [true, false, false, false, false, false, true][i],
-}));
+const PAGE_SIZE = 10;
 
 export function SuggestionListPage() {
   const { projectId } = useParams<{ projectId: string }>();
   const navigate = useNavigate();
+
+  const [suggestions, setSuggestions] = useState<SuggestionSummary[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+
+  const [search, setSearch] = useState('');
+  const [status, setStatus] = useState<SuggestionStatus | ''>('');
+  const [sort, setSort] = useState<SuggestionSort>('score');
+  const [order, setOrder] = useState<OrderSort>('desc');
+
+  const fetchSuggestions = useCallback(async () => {
+    if (!projectId) return;
+    setLoading(true);
+    setError(null);
+
+    try {
+      const responce = await getSuggestions(projectId, {
+        status: status || undefined,
+        search: search || undefined,
+        sort: sort || undefined,
+        order: order || undefined,
+        page,
+        pageSize: PAGE_SIZE,
+      });
+      setSuggestions(responce.item);
+      setTotal(responce.total);
+    } catch {
+      setError('Ошибка загрузки предложений');
+    } finally {
+      setLoading(false);
+    }
+  }, [projectId, search, status, sort, order, page]);
+
+  useEffect(() => {
+    fetchSuggestions();
+  }, [fetchSuggestions]);
+
+  const totalPages = Math.ceil(total / PAGE_SIZE);
+  const formatDate = (iso: string) =>
+    new Date(iso).toLocaleDateString('ru-RU', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    });
+
+  const getBadgeVariant = (status: SuggestionStatus) => {
+    switch (status) {
+      case 'New':
+        return 'new';
+      case 'InProgress':
+        return 'progress';
+      case 'Accepted':
+        return 'accepted';
+      case 'Rejected':
+        return 'rejected';
+      default:
+        return 'new';
+    }
+  };
 
   return (
     <div className={styles.page}>
@@ -45,10 +88,10 @@ export function SuggestionListPage() {
             variant="outline"
             onClick={() => navigate(`/projects/${projectId}`)}
           >
-            [&lt;-] Назад к доске
+            Назад к доске
           </Button>
           <Button variant="primary" onClick={() => alert('Open modal')}>
-            [+] Предложить идею
+            Предложить идею
           </Button>
         </div>
       </div>
@@ -56,11 +99,26 @@ export function SuggestionListPage() {
       <div className={styles.filters}>
         <div className={styles.filterGroup}>
           <label>Поиск</label>
-          <input type="text" placeholder="Поиск по тексту..." />
+          <input
+            type="text"
+            placeholder="Поиск по тексту..."
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
+          />
         </div>
+
         <div className={styles.filterGroup}>
           <label>Статус</label>
-          <select>
+          <select
+            value={status}
+            onChange={(e) => {
+              setStatus(e.target.value as SuggestionStatus | '');
+              setPage(1);
+            }}
+          >
             <option value="">Все статусы</option>
             <option>New</option>
             <option>InProgress</option>
@@ -68,93 +126,113 @@ export function SuggestionListPage() {
             <option>Rejected</option>
           </select>
         </div>
+
         <div className={styles.filterGroup}>
           <label>Сортировка</label>
-          <select>
-            <option>По рейтингу</option>
-            <option>По дате создания</option>
-            <option>По обновлению</option>
+          <select
+            value={sort}
+            onChange={(e) => setSort(e.target.value as SuggestionSort)}
+          >
+            <option value="score">По рейтингу</option>
+            <option value="createdAt">По дате создания</option>
+            <option value="updatedAt">По обновлению</option>
           </select>
         </div>
+
         <div className={styles.filterGroup}>
           <label>Порядок</label>
-          <select>
-            <option>По убыванию</option>
-            <option>По возрастанию</option>
+          <select
+            value={order}
+            onChange={(e) => setOrder(e.target.value as OrderSort)}
+          >
+            <option value="desc">По убыванию</option>
+            <option value="asc">По возрастанию</option>
           </select>
         </div>
       </div>
 
-      <div className={styles.table}>
-        <table>
-          <thead>
-            <tr>
-              <th>Предложение</th>
-              <th>Автор</th>
-              <th>Score</th>
-              <th>Дата</th>
-              <th>Статус</th>
-            </tr>
-          </thead>
-          <tbody>
-            {MOCK.map((s) => (
-              <tr
-                key={s.id}
-                onClick={() =>
-                  navigate(`/projects/${projectId}/suggestions/${s.id}`)
-                }
-                className={styles.row}
-              >
-                <td>
-                  <strong>{s.text}</strong>
-                </td>
-                <td>{s.author}</td>
-                <td>
-                  <div
-                    className={styles.voteGroup}
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <VoteButton
-                      type="up"
-                      active={s.voted && s.score > 0}
-                      size="sm"
-                    />
-                    <span className={styles.score}>{s.score}</span>
-                    <VoteButton
-                      type="down"
-                      active={s.voted && s.score < 0}
-                      size="sm"
-                    />
-                  </div>
-                </td>
-                <td>{s.date}</td>
-                <td>
-                  <Badge
-                    variant={
-                      s.status === 'New'
-                        ? 'new'
-                        : s.status === 'InProgress'
-                          ? 'progress'
-                          : s.status === 'Accepted'
-                            ? 'accepted'
-                            : 'rejected'
+      {!loading && !error && (
+        <>
+          <div className={styles.table}>
+            <table>
+              <thead>
+                <tr>
+                  <th>Предложение</th>
+                  <th>Автор</th>
+                  <th>Голоса</th>
+                  <th>Дата</th>
+                  <th>Статус</th>
+                </tr>
+              </thead>
+              <tbody>
+                {suggestions.length === 0 && (
+                  <tr>
+                    <td colSpan={5} className={styles.empty}>
+                      Предложений нет
+                    </td>
+                  </tr>
+                )}
+                {suggestions.map((s) => (
+                  <tr
+                    key={s.id}
+                    onClick={() =>
+                      navigate(`/projects/${projectId}/suggestions/${s.id}`)
                     }
-                  />
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+                    className={styles.row}
+                  >
+                    <td>
+                      <strong>{s.text}</strong>
+                    </td>
+                    <td>{s.author?.displayName ?? '—'}</td>
+                    <td>
+                      <div
+                        className={styles.voteGroup}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <VoteButton type="up" size="sm" />
+                      </div>
+                    </td>
+                    <td>{formatDate(s.createdAt)}</td>
+                    <td>
+                      <Badge variant={getBadgeVariant(s.status)} />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
 
-      <div className={styles.pagination}>
-        <button disabled>←</button>
-        <button className={styles.active}>1</button>
-        <button>2</button>
-        <button>3</button>
-        <button>→</button>
-        <span>1-7 из 23</span>
-      </div>
+          {totalPages > 1 && (
+            <div className={styles.pagination}>
+              <button
+                disabled={page === 1}
+                onClick={() => setPage((p) => p - 1)}
+              >
+                ←
+              </button>
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+                <button
+                  key={p}
+                  className={p === page ? styles.active : ''}
+                  onClick={() => setPage(p)}
+                >
+                  {p}
+                </button>
+              ))}
+              <button
+                disabled={page === totalPages}
+                onClick={() => setPage((p) => p + 1)}
+              >
+                →
+              </button>
+              <span>
+                {(page - 1) * PAGE_SIZE + 1}-{Math.min(page * PAGE_SIZE, total)}{' '}
+                из {total}
+              </span>
+            </div>
+          )}
+        </>
+      )}
     </div>
   );
 }
