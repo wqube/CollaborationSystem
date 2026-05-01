@@ -60,7 +60,7 @@ export function LoginPage() {
               />
             </div>
 
-            <Button type="submit" disabled={loading}>
+            <Button type="submit" disabled={loading} fullWidth>
               {loading ? 'Вход...' : 'Войти'}
             </Button>
           </form>

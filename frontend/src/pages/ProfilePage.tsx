@@ -1,12 +1,22 @@
+import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/Button/Button';
 import { Badge } from '../components/ui/Badge/Badge';
-import { userAppSelector } from '../shared/store/hooks';
+import { useAppDispatcher, userAppSelector } from '../shared/store/hooks';
+import { fetchProjects } from '../shared/store/projectsSlice';
 import styles from '../assets/ProfilePage.module.css';
 
 export function ProfilePage() {
   const navigate = useNavigate();
+  const dispatch = useAppDispatcher();
   const user = userAppSelector((s) => s.auth.user);
+  const { list: projects, loading } = userAppSelector((s) => s.projects);
+
+  useEffect(() => {
+    if (projects.length === 0) {
+      dispatch(fetchProjects());
+    }
+  }, [dispatch, projects.length]);
 
   return (
     <div className={styles.page}>
@@ -40,27 +50,12 @@ export function ProfilePage() {
 
       <div className={styles.card}>
         <h3>Мои проекты</h3>
+        {loading && <p className={styles.loading}>Загрузка...</p>}
+        {!loading && projects.length === 0 && (
+          <p className={styles.empty}>Нет проектов</p>
+        )}
         <div className={styles.projectList}>
-          {[
-            {
-              id: '1',
-              name: 'Core Platform',
-              desc: 'Проект команды Core Platform',
-              role: 'Admin' as const,
-            },
-            {
-              id: '2',
-              name: 'Mobile App',
-              desc: 'iOS / Android разработка',
-              role: 'Member' as const,
-            },
-            {
-              id: '3',
-              name: 'Support Tools',
-              desc: 'Внутренние инструменты',
-              role: 'Member' as const,
-            },
-          ].map((p) => (
+          {projects.map((p) => (
             <div
               key={p.id}
               className={styles.projectItem}
@@ -68,7 +63,7 @@ export function ProfilePage() {
             >
               <div>
                 <strong>{p.name}</strong>
-                <span className={styles.projectDesc}>{p.desc}</span>
+                <span className={styles.projectDesc}>{p.description}</span>
               </div>
               <Badge variant={p.role === 'Admin' ? 'admin' : 'member'} />
             </div>
