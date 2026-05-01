@@ -5,6 +5,7 @@ using CollaborationSystem.Domain.Entities;
 using CollaborationSystem.Domain.Enums;
 using CollaborationSystem.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
 
 namespace CollaborationSystem.Infrastructure.Drafts;
 
@@ -34,13 +35,31 @@ public sealed class DraftService(
         }
 
         var total = await draftsQuery.CountAsync(cancellationToken);
-        var items = await draftsQuery
+        var rawItems = await draftsQuery
             .OrderByDescending(x => x.UpdatedAtUtc)
             .ThenByDescending(x => x.CreatedAtUtc)
             .Skip((query.Page - 1) * query.PageSize)
             .Take(query.PageSize)
-            .Select(ToResponseExpression())
+            .Select(x => new
+            {
+                x.Id,
+                x.ProjectId,
+                x.Type,
+                x.PayloadJson,
+                x.UpdatedAtUtc
+            })
             .ToListAsync(cancellationToken);
+
+        var items = rawItems
+            .Select(x => new DraftResponse
+            {
+                Id = x.Id,
+                ProjectId = x.ProjectId,
+                Type = x.Type,
+                Payload = DeserializePayload(x.PayloadJson),
+                UpdatedAt = x.UpdatedAtUtc
+            })
+            .ToList();
 
         return DraftOperationResult<PagedResponse<DraftResponse>>.Success(new PagedResponse<DraftResponse>
         {
@@ -63,29 +82,16 @@ public sealed class DraftService(
             return DraftOperationResult<DraftResponse>.Failure(accessStatus);
         }
 
-        if (request.SuggestionId.HasValue)
-        {
-            var suggestionExists = await dbContext.Suggestions
-                .AsNoTracking()
-                .AnyAsync(
-                    x => x.Id == request.SuggestionId.Value && x.ProjectId == projectId,
-                    cancellationToken);
-
-            if (!suggestionExists)
-            {
-                return DraftOperationResult<DraftResponse>.Failure(DraftOperationStatus.InvalidRequest);
-            }
-        }
-
         var currentUserId = currentUserService.GetRequiredUserId();
+        var payloadJson = JsonSerializer.Serialize(new { text = request.Text.Trim() });
         var upsertResult = await UpsertDraftAsync(
             projectId,
             draftId,
             currentUserId,
             DraftType.Suggestion,
-            request.SuggestionId,
+            suggestionId: null,
             parentCommentId: null,
-            request.Payload.GetRawText(),
+            payloadJson,
             cancellationToken);
 
         return upsertResult;
@@ -103,18 +109,15 @@ public sealed class DraftService(
             return DraftOperationResult<DraftResponse>.Failure(accessStatus);
         }
 
-        if (request.SuggestionId.HasValue)
-        {
-            var suggestionExists = await dbContext.Suggestions
-                .AsNoTracking()
-                .AnyAsync(
-                    x => x.Id == request.SuggestionId.Value && x.ProjectId == projectId,
-                    cancellationToken);
+        var suggestionExists = await dbContext.Suggestions
+            .AsNoTracking()
+            .AnyAsync(
+                x => x.Id == request.SuggestionId && x.ProjectId == projectId,
+                cancellationToken);
 
-            if (!suggestionExists)
-            {
-                return DraftOperationResult<DraftResponse>.Failure(DraftOperationStatus.InvalidRequest);
-            }
+        if (!suggestionExists)
+        {
+            return DraftOperationResult<DraftResponse>.Failure(DraftOperationStatus.InvalidRequest);
         }
 
         if (request.ParentCommentId.HasValue)
@@ -134,6 +137,12 @@ public sealed class DraftService(
         }
 
         var currentUserId = currentUserService.GetRequiredUserId();
+        var payloadJson = JsonSerializer.Serialize(new
+        {
+            suggestionId = request.SuggestionId,
+            parentCommentId = request.ParentCommentId,
+            text = request.Text.Trim()
+        });
         var upsertResult = await UpsertDraftAsync(
             projectId,
             draftId,
@@ -141,7 +150,7 @@ public sealed class DraftService(
             DraftType.Comment,
             request.SuggestionId,
             request.ParentCommentId,
-            request.Payload.GetRawText(),
+            payloadJson,
             cancellationToken);
 
         return upsertResult;
@@ -264,26 +273,20 @@ public sealed class DraftService(
         {
             Id = draft.Id,
             ProjectId = draft.ProjectId,
-            UserId = draft.UserId,
-            SuggestionId = draft.SuggestionId,
-            ParentCommentId = draft.ParentCommentId,
             Type = draft.Type,
-            PayloadJson = draft.PayloadJson,
-            CreatedAtUtc = draft.CreatedAtUtc,
-            UpdatedAtUtc = draft.UpdatedAtUtc
+            Payload = DeserializePayload(draft.PayloadJson),
+            UpdatedAt = draft.UpdatedAtUtc
         };
 
-    private static System.Linq.Expressions.Expression<Func<Draft, DraftResponse>> ToResponseExpression() =>
-        x => new DraftResponse
+    private static JsonElement DeserializePayload(string payloadJson)
+    {
+        try
         {
-            Id = x.Id,
-            ProjectId = x.ProjectId,
-            UserId = x.UserId,
-            SuggestionId = x.SuggestionId,
-            ParentCommentId = x.ParentCommentId,
-            Type = x.Type,
-            PayloadJson = x.PayloadJson,
-            CreatedAtUtc = x.CreatedAtUtc,
-            UpdatedAtUtc = x.UpdatedAtUtc
-        };
+            return JsonDocument.Parse(payloadJson).RootElement;
+        }
+        catch (JsonException)
+        {
+            return JsonDocument.Parse("{}").RootElement;
+        }
+    }
 }
