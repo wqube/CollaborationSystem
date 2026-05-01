@@ -86,3 +86,9 @@
 .logout {
   margin-top: 24px;
 }
+
+.loading,
+.empty {
+  color: var(--t-gray);
+  padding: 12px 0;
+}
