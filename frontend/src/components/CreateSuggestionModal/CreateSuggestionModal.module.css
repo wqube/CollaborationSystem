@@ -1,0 +1,53 @@
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.field label {
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.field textarea {
+  padding: 14px 16px;
+  border: 1px solid #e0e0e0;
+  border-radius: 12px;
+  font-size: 14px;
+  resize: vertical;
+  min-height: 120px;
+}
+
+.field textarea:focus {
+  outline: none;
+  border-color: #ffdd2d;
+  box-shadow: 0 0 0 3px rgba(255, 221, 45, 0.2);
+}
+
+.draftInfo {
+  padding: 12px 16px;
+  background: #fff9e6;
+  border-radius: 12px;
+  font-size: 14px;
+  color: #8a8a8a;
+}
+
+.error {
+  color: #d32f2f;
+  background: #ffebee;
+  padding: 10px;
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}

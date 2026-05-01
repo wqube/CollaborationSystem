@@ -4,6 +4,7 @@ import { useAppDispatcher } from '../shared/store/hooks';
 import { setAuth } from '../shared/store/authSlice';
 import { login } from '../shared/api/auth';
 import { useState } from 'react';
+import styles from '../assets/LoginPage.module.css';
 
 export function LoginPage() {
   const dispatch = useAppDispatcher();
@@ -32,13 +33,13 @@ export function LoginPage() {
 
   return (
     <>
-      <div className="login-container">
-        <div className="login-card">
-          <div className="login-logo">
+      <div className={styles.login_container}>
+        <div className={styles.login_card}>
+          <div className={styles.login_logo}>
             <img src={`/public/T-bank-logo.png`} width={64} height={64} />
           </div>
-          <h1 className="login-title">Вход в систему</h1>
-          <p className="login-subtitle">Управление идеями команды</p>
+          <h1 className={styles.login_title}>Вход в систему</h1>
+          <p className={styles.login_subtitle}>Управление идеями команды</p>
 
           <form onSubmit={handleLogin}>
             <div className="form-group">

@@ -5,6 +5,7 @@ import { fetchProjects } from '../shared/store/projectsSlice';
 import { ProjectCard } from '../components/ProjectCard/ProjectCard';
 import { CreateProjectModal } from '../components/CreateProjectModal/CreateProjectModal';
 import { Button } from '../components/ui/Button/Button';
+import styles from '../assets/ProjectListPage.module.css';
 
 export function ProjectListPage() {
   const navigate = useNavigate();
@@ -31,22 +32,22 @@ export function ProjectListPage() {
   };
 
   return (
-    <div className="page">
-      <div className="header">
-        <h1 className="title">Мои проекты</h1>
+    <div className={styles.page}>
+      <div className={styles.header}>
+        <h1 className={styles.title}>Мои проекты</h1>
         <Button variant="primary" size="md" onClick={() => setModalOpen(true)}>
           Новый проект
         </Button>
       </div>
 
-      {loading && <div className="loading">Загрузка...</div>}
-      {error && <div className="error">{error}</div>}
+      {loading && <div className={styles.loading}>Загрузка...</div>}
+      {error && <div className={styles.error}>{error}</div>}
 
       {!loading && !error && projects.length === 0 && (
-        <div className="empty">Нет доступных проектов</div>
+        <div className={styles.empty}>Нет доступных проектов</div>
       )}
 
-      <div className="grid">
+      <div className={styles.grid}>
         {projects.map((project) => (
           <ProjectCard
             key={project.id}

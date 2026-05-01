@@ -1,0 +1,178 @@
+.page {
+  max-width: 1200px;
+  margin: 30px auto;
+  padding: 0 20px;
+}
+
+.twoColumns {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 24px;
+  margin-top: 20px;
+}
+
+.card {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  border: 1px solid #e0e0e0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  margin-bottom: 20px;
+}
+
+.top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 24px;
+}
+
+.top h1 {
+  font-size: 24px;
+  margin-bottom: 8px;
+}
+
+.meta {
+  display: flex;
+  gap: 16px;
+  color: #8a8a8a;
+  font-size: 14px;
+  align-items: center;
+}
+
+.statusSelect {
+  padding: 8px 32px 8px 16px;
+  border: 1px solid #e0e0e0;
+  border-radius: 12px;
+}
+
+.description {
+  padding: 16px;
+  background: #f5f5f5;
+  border-radius: 12px;
+  margin: 24px 0;
+}
+
+.commentInput {
+  width: 100%;
+  padding: 14px;
+  border: 1px solid #e0e0e0;
+  border-radius: 12px;
+  resize: vertical;
+}
+
+.commentActions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 10px 0 20px;
+}
+
+.draft {
+  font-size: 13px;
+  color: #8a8a8a;
+}
+
+.comments {
+  margin-top: 20px;
+}
+
+.comment {
+  padding: 16px;
+  background: #f5f5f5;
+  border-radius: 12px;
+  margin-bottom: 12px;
+}
+
+.commentHeader {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.avatar {
+  width: 32px;
+  height: 32px;
+  background: #1a1a1a;
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.time {
+  display: block;
+  font-size: 12px;
+  color: #8a8a8a;
+}
+
+.comment p {
+  margin-left: 42px;
+}
+
+.commentBtns {
+  margin-left: 42px;
+  margin-top: 8px;
+  display: flex;
+  gap: 16px;
+}
+
+.commentBtns button {
+  background: none;
+  border: none;
+  color: #8a8a8a;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.commentBtns button:hover {
+  color: #1a1a1a;
+}
+
+.nested {
+  margin-left: 42px;
+  padding-left: 20px;
+  border-left: 2px solid #e0e0e0;
+}
+
+.votePanel {
+  display: flex;
+  gap: 20px;
+  justify-content: center;
+  align-items: center;
+  margin: 20px 0;
+}
+
+.bigScore {
+  font-size: 32px;
+  font-weight: 700;
+}
+
+.voters {
+  margin-top: 16px;
+  padding: 16px;
+  background: #f5f5f5;
+  border-radius: 12px;
+}
+
+.voters h4 {
+  margin-bottom: 8px;
+}
+
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.tags span {
+  background: white;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 13px;
+}

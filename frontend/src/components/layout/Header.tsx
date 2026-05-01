@@ -33,6 +33,9 @@ export function Header() {
         >
           {userName}
         </span>
+        <span className={styles.text_small} onClick={() => navigate('/drafts')}>
+          Черновики
+        </span>
         <div
           className={styles.user_avatar}
           onClick={() => navigate('/profile')}
