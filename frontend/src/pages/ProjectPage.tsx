@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '../components/ui/Button/Button';
 import { Badge } from '../components/ui/Badge/Badge';
 import { Tabs, type TabItem } from '../components/ui/Tabs/Tabs';
@@ -8,184 +8,196 @@ import { CreateSuggestionModal } from '../components/CreateSuggestionModal/Creat
 import { SettingsModal } from '../components/SettingsModal/SettingsModal';
 import { MembersModal } from '../components/MembersModal/MembersModal';
 import styles from '../assets/ProjectPage.module.css';
+import { getDashboard } from '../shared/api/dashboard';
+import type {
+  ProjectSummary,
+  SuggestionStatus,
+  SuggestionSummary,
+} from '../types/api';
 
-const TABS: TabItem[] = [
-  { id: 'New', label: 'New', count: 4 },
-  { id: 'InProgress', label: 'InProgress', count: 2 },
-  { id: 'Accepted', label: 'Accepted', count: 8 },
-  { id: 'Rejected', label: 'Rejected', count: 3 },
-];
-
-type SuggestionStatus = 'New' | 'InProgress' | 'Accepted' | 'Rejected';
-type VoteStatus = 'up' | 'down' | null;
-
-interface Suggestion {
-  id: string;
-  text: string;
-  author: string;
-  score: number;
-  status: SuggestionStatus;
-  date: string;
-  voted: VoteStatus;
+export interface suggestionsPreviewInterface {
+  suggestionsPreview: SuggestionSummary[];
 }
 
-const MOCK_SUGGESTIONS: Suggestion[] = [
-  {
-    id: 'd68650b5',
-    text: 'Добавить обязательный шаблон ретро перед встречей',
-    author: 'Иван Петров',
-    score: 5,
-    status: 'New',
-    date: '2026-04-09',
-    voted: 'up',
-  },
-  {
-    id: 'e79761c6',
-    text: 'Автоматизировать деплой на тестовые стенды',
-    author: 'Мария Сидорова',
-    score: 8,
-    status: 'New',
-    date: '2026-04-08',
-    voted: 'down',
-  },
-  {
-    id: 'f80872d7',
-    text: 'Внедрить практику парного программирования',
-    author: 'Алексей Иванов',
-    score: 3,
-    status: 'InProgress',
-    date: '2026-04-07',
-    voted: null,
-  },
-  {
-    id: '091983e8',
-    text: 'Обновить документацию по API',
-    author: 'Ольга Смирнова',
-    score: 2,
-    status: 'New',
-    date: '2026-04-06',
-    voted: null,
-  },
-  {
-    id: '1a2b3c4d',
-    text: 'Настроить автоматическое форматирование кода',
-    author: 'Сергей Козлов',
-    score: 6,
-    status: 'New',
-    date: '2026-04-05',
-    voted: null,
-  },
+const TABS: TabItem[] = [
+  { id: 'New', label: 'New' },
+  { id: 'InProgress', label: 'InProgress' },
+  { id: 'Accepted', label: 'Accepted' },
+  { id: 'Rejected', label: 'Rejected' },
 ];
 
 export function ProjectPage() {
   const { projectId } = useParams<{ projectId: string }>();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState('New');
-  const [suggestionModalOpen, setSuggestionModalOpen] = useState(false);
+  const [searchParams] = useSearchParams();
+  const draftId = searchParams.get('draftId') ?? undefined;
+
+  const [activeTab, setActiveTab] = useState<SuggestionStatus>('New');
+  const [suggestions, setSuggestions] = useState<SuggestionSummary[]>([]);
+  const [project, setProject] = useState<ProjectSummary | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const [suggestionModalOpen, setSuggestionModalOpen] = useState(!!draftId);
   const [settingsModalOpen, setSettingsModalOpen] = useState(false);
   const [membersModalOpen, setMembersModalOpen] = useState(false);
+
+  const fetchDashboard = async (status: SuggestionStatus) => {
+    if (!projectId) return;
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const data = await getDashboard(projectId, { status });
+
+      setProject(data.project);
+      setSuggestions(data.suggestions.items);
+    } catch {
+      setError('Не удалось загрузить данные проекта');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchDashboard(activeTab);
+  }, [projectId, activeTab]);
+
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab as SuggestionStatus);
+  };
+
+  const formatDate = (iso: string) =>
+    new Date(iso).toLocaleDateString('ru-RU', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    });
 
   return (
     <div className={styles.page}>
       <div className={styles.header}>
-        <Tabs tabs={TABS} activeTab={activeTab} onChange={setActiveTab} />
+        <Tabs tabs={TABS} activeTab={activeTab} onChange={handleTabChange} />
         <div className={styles.actions}>
+          <Button
+            variant="outline"
+            onClick={() => navigate(`/projects/${projectId}/drafts`)}
+          >
+            Черновики
+          </Button>
           <Button variant="outline" onClick={() => setMembersModalOpen(true)}>
-            [@] Участники
+            Участники
           </Button>
           <Button variant="outline" onClick={() => setSettingsModalOpen(true)}>
-            [*] Настройки
+            Настройки
           </Button>
           <Button
             variant="primary"
             onClick={() => setSuggestionModalOpen(true)}
           >
-            [+] Предложить идею
+            Предложить идею
           </Button>
         </div>
       </div>
 
-      <div className={styles.table}>
-        <table>
-          <thead>
-            <tr>
-              <th>Предложение</th>
-              <th>Автор</th>
-              <th>Score</th>
-              <th>Дата</th>
-              <th>Статус</th>
-            </tr>
-          </thead>
-          <tbody>
-            {MOCK_SUGGESTIONS.map((s) => (
-              <tr
-                key={s.id}
-                onClick={() =>
-                  navigate(`/projects/${projectId}/suggestions/${s.id}`)
-                }
-                className={styles.row}
-              >
-                <td>
-                  <strong>{s.text}</strong>
-                  <br />
-                  <span className={styles.idText}>id: {s.id}...</span>
-                </td>
-                <td>{s.author}</td>
-                <td>
-                  <div
-                    className={styles.voteGroup}
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <VoteButton type="up" active={s.voted === 'up'} size="sm" />
-                    <span className={styles.score}>{s.score}</span>
-                    <VoteButton
-                      type="down"
-                      active={s.voted === 'down'}
-                      size="sm"
-                    />
-                  </div>
-                </td>
-                <td>{s.date}</td>
-                <td>
-                  <Badge
-                    variant={
-                      s.status === 'New'
-                        ? 'new'
-                        : s.status === 'InProgress'
-                          ? 'progress'
-                          : s.status === 'Accepted'
-                            ? 'accepted'
-                            : 'rejected'
-                    }
-                  />
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      {loading && <p className={styles.state}>Загрузка...</p>}
+      {error && <p className={styles.error}>{error}</p>}
 
-      <div className={styles.viewAll}>
-        <Button
-          variant="outline"
-          onClick={() => navigate(`/projects/${projectId}/suggestions`)}
-        >
-          Все предложения →
-        </Button>
-      </div>
+      {!loading && !error && (
+        <>
+          <div className={styles.table}>
+            <table>
+              <thead>
+                <tr>
+                  <th>Предложение</th>
+                  <th>Автор</th>
+                  <th>Score</th>
+                  <th>Дата</th>
+                  <th>Статус</th>
+                </tr>
+              </thead>
+              <tbody>
+                {suggestions.length === 0 && (
+                  <tr>
+                    <td colSpan={5} className={styles.empty}>
+                      Предложений нет
+                    </td>
+                  </tr>
+                )}
+                {suggestions.map((s) => (
+                  <tr
+                    key={s.id}
+                    onClick={() =>
+                      navigate(`/projects/${projectId}/suggestions/${s.id}`)
+                    }
+                    className={styles.row}
+                  >
+                    <td>
+                      <strong>{s.text}</strong>
+                      <br />
+                      <span className={styles.idText}>
+                        id: {s.id.slice(0, 8)}...
+                      </span>
+                    </td>
+                    <td>{s.author.displayName}</td>
+                    <td>
+                      <div
+                        className={styles.voteGroup}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <VoteButton type="up" active={false} size="sm" />
+                        <span className={styles.score}>{s.score}</span>
+                        <VoteButton type="down" active={false} size="sm" />
+                      </div>
+                    </td>
+                    <td>{formatDate(s.createdAt)}</td>
+                    <td>
+                      <Badge
+                        variant={
+                          s.status === 'New'
+                            ? 'new'
+                            : s.status === 'InProgress'
+                              ? 'progress'
+                              : s.status === 'Accepted'
+                                ? 'accepted'
+                                : 'rejected'
+                        }
+                      />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <div className={styles.viewAll}>
+            <Button
+              variant="outline"
+              onClick={() => navigate(`/projects/${projectId}/suggestions`)}
+            >
+              Все предложения →
+            </Button>
+          </div>
+        </>
+      )}
 
       <CreateSuggestionModal
         open={suggestionModalOpen}
         onClose={() => setSuggestionModalOpen(false)}
-        onSuccess={() => setSuggestionModalOpen(false)}
+        onSuccess={() => {
+          setSuggestionModalOpen(false);
+          // fetchDashboard(activeTab);
+        }}
         projectId={projectId!}
+        draftId={draftId}
       />
       <SettingsModal
         open={settingsModalOpen}
         onClose={() => setSettingsModalOpen(false)}
         projectId={projectId!}
-        projectName="Core Platform"
-        projectDescription="Проект команды Core Platform"
+        projectName={project?.name ?? ''}
+        projectDescription={project?.description ?? ''}
       />
       <MembersModal
         open={membersModalOpen}
