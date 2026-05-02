@@ -6,12 +6,23 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace CollaborationSystem.Api.Controllers;
 
+/// <summary>
+/// Provides suggestion and vote endpoints for projects.
+/// </summary>
 [ApiController]
 [Authorize]
 [Route("api/v1/projects/{projectId:guid}/suggestions")]
 public class SuggestionsController(ISuggestionService suggestionService) : ControllerBase
 {
+    /// <summary>
+    /// Returns a filtered and paged list of project suggestions.
+    /// </summary>
     [HttpGet]
+    [ProducesResponseType(typeof(PagedResponse<SuggestionSummaryResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<ActionResult<PagedResponse<SuggestionSummaryResponse>>> GetSuggestions(
         Guid projectId,
         [FromQuery] GetSuggestionsQuery query,
@@ -22,7 +33,15 @@ public class SuggestionsController(ISuggestionService suggestionService) : Contr
         return ToActionResult(result, value => Ok(value));
     }
 
+    /// <summary>
+    /// Creates a suggestion in a project.
+    /// </summary>
     [HttpPost]
+    [ProducesResponseType(typeof(SuggestionSummaryResponse), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<ActionResult<SuggestionSummaryResponse>> CreateSuggestion(
         Guid projectId,
         [FromBody] CreateSuggestionRequest request,
@@ -38,7 +57,14 @@ public class SuggestionsController(ISuggestionService suggestionService) : Contr
                 suggestion));
     }
 
+    /// <summary>
+    /// Returns suggestion details by suggestion id.
+    /// </summary>
     [HttpGet("{suggestionId:guid}")]
+    [ProducesResponseType(typeof(SuggestionDetailsResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<ActionResult<SuggestionDetailsResponse>> GetSuggestionById(
         Guid projectId,
         Guid suggestionId,
@@ -49,7 +75,15 @@ public class SuggestionsController(ISuggestionService suggestionService) : Contr
         return ToActionResult(result, value => Ok(value));
     }
 
+    /// <summary>
+    /// Updates suggestion text.
+    /// </summary>
     [HttpPatch("{suggestionId:guid}")]
+    [ProducesResponseType(typeof(SuggestionSummaryResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<ActionResult<SuggestionSummaryResponse>> UpdateSuggestionText(
         Guid projectId,
         Guid suggestionId,
@@ -65,7 +99,16 @@ public class SuggestionsController(ISuggestionService suggestionService) : Contr
         return ToActionResult(result, value => Ok(value));
     }
 
+    /// <summary>
+    /// Updates suggestion status.
+    /// </summary>
     [HttpPatch("{suggestionId:guid}/status")]
+    [ProducesResponseType(typeof(SuggestionSummaryResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
     public async Task<ActionResult<SuggestionSummaryResponse>> UpdateSuggestionStatus(
         Guid projectId,
         Guid suggestionId,
@@ -81,7 +124,15 @@ public class SuggestionsController(ISuggestionService suggestionService) : Contr
         return ToActionResult(result, value => Ok(value));
     }
 
+    /// <summary>
+    /// Sets the current user's vote for a suggestion.
+    /// </summary>
     [HttpPut("{suggestionId:guid}/vote")]
+    [ProducesResponseType(typeof(VoteResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<ActionResult<VoteResponse>> Vote(
         Guid projectId,
         Guid suggestionId,
@@ -97,7 +148,14 @@ public class SuggestionsController(ISuggestionService suggestionService) : Contr
         return ToActionResult(result, value => Ok(value));
     }
 
+    /// <summary>
+    /// Removes the current user's vote from a suggestion.
+    /// </summary>
     [HttpDelete("{suggestionId:guid}/vote")]
+    [ProducesResponseType(typeof(VoteResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<ActionResult<VoteResponse>> RemoveVote(
         Guid projectId,
         Guid suggestionId,
@@ -124,30 +182,23 @@ public class SuggestionsController(ISuggestionService suggestionService) : Contr
         status switch
         {
             SuggestionOperationStatus.Forbidden => Forbid(),
-            SuggestionOperationStatus.ProjectNotFound => NotFound(CreateProblemDetails(
-                StatusCodes.Status404NotFound,
-                "Project not found.")),
-            SuggestionOperationStatus.SuggestionNotFound => NotFound(CreateProblemDetails(
-                StatusCodes.Status404NotFound,
-                "Suggestion not found.")),
-            SuggestionOperationStatus.UserNotFound => NotFound(CreateProblemDetails(
-                StatusCodes.Status404NotFound,
-                "User not found.")),
-            SuggestionOperationStatus.Conflict => Conflict(CreateProblemDetails(
-                StatusCodes.Status409Conflict,
-                "Suggestion operation conflicts with the current state.")),
-            SuggestionOperationStatus.InvalidRequest => BadRequest(CreateProblemDetails(
-                StatusCodes.Status400BadRequest,
-                "Suggestion request is invalid.")),
-            _ => BadRequest(CreateProblemDetails(
-                StatusCodes.Status400BadRequest,
-                "Suggestion operation failed."))
-        };
-
-    private static ProblemDetails CreateProblemDetails(int status, string title) =>
-        new()
-        {
-            Status = status,
-            Title = title
+            SuggestionOperationStatus.ProjectNotFound => Problem(
+                statusCode: StatusCodes.Status404NotFound,
+                title: "Project not found."),
+            SuggestionOperationStatus.SuggestionNotFound => Problem(
+                statusCode: StatusCodes.Status404NotFound,
+                title: "Suggestion not found."),
+            SuggestionOperationStatus.UserNotFound => Problem(
+                statusCode: StatusCodes.Status404NotFound,
+                title: "User not found."),
+            SuggestionOperationStatus.Conflict => Problem(
+                statusCode: StatusCodes.Status409Conflict,
+                title: "Suggestion operation conflicts with the current state."),
+            SuggestionOperationStatus.InvalidRequest => Problem(
+                statusCode: StatusCodes.Status400BadRequest,
+                title: "Suggestion request is invalid."),
+            _ => Problem(
+                statusCode: StatusCodes.Status400BadRequest,
+                title: "Suggestion operation failed.")
         };
 }

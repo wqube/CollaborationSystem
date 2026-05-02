@@ -8,6 +8,9 @@ using Microsoft.Extensions.Configuration;
 
 namespace CollaborationSystem.Api.Controllers;
 
+/// <summary>
+/// Provides authentication endpoints for development users.
+/// </summary>
 [ApiController]
 [Route("api/v1/auth")]
 public class AuthController(
@@ -19,7 +22,13 @@ public class AuthController(
     private const string DefaultRefreshTokenCookieName = "refreshToken";
     private const string DefaultRefreshTokenCookiePath = "/api/v1/auth";
 
+    /// <summary>
+    /// Signs in a development user and sets a refresh token cookie.
+    /// </summary>
     [HttpPost("login")]
+    [ProducesResponseType(typeof(AuthResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<AuthResponse>> Login(
         [FromBody] LoginRequest request,
         CancellationToken cancellationToken)
@@ -48,7 +57,12 @@ public class AuthController(
         return Ok(response);
     }
 
+    /// <summary>
+    /// Rotates the refresh token cookie and returns a new access token.
+    /// </summary>
     [HttpPost("refresh")]
+    [ProducesResponseType(typeof(RefreshResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<RefreshResponse>> Refresh(CancellationToken cancellationToken)
     {
         if (!Request.Cookies.TryGetValue(GetRefreshTokenCookieName(), out var refreshToken) ||
@@ -83,7 +97,11 @@ public class AuthController(
         });
     }
 
+    /// <summary>
+    /// Revokes the current refresh session and clears the refresh token cookie.
+    /// </summary>
     [HttpPost("logout")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IActionResult> Logout(CancellationToken cancellationToken)
     {
         if (Request.Cookies.TryGetValue(GetRefreshTokenCookieName(), out var refreshToken) &&
