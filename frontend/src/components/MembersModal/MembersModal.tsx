@@ -1,16 +1,14 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Modal } from '../ui/Modal/Modal';
 import { Button } from '../ui/Button/Button';
-import styles from '../MembersModal/MembersModal.module.css';
 import { Badge } from '../ui/Badge/Badge';
-
-interface Member {
-  userId: string;
-  displayName: string;
-  email: string;
-  role: 'Admin' | 'Member';
-  joinedAt: string;
-}
+import apiClient from '../../shared/api/client';
+import type {
+  ProjectDetails,
+  ProjectMemberDto,
+  ProjectRole,
+} from '../../types/api';
+import styles from '../MembersModal/MembersModal.module.css';
 
 interface MembersModalProps {
   open: boolean;
@@ -18,48 +16,74 @@ interface MembersModalProps {
   projectId: string;
 }
 
-const mockMembers: Member[] = [
-  {
-    userId: '1',
-    displayName: 'Иван Петров',
-    email: 'ivan@example.local',
-    role: 'Admin',
-    joinedAt: '2026-04-01',
-  },
-  {
-    userId: '2',
-    displayName: 'Мария Сидорова',
-    email: 'maria@example.local',
-    role: 'Member',
-    joinedAt: '2026-03-15',
-  },
-  {
-    userId: '3',
-    displayName: 'Анна Соколова',
-    email: 'anna@example.local',
-    role: 'Member',
-    joinedAt: '2026-04-09',
-  },
-];
-
 export function MembersModal({ open, onClose, projectId }: MembersModalProps) {
-  const [members, setMembers] = useState<Member[]>(mockMembers);
+  const [members, setMembers] = useState<ProjectMemberDto[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [searchUser, setSearchUser] = useState('');
+  const [newRole, setNewRole] = useState<ProjectRole>('Member');
 
-  const handleAddMember = () => {
-    // TODO: POST /api/v1/projects/{projectId}/members
-    alert('Add member: ' + searchUser);
+  // Загрузка участников при открытии
+  useEffect(() => {
+    if (!open || !projectId) return;
+
+    setLoading(true);
+    setError(null);
+
+    apiClient
+      .get<ProjectDetails>(`/projects/${projectId}`)
+      .then((res) => {
+        setMembers(res.data.members || []);
+      })
+      .catch(() => setError('Не удалось загрузить участников'))
+      .finally(() => setLoading(false));
+  }, [open, projectId]);
+
+  const handleAddMember = async () => {
+    if (!searchUser.trim()) return;
+
+    try {
+      setError(null);
+      await apiClient.post(`/projects/${projectId}/members`, {
+        userId: searchUser,
+        role: newRole,
+      });
+      const res = await apiClient.get(`/projects/${projectId}`);
+      setMembers(res.data.members || []);
+      setSearchUser('');
+    } catch {
+      setError('Не удалось добавить участника');
+    }
   };
 
-  const handleChangeRole = (userId: string, newRole: 'Admin' | 'Member') => {
-    setMembers((prev) =>
-      prev.map((m) => (m.userId === userId ? { ...m, role: newRole } : m)),
-    );
+  const handleChangeRole = async (userId: string, role: ProjectRole) => {
+    try {
+      await apiClient.patch(`/projects/${projectId}/members/${userId}`, {
+        role,
+      });
+      setMembers((prev) =>
+        prev.map((m) => (m.userId === userId ? { ...m, role } : m)),
+      );
+    } catch {
+      setError('Не удалось изменить роль');
+    }
   };
 
-  const handleRemoveMember = (userId: string) => {
-    setMembers((prev) => prev.filter((m) => m.userId !== userId));
+  const handleRemoveMember = async (userId: string) => {
+    try {
+      await apiClient.delete(`/projects/${projectId}/members/${userId}`);
+      setMembers((prev) => prev.filter((m) => m.userId !== userId));
+    } catch {
+      setError('Не удалось удалить участника');
+    }
   };
+
+  const formatDate = (iso: string) =>
+    new Date(iso).toLocaleDateString('ru-RU', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    });
 
   return (
     <Modal isOpen={open} onClose={onClose} title="Участники проекта" size="lg">
@@ -74,15 +98,22 @@ export function MembersModal({ open, onClose, projectId }: MembersModalProps) {
               onChange={(e) => setSearchUser(e.target.value)}
               className={styles.searchInput}
             />
-            <select className={styles.roleSelect}>
-              <option>Member</option>
-              <option>Admin</option>
+            <select
+              className={styles.roleSelect}
+              value={newRole}
+              onChange={(e) => setNewRole(e.target.value as ProjectRole)}
+            >
+              <option value="Member">Member</option>
+              <option value="Admin">Admin</option>
             </select>
             <Button variant="primary" onClick={handleAddMember}>
               Добавить
             </Button>
           </div>
         </div>
+
+        {error && <p className={styles.errorText}>{error}</p>}
+        {loading && <p>Загрузка...</p>}
 
         <hr />
 
@@ -101,7 +132,7 @@ export function MembersModal({ open, onClose, projectId }: MembersModalProps) {
                   <strong>{member.displayName}</strong>
                   <span className={styles.email}>{member.email}</span>
                   <span className={styles.joined}>
-                    Присоединился: {member.joinedAt}
+                    Присоединился: {formatDate(member.joinedAt)}
                   </span>
                 </div>
               </div>
@@ -112,13 +143,13 @@ export function MembersModal({ open, onClose, projectId }: MembersModalProps) {
                   onChange={(e) =>
                     handleChangeRole(
                       member.userId,
-                      e.target.value as 'Admin' | 'Member',
+                      e.target.value as ProjectRole,
                     )
                   }
                   className={styles.roleSelectSm}
                 >
-                  <option>Admin</option>
-                  <option>Member</option>
+                  <option value="Admin">Admin</option>
+                  <option value="Member">Member</option>
                 </select>
                 <button
                   className={styles.removeBtn}
@@ -129,6 +160,9 @@ export function MembersModal({ open, onClose, projectId }: MembersModalProps) {
               </div>
             </div>
           ))}
+          {!loading && members.length === 0 && (
+            <p className={styles.emptyText}>Нет участников</p>
+          )}
         </div>
       </div>
     </Modal>

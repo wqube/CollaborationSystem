@@ -92,3 +92,7 @@
   display: flex;
   gap: 12px;
 }
+
+.topBar {
+  margin-bottom: 24px;
+}

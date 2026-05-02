@@ -1,122 +1,58 @@
-/* .voteBtn {
+.voteBtn {
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: 8px;
-  border: 1px solid var(--border);
+  border: 1px solid #e0e0e0;
   background: white;
   font-weight: 700;
   cursor: pointer;
   transition: all 0.2s;
-  color: var(--black);
+  color: #1a1a1a;
 }
 
 .voteBtn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
-}
-
-.sm {
-  width: 28px;
-  height: 28px;
-  font-size: 16px;
-}
-
-.md {
-  width: 36px;
-  height: 36px;
-  font-size: 20px;
-}
-
-.lg {
-  width: 48px;
-  height: 48px;
-  font-size: 28px;
-}
-
-.voteBtn:hover:not(:disabled):not(.active-up):not(.active-down) {
-  background: var(--light-gray);
-}
-
-.active-up {
-  background: var(--green);
-  color: white;
-  border-color: var(--green);
-}
-
-.active-up:hover:not(:disabled) {
-  background: #008f59;
-}
-
-.active-down {
-  background: var(--red);
-  color: white;
-  border-color: var(--red);
-}
-
-.active-down:hover:not(:disabled) {
-  background: #c41030;
-} */
-
-.voteBtn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: transparent;
-  border: 2px solid transparent;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.15s ease-in-out;
-  padding: 0;
-  color: #6b7280; /* gray-500 */
-}
-
-.voteBtn:hover:not(:disabled) {
-  color: #374151; /* gray-700 */
-  background: #f3f4f6; /* gray-100 */
-}
-
-.voteBtn:active:not(:disabled) {
-  transform: scale(0.95);
-}
-
-.voteBtn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.voteBtn.active {
-  color: #2563eb; /* blue-600 */
-  border-color: #2563eb;
-  background: #eff6ff; /* blue-50 */
-}
-
-.voteBtn.active:hover:not(:disabled) {
-  background: #dbeafe; /* blue-100 */
 }
 
 /* Размер sm — для таблиц и списков */
 .sm {
   width: 28px;
   height: 28px;
-}
-
-.sm .icon {
-  width: 14px;
-  height: 14px;
+  font-size: 16px;
 }
 
 /* Размер lg — для детальной страницы */
 .lg {
   width: 48px;
   height: 48px;
+  font-size: 28px;
 }
 
-.lg .icon {
-  width: 24px;
-  height: 24px;
+/* Hover на неактивных кнопках */
+.voteBtn:hover:not(:disabled):not(.active-up):not(.active-down) {
+  background: #f5f5f5;
 }
 
-.icon {
-  pointer-events: none;
+/* Активная ЗА (зелёная) */
+.active-up {
+  background: #00a86b;
+  color: white;
+  border-color: #00a86b;
+}
+
+.active-up:hover:not(:disabled) {
+  background: #008f59;
+}
+
+/* Активная ПРОТИВ (красная) */
+.active-down {
+  background: #e31c3d;
+  color: white;
+  border-color: #e31c3d;
+}
+
+.active-down:hover:not(:disabled) {
+  background: #c41030;
 }

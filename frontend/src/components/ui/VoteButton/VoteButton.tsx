@@ -25,42 +25,21 @@ export const VoteButton = ({
     }
   };
 
+  const activeClass = active
+    ? type === 'up'
+      ? 'active-up'
+      : 'active-down'
+    : '';
+
   return (
     <button
       type="button"
-      className={`${styles.voteBtn} ${styles[size]} ${active ? styles.active : ''} ${className}`}
+      className={`${styles.voteBtn} ${styles[size]} ${activeClass ? styles[activeClass] : ''} ${className}`}
       onClick={handleClick}
       disabled={disabled}
-      aria-label={
-        type === 'up' ? 'Голос за предложение' : 'Голос против предложения'
-      }
-      aria-pressed={active}
+      aria-label={type === 'up' ? 'Голосовать за' : 'Голосовать против'}
     >
-      {type === 'up' ? (
-        <svg
-          className={styles.icon}
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <path d="M12 19V5M5 12l7-7 7 7" />
-        </svg>
-      ) : (
-        <svg
-          className={styles.icon}
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <path d="M12 5v14M5 12l7 7 7-7" />
-        </svg>
-      )}
+      {type === 'up' ? '+' : '−'}
     </button>
   );
 };
