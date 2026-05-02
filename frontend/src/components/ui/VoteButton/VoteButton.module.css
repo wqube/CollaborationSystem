@@ -1,4 +1,4 @@
-.voteBtn {
+/* .voteBtn {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -16,7 +16,6 @@
   cursor: not-allowed;
 }
 
-/* Sizes */
 .sm {
   width: 28px;
   height: 28px;
@@ -35,12 +34,10 @@
   font-size: 28px;
 }
 
-/* Hover states */
 .voteBtn:hover:not(:disabled):not(.active-up):not(.active-down) {
   background: var(--light-gray);
 }
 
-/* Active states */
 .active-up {
   background: var(--green);
   color: white;
@@ -59,4 +56,67 @@
 
 .active-down:hover:not(:disabled) {
   background: #c41030;
+} */
+
+.voteBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 2px solid transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease-in-out;
+  padding: 0;
+  color: #6b7280; /* gray-500 */
+}
+
+.voteBtn:hover:not(:disabled) {
+  color: #374151; /* gray-700 */
+  background: #f3f4f6; /* gray-100 */
+}
+
+.voteBtn:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+.voteBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.voteBtn.active {
+  color: #2563eb; /* blue-600 */
+  border-color: #2563eb;
+  background: #eff6ff; /* blue-50 */
+}
+
+.voteBtn.active:hover:not(:disabled) {
+  background: #dbeafe; /* blue-100 */
+}
+
+/* Размер sm — для таблиц и списков */
+.sm {
+  width: 28px;
+  height: 28px;
+}
+
+.sm .icon {
+  width: 14px;
+  height: 14px;
+}
+
+/* Размер lg — для детальной страницы */
+.lg {
+  width: 48px;
+  height: 48px;
+}
+
+.lg .icon {
+  width: 24px;
+  height: 24px;
+}
+
+.icon {
+  pointer-events: none;
 }

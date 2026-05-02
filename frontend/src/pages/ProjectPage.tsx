@@ -49,7 +49,7 @@ export function ProjectPage() {
     setError(null);
 
     try {
-      const data = await getDashboard(projectId, { status });
+      const data = await getDashboard(projectId, { status, pageSize: 5 });
 
       setProject(data.project);
       setSuggestions(data.suggestions.items);
@@ -187,7 +187,7 @@ export function ProjectPage() {
         onClose={() => setSuggestionModalOpen(false)}
         onSuccess={() => {
           setSuggestionModalOpen(false);
-          // fetchDashboard(activeTab);
+          fetchDashboard(activeTab);
         }}
         projectId={projectId!}
         draftId={draftId}

@@ -1,36 +1,66 @@
-//Кнопка голосования Up/Down
-import React from 'react';
 import styles from './VoteButton.module.css';
 
-export type VoteType = 'up' | 'down';
-
-interface VoteButtonProps {
-  type: VoteType;
+export interface VoteButtonProps {
+  type: 'up' | 'down';
+  size?: 'sm' | 'lg';
   active?: boolean;
   onClick?: () => void;
   disabled?: boolean;
-  size?: 'sm' | 'md' | 'lg';
+  className?: string;
 }
 
-export const VoteButton: React.FC<VoteButtonProps> = ({
+export const VoteButton = ({
   type,
+  size = 'sm',
   active = false,
   onClick,
   disabled = false,
-  size = 'md',
-}) => {
+  className = '',
+}: VoteButtonProps) => {
+  const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!disabled && onClick) {
+      onClick();
+    }
+  };
+
   return (
     <button
-      className={`
-        ${styles.voteBtn} 
-        ${styles[size]} 
-        ${active ? styles[`active-${type}`] : ''}
-      `}
-      onClick={onClick}
+      type="button"
+      className={`${styles.voteBtn} ${styles[size]} ${active ? styles.active : ''} ${className}`}
+      onClick={handleClick}
       disabled={disabled}
-      aria-label={type === 'up' ? 'Голосовать за' : 'Голосовать против'}
+      aria-label={
+        type === 'up' ? 'Голос за предложение' : 'Голос против предложения'
+      }
+      aria-pressed={active}
     >
-      {type === 'up' ? '+' : '−'}
+      {type === 'up' ? (
+        <svg
+          className={styles.icon}
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="M12 19V5M5 12l7-7 7 7" />
+        </svg>
+      ) : (
+        <svg
+          className={styles.icon}
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="M12 5v14M5 12l7 7 7-7" />
+        </svg>
+      )}
     </button>
   );
 };

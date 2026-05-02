@@ -144,10 +144,10 @@ export function CreateSuggestionModal({
   };
 
   const saveStatusLabel: Record<SaveStatus, string> = {
-    idle: '[*] Черновик сохраняется автоматически',
-    saving: '[*] Сохранение...',
-    saved: '[*] Черновик сохранён',
-    error: '[!] Не удалось сохранить черновик',
+    idle: 'Черновик сохраняется автоматически',
+    saving: 'Сохранение...',
+    saved: 'Черновик сохранён',
+    error: '! Не удалось сохранить черновик !',
   };
 
   return (
