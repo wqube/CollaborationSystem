@@ -10,21 +10,21 @@ export const createComment = async (
   suggestionId: string,
   data: CreateCommentRequest,
 ): Promise<CommentDto> => {
-  const responce = await apiClient.post<CommentDto>(
+  const response = await apiClient.post<CommentDto>(
     `/projects/${projectId}/suggestions/${suggestionId}/comments`,
     data,
   );
-  return responce.data;
+  return response.data;
 };
 
 export const getComments = async (
   projectId: string,
   suggestionId: string,
 ): Promise<CommentDto[]> => {
-  const responce = await apiClient.get<CommentDto[]>(
+  const response = await apiClient.get<CommentDto[]>(
     `/projects/${projectId}/suggestions/${suggestionId}/comments`,
   );
-  return responce.data;
+  return response.data;
 };
 
 export const updateComment = async (
@@ -32,11 +32,11 @@ export const updateComment = async (
   commentId: string,
   data: UpdateCommentRequest,
 ): Promise<CommentDto> => {
-  const responce = await apiClient.patch<CommentDto>(
+  const response = await apiClient.patch<CommentDto>(
     `/projects/${projectId}/comments/${commentId}`,
     data,
   );
-  return responce.data;
+  return response.data;
 };
 
 export const deleteComment = async (

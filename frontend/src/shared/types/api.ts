@@ -1,4 +1,4 @@
-export interface AuthResponce {
+export interface AuthResponse {
   accessToken: string;
   expiresIn: number;
   user: {
@@ -8,7 +8,7 @@ export interface AuthResponce {
   };
 }
 
-export interface refreshResponce {
+export interface refreshResponse {
   accessToken: string;
   expiresIn: number;
 }

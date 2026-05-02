@@ -73,7 +73,7 @@ export interface ProjectDetails {
   description: string;
   createdByUserId: string;
   createdAt: string;
-  members: ProjectMemberDto;
+  members: ProjectMemberDto[];
 }
 
 export interface CommentDto {

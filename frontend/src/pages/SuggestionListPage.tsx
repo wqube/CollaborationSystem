@@ -43,7 +43,7 @@ export function SuggestionListPage() {
         page,
         pageSize: PAGE_SIZE,
       });
-      setSuggestions(responce.item);
+      setSuggestions(responce.items);
       setTotal(responce.total);
     } catch {
       setError('Ошибка загрузки предложений');
