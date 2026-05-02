@@ -1,7 +1,13 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Modal } from '../ui/Modal/Modal';
 import { Button } from '../ui/Button/Button';
-import apiClient from '../../shared/api/client';
+import {
+  saveSuggestionDraft,
+  getProjectDrafts,
+  deleteDraft,
+  findDraftById,
+} from '../../shared/api/drafts';
+import { createSuggestion } from '../../shared/api/suggestions';
 import styles from '../CreateSuggestionModal/CreateSuggestionModal.module.css';
 
 interface CreateSuggestionModalProps {
@@ -9,12 +15,10 @@ interface CreateSuggestionModalProps {
   onClose: () => void;
   onSuccess: () => void;
   projectId: string;
-  // Если передан draftId — загружаем существующий черновик
   draftId?: string;
 }
 
 type SaveStatus = 'idle' | 'saving' | 'saved' | 'error';
-
 const AUTOSAVE_DELAY_MS = 1500;
 
 export function CreateSuggestionModal({
@@ -29,30 +33,28 @@ export function CreateSuggestionModal({
   const [error, setError] = useState('');
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
 
-  // draftId может появиться после первого автосохранения
   const draftIdRef = useRef<string | null>(initialDraftId ?? null);
   const autosaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Загружаем черновик если он передан
+  // Загрузка черновика при открытии
   useEffect(() => {
     if (!open || !initialDraftId) return;
 
-    apiClient
-      .get(`/projects/${projectId}/drafts`)
-      .then((res) => {
-        const draft = res.data.items?.find(
-          (d: { id: string }) => d.id === initialDraftId,
-        );
-        if (draft?.payload?.text) {
+    const loadDraft = async () => {
+      try {
+        const response = await getProjectDrafts(projectId);
+        const draft = findDraftById(response.items, initialDraftId);
+        if (draft?.type === 'Suggestion' && draft.payload.text) {
           setText(draft.payload.text);
         }
-      })
-      .catch(() => {
-        // Черновик не найден — начинаем с пустого поля
-      });
+      } catch {
+        // Черновик не найден, чистое поле
+      }
+    };
+    loadDraft();
   }, [open, initialDraftId, projectId]);
 
-  // Сбрасываем состояние при закрытии
+  // Сброс состояние при закрытии
   useEffect(() => {
     if (!open) {
       setText('');
@@ -65,6 +67,7 @@ export function CreateSuggestionModal({
     }
   }, [open, initialDraftId]);
 
+  // Сохранение черновика
   const saveDraft = useCallback(
     async (value: string) => {
       if (!value.trim()) return;
@@ -76,10 +79,7 @@ export function CreateSuggestionModal({
       draftIdRef.current = draftId;
 
       try {
-        await apiClient.put(
-          `/projects/${projectId}/drafts/suggestion/${draftId}`,
-          { text: value },
-        );
+        await saveSuggestionDraft(projectId, draftId, { text: value });
         setSaveStatus('saved');
       } catch {
         setSaveStatus('error');
@@ -102,6 +102,7 @@ export function CreateSuggestionModal({
     }, AUTOSAVE_DELAY_MS);
   };
 
+  // Сохранение и закрытие
   const handleSaveDraftAndClose = async () => {
     // Отменяем pending автосохранение и сохраняем сразу
     if (autosaveTimerRef.current) {
@@ -111,6 +112,7 @@ export function CreateSuggestionModal({
     onClose();
   };
 
+  // Публикация предложения
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!text.trim()) {
@@ -122,17 +124,14 @@ export function CreateSuggestionModal({
       setLoading(true);
       setError('');
 
-      await apiClient.post(`/projects/${projectId}/suggestions`, {
-        text: text.trim(),
-      });
+      // Создание предложения
+      await createSuggestion(projectId, { text: text.trim() });
 
       // Удаляем черновик после успешной публикации
       if (draftIdRef.current) {
-        await apiClient
-          .delete(`/projects/${projectId}/drafts/${draftIdRef.current}`)
-          .catch(() => {
-            // Не критично если не удалился
-          });
+        await deleteDraft(projectId, draftIdRef.current).catch(() => {
+          // Не критично, если не удалился
+        });
       }
 
       onSuccess();
