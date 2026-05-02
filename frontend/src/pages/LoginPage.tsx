@@ -36,7 +36,7 @@ export function LoginPage() {
       <div className={styles.login_container}>
         <div className={styles.login_card}>
           <div className={styles.login_logo}>
-            <img src={`/public/T-bank-logo.png`} width={64} height={64} />
+            <img src="/T-Bank-Logo.png" width={64} height={64} />
           </div>
           <h1 className={styles.login_title}>Вход в систему</h1>
           <p className={styles.login_subtitle}>Управление идеями команды</p>

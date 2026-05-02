@@ -1,5 +1,5 @@
-import styles from './Header.module.css';
 import { useNavigate } from 'react-router-dom';
+import styles from './Header.module.css';
 import { userAppSelector } from '../../shared/store/hooks';
 
 export function Header() {
@@ -23,9 +23,10 @@ export function Header() {
   return (
     <header className={styles.app_header}>
       <div className={styles.logo} onClick={() => navigate('/projects')}>
-        <img src={`/public/T-bank-logo.png`} width={36} height={36} />
+        <img src="/T-Bank-Logo.png" width={36} height={36} alt="Лого" />
         <span>Система совместной работы</span>
       </div>
+
       <div className={styles.user}>
         <span
           className={styles.text_small}

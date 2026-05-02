@@ -92,6 +92,14 @@ export function DraftsPage() {
 
   return (
     <div className={styles.page}>
+      <div className={styles.topBar}>
+        <Button
+          variant="outline"
+          onClick={() => navigate(`/projects/${projectId}`)}
+        >
+          ← Назад к доске
+        </Button>
+      </div>
       <h1>Черновики</h1>
 
       <div className={styles.tabs}>

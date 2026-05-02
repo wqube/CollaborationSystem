@@ -15,6 +15,12 @@
   font-weight: 700;
   font-size: 20px;
   cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.logo span {
+  white-space: nowrap;
 }
 
 .logo_icon {
@@ -33,6 +39,7 @@
   display: flex;
   cursor: pointer;
   align-items: center;
+  flex-shrink: 0;
 }
 .user_avatar {
   width: 40px;
@@ -49,4 +56,10 @@
 .text_small {
   font-size: 13px;
   color: var(--t-gray);
+}
+
+.left {
+  display: flex;
+  align-items: center;
+  gap: 20px;
 }

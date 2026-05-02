@@ -9,6 +9,8 @@ import { SettingsModal } from '../components/SettingsModal/SettingsModal';
 import { MembersModal } from '../components/MembersModal/MembersModal';
 import styles from '../assets/ProjectPage.module.css';
 import { getDashboard } from '../shared/api/dashboard';
+import { useAppDispatcher, userAppSelector } from '../shared/store/hooks';
+import { fetchProjects } from '../shared/store/projectsSlice';
 import type {
   ProjectSummary,
   SuggestionStatus,
@@ -31,6 +33,9 @@ export function ProjectPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const draftId = searchParams.get('draftId') ?? undefined;
+
+  const dispatch = useAppDispatcher();
+  const { list: projects } = userAppSelector((state) => state.projects);
 
   const [activeTab, setActiveTab] = useState<SuggestionStatus>('New');
   const [suggestions, setSuggestions] = useState<SuggestionSummary[]>([]);
@@ -61,6 +66,12 @@ export function ProjectPage() {
   };
 
   useEffect(() => {
+    if (projects.length === 0) {
+      dispatch(fetchProjects());
+    }
+  }, [dispatch, projects.length]);
+
+  useEffect(() => {
     fetchDashboard(activeTab);
   }, [projectId, activeTab]);
 
@@ -77,6 +88,26 @@ export function ProjectPage() {
 
   return (
     <div className={styles.page}>
+      <div className={styles.projectBar}>
+        <select
+          className={styles.projectSelect}
+          value={projectId}
+          onChange={(e) => {
+            const newId = e.target.value;
+            if (newId) {
+              navigate(`/projects/${newId}`);
+            }
+          }}
+        >
+          <option value="">Выберите проект</option>
+          {projects.map((p) => (
+            <option key={p.id} value={p.id}>
+              {p.name}
+            </option>
+          ))}
+        </select>
+      </div>
+
       <div className={styles.header}>
         <Tabs tabs={TABS} activeTab={activeTab} onChange={handleTabChange} />
         <div className={styles.actions}>
