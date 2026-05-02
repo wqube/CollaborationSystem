@@ -18,22 +18,28 @@ public sealed class ProjectService(
     {
         var currentUserId = currentUserService.GetRequiredUserId();
 
-        var projectIdsQuery = dbContext.ProjectMembers
+        var projectMembershipsQuery = dbContext.ProjectMembers
             .AsNoTracking()
             .Where(x => x.UserId == currentUserId)
-            .Select(x => x.ProjectId);
+            .Where(x => x.Project != null);
 
-        var projectsQuery = dbContext.Projects
-            .AsNoTracking()
-            .Where(x => projectIdsQuery.Contains(x.Id));
-
-        var total = await projectsQuery.CountAsync(cancellationToken);
-        var items = await projectsQuery
-            .OrderByDescending(x => x.UpdatedAtUtc)
-            .ThenBy(x => x.Name)
+        var total = await projectMembershipsQuery.CountAsync(cancellationToken);
+        var items = await projectMembershipsQuery
+            .OrderByDescending(x => x.Project!.UpdatedAtUtc)
+            .ThenBy(x => x.Project!.Name)
             .Skip((query.Page - 1) * query.PageSize)
             .Take(query.PageSize)
-            .Select(ToProjectSummaryExpression())
+            .Select(x => new ProjectSummaryResponse
+            {
+                Id = x.Project!.Id,
+                Name = x.Project.Name,
+                Description = x.Project.Description,
+                Role = x.Role,
+                LastAccessedAt = x.Project.UpdatedAtUtc,
+                CreatedByUserId = x.Project.CreatedByUserId,
+                CreatedAtUtc = x.Project.CreatedAtUtc,
+                UpdatedAtUtc = x.Project.UpdatedAtUtc
+            })
             .ToListAsync(cancellationToken);
 
         return new PagedResponse<ProjectSummaryResponse>
@@ -214,6 +220,8 @@ public sealed class ProjectService(
             Id = project.Id,
             Name = project.Name,
             Description = project.Description,
+            Role = ProjectRole.Admin,
+            LastAccessedAt = project.UpdatedAtUtc,
             CreatedByUserId = project.CreatedByUserId,
             CreatedAtUtc = project.CreatedAtUtc,
             UpdatedAtUtc = project.UpdatedAtUtc
@@ -266,6 +274,7 @@ public sealed class ProjectService(
             Id = x.Id,
             Name = x.Name,
             Description = x.Description,
+            LastAccessedAt = x.UpdatedAtUtc,
             CreatedByUserId = x.CreatedByUserId,
             CreatedAtUtc = x.CreatedAtUtc,
             UpdatedAtUtc = x.UpdatedAtUtc
