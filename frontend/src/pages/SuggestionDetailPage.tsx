@@ -4,6 +4,7 @@ import { Button } from '../components/ui/Button/Button';
 import { SuggestionHeader } from '../components/SuggestionDetailPage/SuggestionHeader';
 import { VotePanel } from '../components/SuggestionDetailPage/VotePanel';
 import { CommentsSection } from '../components/SuggestionDetailPage/CommentsSection';
+import { useLocation } from 'react-router-dom';
 import {
   getSuggestionDetails,
   updateSuggestionStatus,
@@ -22,6 +23,7 @@ import type {
   CommentNode,
   SuggestionStatus,
   VoteType,
+  ProjectRole,
 } from '../types/api';
 import styles from '../assets/SuggestionDetailPage.module.css';
 
@@ -62,12 +64,20 @@ export function SuggestionDetailPage() {
     suggestionId: string;
   }>();
   const navigate = useNavigate();
+  const location = useLocation();
 
   // Состояния данных
   const [detail, setDetail] = useState<SuggestionDetails | null>(null);
   const [commentTree, setCommentTree] = useState<CommentNode[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const userRoleFromState = location.state as
+    | { userRole?: ProjectRole }
+    | undefined;
+  const [userRole, _setUserRole] = useState<ProjectRole>(
+    userRoleFromState?.userRole ?? 'Member',
+  );
 
   // UI состояния для комментариев
   const [replyingToId, setReplyingToId] = useState<string | null>(null);
@@ -205,6 +215,7 @@ export function SuggestionDetailPage() {
           {/* Заголовок с предложением */}
           <SuggestionHeader
             detail={detail}
+            userRole={userRole}
             onStatusChange={handleStatusChange}
           />
 

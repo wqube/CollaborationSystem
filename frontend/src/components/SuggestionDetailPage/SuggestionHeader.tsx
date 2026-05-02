@@ -1,9 +1,14 @@
 import { Badge } from '../ui/Badge/Badge';
-import type { SuggestionDetails, SuggestionStatus } from '../../types/api';
+import type {
+  ProjectRole,
+  SuggestionDetails,
+  SuggestionStatus,
+} from '../../types/api';
 import styles from '../../assets/SuggestionDetailPage.module.css';
 
 interface SuggestionHeaderProps {
   detail: SuggestionDetails;
+  userRole: ProjectRole;
   onStatusChange: (status: SuggestionStatus) => void;
 }
 
@@ -31,8 +36,11 @@ const getBadgeVariant = (s: SuggestionStatus) => {
 
 export function SuggestionHeader({
   detail,
+  userRole,
   onStatusChange,
 }: SuggestionHeaderProps) {
+  const isAdmin = userRole === 'Admin';
+
   return (
     <div className={styles.card}>
       <div className={styles.top}>
@@ -49,15 +57,13 @@ export function SuggestionHeader({
           className={styles.statusSelect}
           value={detail.status}
           onChange={(e) => onStatusChange(e.target.value as SuggestionStatus)}
-          // !!!!!!!!!!!!!!! Вернуть проверку прав, когда бэкенд починят !!!!!!!!!!!!!!!
           // Только администраторы могут менять статус (предполагаем, что эта информация есть в project.role)
-          // disabled={projectRole !== 'Admin'}
-          // title={
-          //   projectRole !== 'Admin'
-          //     ? 'Только администраторы могут менять статус'
-          //     : ''
-          // }
-          title="Изменить статус"
+          disabled={!isAdmin}
+          title={
+            !isAdmin
+              ? 'Только администраторы могут менять статус'
+              : 'Изменить статус'
+          }
         >
           <option value="New">New</option>
           <option value="InProgress">InProgress</option>
