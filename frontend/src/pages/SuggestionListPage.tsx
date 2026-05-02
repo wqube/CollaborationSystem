@@ -11,12 +11,13 @@ import type {
 } from '../types/api';
 import styles from '../assets/SuggestionListPage.module.css';
 import { useCallback, useEffect, useState } from 'react';
+import { CreateSuggestionButton } from '../components/CreateSuggestionButton/CreateSuggestionButton';
 
 const PAGE_SIZE = 10;
 
 export function SuggestionListPage() {
-  const { projectId } = useParams<{ projectId: string }>();
   const navigate = useNavigate();
+  const { projectId } = useParams<{ projectId: string }>();
 
   const [suggestions, setSuggestions] = useState<SuggestionSummary[]>([]);
   const [loading, setLoading] = useState(true);
@@ -90,9 +91,13 @@ export function SuggestionListPage() {
           >
             Назад к доске
           </Button>
-          <Button variant="primary" onClick={() => alert('Open modal')}>
-            Предложить идею
-          </Button>
+
+          <CreateSuggestionButton
+            projectId={projectId!}
+            onRefresh={fetchSuggestions} // передаём функцию обновления списка
+            variant="primary"
+            buttonText="Предложить идею"
+          />
         </div>
       </div>
 

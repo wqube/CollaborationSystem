@@ -1,10 +1,9 @@
-import { useState, useEffect } from 'react';
-import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
+import { useState, useEffect, useCallback } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/Button/Button';
 import { Badge } from '../components/ui/Badge/Badge';
 import { Tabs, type TabItem } from '../components/ui/Tabs/Tabs';
 import { VoteButton } from '../components/ui/VoteButton/VoteButton';
-import { CreateSuggestionModal } from '../components/CreateSuggestionModal/CreateSuggestionModal';
 import { SettingsModal } from '../components/SettingsModal/SettingsModal';
 import { MembersModal } from '../components/MembersModal/MembersModal';
 import styles from '../assets/ProjectPage.module.css';
@@ -16,6 +15,7 @@ import type {
   SuggestionStatus,
   SuggestionSummary,
 } from '../types/api';
+import { CreateSuggestionButton } from '../components/CreateSuggestionButton/CreateSuggestionButton';
 
 export interface suggestionsPreviewInterface {
   suggestionsPreview: SuggestionSummary[];
@@ -31,8 +31,6 @@ const TABS: TabItem[] = [
 export function ProjectPage() {
   const { projectId } = useParams<{ projectId: string }>();
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const draftId = searchParams.get('draftId') ?? undefined;
 
   const dispatch = useAppDispatcher();
   const { list: projects } = userAppSelector((state) => state.projects);
@@ -43,27 +41,29 @@ export function ProjectPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const [suggestionModalOpen, setSuggestionModalOpen] = useState(!!draftId);
   const [settingsModalOpen, setSettingsModalOpen] = useState(false);
   const [membersModalOpen, setMembersModalOpen] = useState(false);
 
-  const fetchDashboard = async (status: SuggestionStatus) => {
-    if (!projectId) return;
+  const fetchDashboard = useCallback(
+    async (status: SuggestionStatus) => {
+      if (!projectId) return;
 
-    setLoading(true);
-    setError(null);
+      setLoading(true);
+      setError(null);
 
-    try {
-      const data = await getDashboard(projectId, { status, pageSize: 5 });
+      try {
+        const data = await getDashboard(projectId, { status, pageSize: 5 });
 
-      setProject(data.project);
-      setSuggestions(data.suggestions.items);
-    } catch {
-      setError('Не удалось загрузить данные проекта');
-    } finally {
-      setLoading(false);
-    }
-  };
+        setProject(data.project);
+        setSuggestions(data.suggestions.items);
+      } catch {
+        setError('Не удалось загрузить данные проекта');
+      } finally {
+        setLoading(false);
+      }
+    },
+    [projectId],
+  );
 
   useEffect(() => {
     if (projects.length === 0) {
@@ -117,18 +117,21 @@ export function ProjectPage() {
           >
             Черновики
           </Button>
+
           <Button variant="outline" onClick={() => setMembersModalOpen(true)}>
             Участники
           </Button>
+
           <Button variant="outline" onClick={() => setSettingsModalOpen(true)}>
             Настройки
           </Button>
-          <Button
+
+          <CreateSuggestionButton
+            projectId={projectId!}
+            onRefresh={() => fetchDashboard(activeTab)}
             variant="primary"
-            onClick={() => setSuggestionModalOpen(true)}
-          >
-            Предложить идею
-          </Button>
+            buttonText="Предложить идею"
+          />
         </div>
       </div>
 
@@ -160,7 +163,9 @@ export function ProjectPage() {
                   <tr
                     key={s.id}
                     onClick={() =>
-                      navigate(`/projects/${projectId}/suggestions/${s.id}`)
+                      navigate(`/projects/${projectId}/suggestions/${s.id}`, {
+                        state: { userRole: project?.role },
+                      })
                     }
                     className={styles.row}
                   >
@@ -213,16 +218,6 @@ export function ProjectPage() {
         </>
       )}
 
-      <CreateSuggestionModal
-        open={suggestionModalOpen}
-        onClose={() => setSuggestionModalOpen(false)}
-        onSuccess={() => {
-          setSuggestionModalOpen(false);
-          fetchDashboard(activeTab);
-        }}
-        projectId={projectId!}
-        draftId={draftId}
-      />
       <SettingsModal
         open={settingsModalOpen}
         onClose={() => setSettingsModalOpen(false)}
