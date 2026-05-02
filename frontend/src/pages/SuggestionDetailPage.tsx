@@ -70,8 +70,6 @@ export function SuggestionDetailPage() {
   const [error, setError] = useState<string | null>(null);
 
   // UI состояния для комментариев
-  const [mainText, setMainText] = useState('');
-  const [submittingMain, setSubmittingMain] = useState(false);
   const [replyingToId, setReplyingToId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
 
@@ -99,21 +97,17 @@ export function SuggestionDetailPage() {
   }, [fetchData]);
 
   // Хендлеры
-  const handleSendMain = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!mainText.trim() || !projectId || !suggestionId) return;
-    setSubmittingMain(true);
+  const handleSendMain = async (text: string): Promise<void> => {
+    if (!projectId || !suggestionId || !text.trim()) return;
+
     try {
       await createComment(projectId, suggestionId, {
-        text: mainText.trim(),
+        text: text.trim(),
         parentCommentId: null,
       });
-      setMainText('');
-      await fetchData();
+      // Черновик очистится внутри CommentsSection через useCommentDraft
     } catch {
       setError('Не удалось отправить комментарий');
-    } finally {
-      setSubmittingMain(false);
     }
   };
 
@@ -216,16 +210,17 @@ export function SuggestionDetailPage() {
 
           {/* Блок обсуждения */}
           <CommentsSection
+            projectId={projectId!}
+            suggestionId={suggestionId!}
             comments={commentTree}
-            mainText={mainText}
-            submittingMain={submittingMain}
             replyingToId={replyingToId}
             editingId={editingId}
-            onMainTextChange={(text) => setMainText(text)}
             onSendMain={handleSendMain}
+            onClearMainDraft={() => {}} // Больше не нужен, хук сам очищает
             onStartReply={(id) => setReplyingToId(id)}
             onCancelReply={() => setReplyingToId(null)}
             onSubmitReply={handleSubmitReply}
+            onClearReplyDraft={() => {}}
             onStartEdit={(id) => setEditingId(id)}
             onCancelEdit={() => setEditingId(null)}
             onSaveEdit={handleSaveEdit}

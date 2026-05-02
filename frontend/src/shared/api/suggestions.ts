@@ -6,6 +6,7 @@ import type {
   SuggestionSort,
   OrderSort,
   VoteType,
+  CreateSuggestionRequest,
 } from '../../types/api';
 
 export interface GetSuggestionsParams {
@@ -45,6 +46,17 @@ export const getSuggestions = async (
   const response = await apiClient.get<SuggestionResponse>(
     `/projects/${projectId}/suggestions`,
     { params },
+  );
+  return response.data;
+};
+
+export const createSuggestion = async (
+  projectId: string,
+  payload: CreateSuggestionRequest,
+): Promise<SuggestionSummary> => {
+  const response = await apiClient.post<SuggestionSummary>(
+    `/projects/${projectId}/suggestions`,
+    payload,
   );
   return response.data;
 };

@@ -1,15 +1,19 @@
 import { useState } from 'react';
 import { Button } from '../ui/Button/Button';
+import { useCommentDraft } from '../../hooks/useCommentDraft';
 import type { CommentNode } from '../../types/api';
 import styles from '../../assets/SuggestionDetailPage.module.css';
 
 interface CommentItemProps {
   comment: CommentNode;
+  projectId: string;
+  suggestionId: string;
   replyingToId: string | null;
   editingId: string | null;
   onStartReply: (id: string) => void;
   onCancelReply: () => void;
   onSubmitReply: (parentId: string, text: string) => Promise<void>;
+  onClearReplyDraft: () => void;
   onStartEdit: (id: string) => void;
   onCancelEdit: () => void;
   onSaveEdit: (id: string, text: string) => Promise<void>;
@@ -18,43 +22,42 @@ interface CommentItemProps {
 
 export function CommentItem({
   comment,
+  projectId,
+  suggestionId,
   replyingToId,
   editingId,
   onStartReply,
   onCancelReply,
   onSubmitReply,
+  onClearReplyDraft,
   onStartEdit,
   onCancelEdit,
   onSaveEdit,
   onDelete,
 }: CommentItemProps) {
-  const [replyText, setReplyText] = useState('');
   const [editText, setEditText] = useState(comment.text);
-  const [submittingReply, setSubmittingReply] = useState(false);
+  // const [isEditingLocal, setIsEditingLocal] = useState(false);
 
   const isReplying = replyingToId === comment.id;
   const isEditing = editingId === comment.id;
 
-  const handleReplySubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    if (!replyText.trim()) return;
+  // Хук для ответа на комментарий
+  const { draftText, saveStatus, statusLabel, handleTextChange, clearDraft } =
+    useCommentDraft(projectId, suggestionId, isReplying ? comment.id : null);
 
-    setSubmittingReply(true);
-    try {
-      // Вызываем пропс, который уже "знает" projectId и suggestionId
-      await onSubmitReply(comment.id, replyText.trim());
-      setReplyText('');
-    } catch (err) {
-      console.error('Ошибка при отправке ответа:', err);
-    } finally {
-      setSubmittingReply(false);
-    }
+  const handleReplySubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!draftText.trim()) return;
+    await onSubmitReply(comment.id, draftText.trim());
+    await clearDraft();
+    onClearReplyDraft();
   };
 
   const handleEditSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editText.trim() || editText === comment.text) return;
     await onSaveEdit(comment.id, editText.trim());
+    // setIsEditingLocal(false);
   };
 
   const formatDate = (iso: string) => new Date(iso).toLocaleDateString('ru-RU');
@@ -121,21 +124,25 @@ export function CommentItem({
       {isReplying && (
         <form onSubmit={handleReplySubmit} className={styles.replyForm}>
           <textarea
-            value={replyText}
-            onChange={(e) => setReplyText(e.target.value)}
+            value={draftText}
+            onChange={(e) => handleTextChange(e.target.value)}
             placeholder="Ваш ответ..."
             rows={2}
             autoFocus
             className={styles.commentInput}
+            disabled={saveStatus === 'saving'}
           />
           <div className={styles.replyActions}>
+            {statusLabel && (
+              <span className={styles.draftStatus}>{statusLabel}</span>
+            )}
             <Button
               type="submit"
               variant="primary"
               size="sm"
-              disabled={submittingReply || !replyText.trim()}
+              disabled={saveStatus === 'saving' || !draftText.trim()}
             >
-              {submittingReply ? 'Отправка...' : 'Ответить'}
+              {saveStatus === 'saving' ? 'Сохранение...' : 'Ответить'}
             </Button>
             <Button
               type="button"
@@ -155,11 +162,14 @@ export function CommentItem({
             <CommentItem
               key={reply.id}
               comment={reply}
+              projectId={projectId}
+              suggestionId={suggestionId}
               replyingToId={replyingToId}
               editingId={editingId}
               onStartReply={onStartReply}
               onCancelReply={onCancelReply}
               onSubmitReply={onSubmitReply}
+              onClearReplyDraft={onClearReplyDraft}
               onStartEdit={onStartEdit}
               onCancelEdit={onCancelEdit}
               onSaveEdit={onSaveEdit}
