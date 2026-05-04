@@ -20,8 +20,6 @@ export function ProfilePage() {
 
   return (
     <div className={styles.page}>
-      <h1>Профиль</h1>
-
       <div className={styles.card}>
         <div className={styles.profileHeader}>
           <div className={styles.avatar}>

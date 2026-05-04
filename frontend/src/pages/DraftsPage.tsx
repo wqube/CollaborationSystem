@@ -100,7 +100,6 @@ export function DraftsPage() {
           Назад к доске
         </Button>
       </div>
-      <h1>Черновики</h1>
 
       <div className={styles.tabs}>
         {(['all', 'Suggestion', 'Comment'] as const).map((tab) => (
