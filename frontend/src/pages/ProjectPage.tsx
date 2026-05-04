@@ -3,7 +3,6 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/Button/Button';
 import { Badge } from '../components/ui/Badge/Badge';
 import { Tabs, type TabItem } from '../components/ui/Tabs/Tabs';
-import { VoteButton } from '../components/ui/VoteButton/VoteButton';
 import { SettingsModal } from '../components/SettingsModal/SettingsModal';
 import { MembersModal } from '../components/MembersModal/MembersModal';
 import styles from '../assets/ProjectPage.module.css';
@@ -16,6 +15,7 @@ import type {
   SuggestionSummary,
 } from '../types/api';
 import { CreateSuggestionButton } from '../components/CreateSuggestionButton/CreateSuggestionButton';
+import { SuggestionVoteCell } from '../components/SuggestionVoteCell/SuggestionVoteCell';
 
 export interface suggestionsPreviewInterface {
   suggestionsPreview: SuggestionSummary[];
@@ -146,7 +146,7 @@ export function ProjectPage() {
                 <tr>
                   <th>Предложение</th>
                   <th>Автор</th>
-                  <th>Score</th>
+                  <th>Голоса</th>
                   <th>Дата</th>
                   <th>Статус</th>
                 </tr>
@@ -177,15 +177,20 @@ export function ProjectPage() {
                       </span>
                     </td>
                     <td>{s.author.displayName}</td>
-                    <td>
-                      <div
-                        className={styles.voteGroup}
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <VoteButton type="up" active={false} size="sm" />
-                        <span className={styles.score}>{s.score}</span>
-                        <VoteButton type="down" active={false} size="sm" />
-                      </div>
+                    <td onClick={(e) => e.stopPropagation()}>
+                      <SuggestionVoteCell
+                        projectId={projectId!}
+                        suggestion={s}
+                        onVoteSuccess={(id, newScore) => {
+                          setSuggestions((prev) =>
+                            prev.map((item) =>
+                              item.id === id
+                                ? { ...item, score: newScore }
+                                : item,
+                            ),
+                          );
+                        }}
+                      />
                     </td>
                     <td>{formatDate(s.createdAt)}</td>
                     <td>

@@ -1,7 +1,6 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/Button/Button';
 import { Badge } from '../components/ui/Badge/Badge';
-import { VoteButton } from '../components/ui/VoteButton/VoteButton';
 import { getSuggestions } from '../shared/api/suggestions';
 import type {
   SuggestionSummary,
@@ -12,6 +11,7 @@ import type {
 import styles from '../assets/SuggestionListPage.module.css';
 import { useCallback, useEffect, useState } from 'react';
 import { CreateSuggestionButton } from '../components/CreateSuggestionButton/CreateSuggestionButton';
+import { SuggestionVoteCell } from '../components/SuggestionVoteCell/SuggestionVoteCell';
 
 const PAGE_SIZE = 10;
 
@@ -189,14 +189,24 @@ export function SuggestionListPage() {
                       <strong>{s.text}</strong>
                     </td>
                     <td>{s.author?.displayName ?? '—'}</td>
-                    <td>
-                      <div
-                        className={styles.voteGroup}
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <VoteButton type="up" size="sm" />
-                      </div>
+
+                    <td onClick={(e) => e.stopPropagation()}>
+                      <SuggestionVoteCell
+                        projectId={projectId!}
+                        suggestion={s}
+                        onVoteSuccess={(id, newScore) => {
+                          // Обновляем локальный стейт списка
+                          setSuggestions((prev) =>
+                            prev.map((item) =>
+                              item.id === id
+                                ? { ...item, score: newScore }
+                                : item,
+                            ),
+                          );
+                        }}
+                      />
                     </td>
+
                     <td>{formatDate(s.createdAt)}</td>
                     <td>
                       <Badge variant={getBadgeVariant(s.status)} />

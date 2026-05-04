@@ -97,7 +97,7 @@ export function DraftsPage() {
           variant="outline"
           onClick={() => navigate(`/projects/${projectId}`)}
         >
-          ← Назад к доске
+          Назад к доске
         </Button>
       </div>
       <h1>Черновики</h1>

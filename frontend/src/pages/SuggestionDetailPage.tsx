@@ -75,6 +75,7 @@ export function SuggestionDetailPage() {
   const userRoleFromState = location.state as
     | { userRole?: ProjectRole }
     | undefined;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [userRole, _setUserRole] = useState<ProjectRole>(
     userRoleFromState?.userRole ?? 'Member',
   );
@@ -227,7 +228,7 @@ export function SuggestionDetailPage() {
             replyingToId={replyingToId}
             editingId={editingId}
             onSendMain={handleSendMain}
-            onClearMainDraft={() => {}} // Больше не нужен, хук сам очищает
+            onClearMainDraft={() => {}}
             onStartReply={(id) => setReplyingToId(id)}
             onCancelReply={() => setReplyingToId(null)}
             onSubmitReply={handleSubmitReply}
