@@ -155,7 +155,7 @@ export function MembersModal({ open, onClose, projectId }: MembersModalProps) {
                   className={styles.removeBtn}
                   onClick={() => handleRemoveMember(member.userId)}
                 >
-                  [X]
+                  X
                 </button>
               </div>
             </div>

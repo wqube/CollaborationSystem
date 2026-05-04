@@ -1,0 +1,19 @@
+.voteGroup {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.score {
+  min-width: 1.5rem;
+  text-align: center;
+  font-weight: 600;
+}
+
+.sm .score {
+  font-size: 0.875rem;
+}
+
+.lg .score {
+  font-size: 1.5rem;
+}

@@ -91,6 +91,7 @@ export interface CommentNode extends CommentDto {
 }
 
 export interface SuggestionSummary {
+  currentUserVote: null;
   id: string;
   projectId: string;
   text: string;
