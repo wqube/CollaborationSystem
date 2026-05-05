@@ -33,8 +33,10 @@ export function ProjectListPage() {
 
   return (
     <div className={styles.page}>
-      <div className={styles.header}>
-        <h1 className={styles.title}>Мои проекты</h1>
+      <div
+        className={styles.header}
+        style={{ display: 'flex', justifyContent: 'flex-end' }}
+      >
         <Button variant="primary" size="md" onClick={() => setModalOpen(true)}>
           Новый проект
         </Button>

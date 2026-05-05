@@ -83,22 +83,19 @@ export function SuggestionListPage() {
   return (
     <div className={styles.page}>
       <div className={styles.header}>
-        <h1>Все предложения</h1>
-        <div className={styles.actions}>
-          <Button
-            variant="outline"
-            onClick={() => navigate(`/projects/${projectId}`)}
-          >
-            Назад к доске
-          </Button>
+        <Button
+          variant="outline"
+          onClick={() => navigate(`/projects/${projectId}`)}
+        >
+          Назад к доске
+        </Button>
 
-          <CreateSuggestionButton
-            projectId={projectId!}
-            onRefresh={fetchSuggestions} // передаём функцию обновления списка
-            variant="primary"
-            buttonText="Предложить идею"
-          />
-        </div>
+        <CreateSuggestionButton
+          projectId={projectId!}
+          onRefresh={fetchSuggestions}
+          variant="primary"
+          buttonText="Предложить идею"
+        />
       </div>
 
       <div className={styles.filters}>

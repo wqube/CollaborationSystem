@@ -153,6 +153,25 @@ export function SuggestionDetailPage() {
     }
   };
 
+  const handleCopyLink = () => {
+    const url = window.location.href;
+    navigator.clipboard
+      .writeText(url)
+      .then(() => {
+        alert('Ссылка скопирована');
+      })
+      .catch(() => {
+        // Fallback для старых браузеров
+        const textArea = document.createElement('textarea');
+        textArea.value = url;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        alert('Ссылка скопирована');
+      });
+  };
+
   const handleStatusChange = async (newStatus: SuggestionStatus) => {
     if (!projectId || !suggestionId) return;
     try {
@@ -246,7 +265,7 @@ export function SuggestionDetailPage() {
 
           <div className={styles.card}>
             <h4>Действия</h4>
-            <Button variant="outline" fullWidth>
+            <Button variant="outline" fullWidth onClick={handleCopyLink}>
               Копировать ссылку
             </Button>
           </div>

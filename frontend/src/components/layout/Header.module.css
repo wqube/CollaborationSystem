@@ -63,3 +63,8 @@
   align-items: center;
   gap: 20px;
 }
+
+.separator {
+  color: var(--t-gray);
+  font-weight: 400;
+}
