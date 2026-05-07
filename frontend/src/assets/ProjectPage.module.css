@@ -74,25 +74,9 @@
   text-align: center;
 }
 
-.projectBar {
+.projectTitle {
+  font-size: 24px;
+  font-weight: 700;
   margin-bottom: 20px;
-  max-width: 300px;
-}
-
-.projectSelect {
-  padding: 10px 32px 10px 16px;
-  background: white;
-  border: 1px solid #e0e0e0;
-  border-radius: 12px;
-  font-size: 16px;
-  font-weight: 500;
-  cursor: pointer;
-  min-width: 250px;
-  appearance: auto;
-}
-
-.projectSelect:focus {
-  outline: none;
-  border-color: var(--t-yellow);
-  box-shadow: 0 0 0 3px rgba(255, 221, 45, 0.2);
+  color: var(--t-black, #1a1a1a);
 }

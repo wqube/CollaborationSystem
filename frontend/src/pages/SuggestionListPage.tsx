@@ -12,6 +12,7 @@ import styles from '../assets/SuggestionListPage.module.css';
 import { useCallback, useEffect, useState } from 'react';
 import { CreateSuggestionButton } from '../components/CreateSuggestionButton/CreateSuggestionButton';
 import { SuggestionVoteCell } from '../components/SuggestionVoteCell/SuggestionVoteCell';
+import { Breadcrumbs } from '../components/Breadcrumbs/BreadCrumbs';
 
 const PAGE_SIZE = 10;
 
@@ -82,13 +83,18 @@ export function SuggestionListPage() {
 
   return (
     <div className={styles.page}>
-      <div className={styles.header}>
-        <Button
-          variant="outline"
-          onClick={() => navigate(`/projects/${projectId}`)}
-        >
-          Назад к доске
-        </Button>
+      <Breadcrumbs />
+      <div className={styles.topBar}>
+        <div className={styles.leftGroup}>
+          <Button
+            variant="outline"
+            size="md"
+            onClick={() => navigate(`/projects/${projectId}`)}
+          >
+            <img src="/left-arrow.png" width={16} height={16} alt="Назад" />
+          </Button>
+          <h1>Все предложения</h1>
+        </div>
 
         <CreateSuggestionButton
           projectId={projectId!}
@@ -97,7 +103,6 @@ export function SuggestionListPage() {
           buttonText="Предложить идею"
         />
       </div>
-
       <div className={styles.filters}>
         <div className={styles.filterGroup}>
           <label>Поиск</label>

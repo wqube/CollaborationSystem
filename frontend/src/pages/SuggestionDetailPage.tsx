@@ -26,6 +26,7 @@ import type {
   ProjectRole,
 } from '../types/api';
 import styles from '../assets/SuggestionDetailPage.module.css';
+import { Breadcrumbs } from '../components/Breadcrumbs/BreadCrumbs';
 
 // !!!!!!!!!!!!!!!!!!!!!! Вынести построение дерева в utils !!!!!!!!!!!!!!!!!!!!!!!
 const buildCommentTree = (comments: CommentDto[]): CommentNode[] => {
@@ -226,9 +227,13 @@ export function SuggestionDetailPage() {
 
   return (
     <div className={styles.page}>
-      <Button variant="outline" onClick={() => navigate(-1)}>
-        Назад к списку
-      </Button>
+      <Breadcrumbs />
+      <div className={styles.topBar}>
+        <Button variant="outline" size="md" onClick={() => navigate(-1)}>
+          <img src="/left-arrow.png" width={16} height={16} alt="Назад" />
+        </Button>
+        <h1>Страница предложения</h1>
+      </div>
 
       <div className={styles.twoColumns}>
         <div className={styles.main}>

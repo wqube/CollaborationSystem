@@ -4,25 +4,22 @@
   padding: 0 20px;
 }
 
-.header {
+.topBar {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 24px;
 }
 
-.actions {
+.leftGroup {
   display: flex;
-  gap: 16px;
+  align-items: center;
+  gap: 12px;
 }
 
-.header h1 {
+.leftGroup h1 {
+  margin: 0;
   font-size: 28px;
-}
-
-.actions {
-  display: flex;
-  gap: 16px;
 }
 
 .filters {

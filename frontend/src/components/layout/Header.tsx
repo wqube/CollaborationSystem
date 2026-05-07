@@ -1,64 +1,27 @@
-import { useNavigate, useLocation, useParams } from 'react-router-dom';
 import { useEffect, useState } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import styles from './Header.module.css';
-import { userAppSelector, useAppDispatcher } from '../../shared/store/hooks';
+import { useAppDispatcher, userAppSelector } from '../../shared/store/hooks';
 import { fetchProjects } from '../../shared/store/projectsSlice';
-import apiClient from '../../shared/api/client';
-import type { ProjectSummary, SuggestionSummary } from '../../types/api';
-
-// Карта путей для статичных страниц
-const PATH_LABELS: Record<string, string> = {
-  projects: 'Мои проекты',
-  profile: 'Профиль',
-  drafts: 'Черновики',
-  suggestions: 'Все предложения',
-};
 
 export function Header() {
   const navigate = useNavigate();
   const location = useLocation();
   const dispatch = useAppDispatcher();
-  const { projectId, suggestionId } = useParams<{
-    projectId?: string;
-    suggestionId?: string;
-  }>();
-
   const user = userAppSelector((state) => state.auth.user);
   const { list: projects } = userAppSelector((state) => state.projects);
-  const [projectName, setProjectName] = useState<string>('');
-  const [suggestionTitle, setSuggestionTitle] = useState<string>('');
 
-  // Загружаем список проектов при старте
+  // Загружаем проекты при монтировании
   useEffect(() => {
     if (projects.length === 0) {
       dispatch(fetchProjects());
     }
   }, [dispatch, projects.length]);
 
-  // Получаем название проекта из Redux
-  useEffect(() => {
-    if (projectId && projects.length > 0) {
-      const project = projects.find((p) => p.id === projectId);
-      if (project) {
-        setProjectName(project.name);
-      }
-    }
-  }, [projectId, projects]);
-
-  // Загружаем название предложения, если есть suggestionId
-  useEffect(() => {
-    if (!projectId || !suggestionId) {
-      setSuggestionTitle('');
-      return;
-    }
-
-    apiClient
-      .get<SuggestionSummary>(
-        `/projects/${projectId}/suggestions/${suggestionId}`,
-      )
-      .then((res) => setSuggestionTitle(res.data.text))
-      .catch(() => setSuggestionTitle(''));
-  }, [projectId, suggestionId]);
+  // Определяем, на странице проекта или нет
+  const pathParts = location.pathname.split('/').filter(Boolean);
+  // /projects/:id → ['projects', 'id']
+  const isProjectPage = pathParts.length === 2 && pathParts[0] === 'projects';
 
   const getInitials = (name: string): string => {
     return name
@@ -74,38 +37,35 @@ export function Header() {
   const userName = user?.displayName || 'Гость';
   const userInitials = user ? getInitials(user.displayName) : 'Г';
 
-  const pathParts = location.pathname.split('/').filter(Boolean);
-  let breadcrumb = '';
-
-  if (pathParts.length === 0) {
-    breadcrumb = '';
-  } else if (pathParts.length === 1) {
-    // /projects или /profile
-    breadcrumb = PATH_LABELS[pathParts[0]] || '';
-  } else if (pathParts[0] === 'projects' && pathParts.length === 2) {
-    // /projects/:id — страница доски → название проекта
-    breadcrumb = projectName || PATH_LABELS['projects'];
-  } else if (pathParts[0] === 'projects' && pathParts.length === 3) {
-    // /projects/:id/suggestions или /projects/:id/drafts
-    breadcrumb = PATH_LABELS[pathParts[2]] || '';
-  } else if (pathParts[0] === 'projects' && pathParts.length === 4) {
-    // /projects/:id/suggestions/:sId → название предложения
-    breadcrumb = suggestionTitle || PATH_LABELS['suggestions'];
-  }
+  const handleProjectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newId = e.target.value;
+    if (newId) {
+      navigate(`/projects/${newId}`);
+    }
+  };
 
   return (
     <header className={styles.app_header}>
-      <div className={styles.logo} onClick={() => navigate('/projects')}>
-        <img src="/T-Bank-Logo.png" width={36} height={36} alt="Лого" />
-        <span>
-          Система совместной работы
-          {breadcrumb && (
-            <>
-              <span className={styles.separator}> / </span>
-              {breadcrumb}
-            </>
-          )}
-        </span>
+      <div className={styles.left}>
+        <div className={styles.logo} onClick={() => navigate('/projects')}>
+          <img src="/T-Bank-Logo.png" width={36} height={36} alt="Лого" />
+          <span>Система совместной работы</span>
+        </div>
+
+        {isProjectPage && projects.length > 0 && (
+          <select
+            className={styles.projectSelector}
+            value=""
+            onChange={handleProjectChange}
+          >
+            <option value="">Выберите проект</option>
+            {projects.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name}
+              </option>
+            ))}
+          </select>
+        )}
       </div>
 
       <div className={styles.user}>
