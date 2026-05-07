@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/Button/Button';
 import apiClient from '../shared/api/client';
 import styles from '../assets/DraftsPage.module.css';
+import { Breadcrumbs } from '../components/Breadcrumbs/BreadCrumbs';
 
 type DraftType = 'Suggestion' | 'Comment';
 
@@ -92,13 +93,16 @@ export function DraftsPage() {
 
   return (
     <div className={styles.page}>
+      <Breadcrumbs />
       <div className={styles.topBar}>
         <Button
           variant="outline"
+          size="md"
           onClick={() => navigate(`/projects/${projectId}`)}
         >
-          Назад к доске
+          <img src="/left-arrow.png" width={16} height={16} alt="Назад" />
         </Button>
+        <h1>Черновики</h1>
       </div>
 
       <div className={styles.tabs}>

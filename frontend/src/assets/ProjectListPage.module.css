@@ -50,3 +50,9 @@
   background: #ffebee;
   border-radius: 12px;
 }
+
+.divider {
+  border: none;
+  border-top: 2px solid var(--t-border, #e0e0e0);
+  margin: 0 0 24px 0;
+}

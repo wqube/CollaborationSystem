@@ -16,6 +16,7 @@ import type {
 } from '../types/api';
 import { CreateSuggestionButton } from '../components/CreateSuggestionButton/CreateSuggestionButton';
 import { SuggestionVoteCell } from '../components/SuggestionVoteCell/SuggestionVoteCell';
+import { Breadcrumbs } from '../components/Breadcrumbs/BreadCrumbs';
 
 export interface suggestionsPreviewInterface {
   suggestionsPreview: SuggestionSummary[];
@@ -88,26 +89,8 @@ export function ProjectPage() {
 
   return (
     <div className={styles.page}>
-      <div className={styles.projectBar}>
-        <select
-          className={styles.projectSelect}
-          value={projectId}
-          onChange={(e) => {
-            const newId = e.target.value;
-            if (newId) {
-              navigate(`/projects/${newId}`);
-            }
-          }}
-        >
-          <option value="">Выберите проект</option>
-          {projects.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.name}
-            </option>
-          ))}
-        </select>
-      </div>
-
+      <Breadcrumbs />
+      {project && <h1 className={styles.projectTitle}>{project.name}</h1>}
       <div className={styles.header}>
         <Tabs tabs={TABS} activeTab={activeTab} onChange={handleTabChange} />
         <div className={styles.actions}>

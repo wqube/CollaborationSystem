@@ -94,5 +94,13 @@
 }
 
 .topBar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
   margin-bottom: 24px;
+}
+
+.topBar h1 {
+  margin: 0;
+  font-size: 28px;
 }

@@ -92,3 +92,15 @@
   color: var(--t-gray);
   padding: 12px 0;
 }
+
+.topBar {
+  display: flex;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.topBar h1 {
+  margin: 0;
+  font-size: 28px;
+  margin-left: 10px;
+}
