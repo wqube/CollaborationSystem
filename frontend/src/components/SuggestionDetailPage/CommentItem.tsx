@@ -10,6 +10,7 @@ interface CommentItemProps {
   suggestionId: string;
   replyingToId: string | null;
   editingId: string | null;
+  submitting?: boolean;
   onStartReply: (id: string) => void;
   onCancelReply: () => void;
   onSubmitReply: (parentId: string, text: string) => Promise<void>;
@@ -26,6 +27,7 @@ export function CommentItem({
   suggestionId,
   replyingToId,
   editingId,
+  submitting = false,
   onStartReply,
   onCancelReply,
   onSubmitReply,
@@ -36,12 +38,9 @@ export function CommentItem({
   onDelete,
 }: CommentItemProps) {
   const [editText, setEditText] = useState(comment.text);
-  // const [isEditingLocal, setIsEditingLocal] = useState(false);
-
   const isReplying = replyingToId === comment.id;
   const isEditing = editingId === comment.id;
 
-  // Хук для ответа на комментарий
   const { draftText, saveStatus, statusLabel, handleTextChange, clearDraft } =
     useCommentDraft(projectId, suggestionId, isReplying ? comment.id : null);
 
@@ -57,7 +56,6 @@ export function CommentItem({
     e.preventDefault();
     if (!editText.trim() || editText === comment.text) return;
     await onSaveEdit(comment.id, editText.trim());
-    // setIsEditingLocal(false);
   };
 
   const formatDate = (iso: string) => new Date(iso).toLocaleDateString('ru-RU');
@@ -140,9 +138,11 @@ export function CommentItem({
               type="submit"
               variant="primary"
               size="sm"
-              disabled={saveStatus === 'saving' || !draftText.trim()}
+              disabled={
+                submitting || saveStatus === 'saving' || !draftText.trim()
+              }
             >
-              {saveStatus === 'saving' ? 'Сохранение...' : 'Ответить'}
+              {submitting ? 'Отправка...' : 'Ответить'}
             </Button>
             <Button
               type="button"
@@ -166,6 +166,7 @@ export function CommentItem({
               suggestionId={suggestionId}
               replyingToId={replyingToId}
               editingId={editingId}
+              submitting={submitting}
               onStartReply={onStartReply}
               onCancelReply={onCancelReply}
               onSubmitReply={onSubmitReply}

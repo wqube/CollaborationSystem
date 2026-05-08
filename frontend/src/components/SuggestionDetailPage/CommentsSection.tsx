@@ -10,6 +10,7 @@ interface CommentsSectionProps {
   comments: CommentNode[];
   replyingToId: string | null;
   editingId: string | null;
+  submitting?: boolean;
   onSendMain: (text: string) => Promise<void>;
   onClearMainDraft: () => void;
   onStartReply: (id: string) => void;
@@ -28,6 +29,7 @@ export function CommentsSection({
   comments,
   replyingToId,
   editingId,
+  submitting = false,
   onSendMain,
   onClearMainDraft,
   onStartReply,
@@ -39,7 +41,6 @@ export function CommentsSection({
   onSaveEdit,
   onDelete,
 }: CommentsSectionProps) {
-  // Используем хук для основного комментария (parentCommentId = null)
   const { draftText, saveStatus, statusLabel, handleTextChange, clearDraft } =
     useCommentDraft(projectId, suggestionId, null);
 
@@ -48,13 +49,12 @@ export function CommentsSection({
     if (!draftText.trim()) return;
     await onSendMain(draftText.trim());
     await clearDraft();
-    onClearMainDraft(); // сброс UI стейта родителя
+    onClearMainDraft();
   };
 
   return (
     <div className={styles.card}>
       <h3>Обсуждение ({comments.length})</h3>
-
       <form onSubmit={handleSubmit}>
         <textarea
           placeholder="Оставьте комментарий..."
@@ -71,9 +71,11 @@ export function CommentsSection({
           <Button
             variant="primary"
             type="submit"
-            disabled={saveStatus === 'saving' || !draftText.trim()}
+            disabled={
+              submitting || saveStatus === 'saving' || !draftText.trim()
+            }
           >
-            Отправить
+            {submitting ? 'Отправка...' : 'Отправить'}
           </Button>
         </div>
       </form>
@@ -90,6 +92,7 @@ export function CommentsSection({
             suggestionId={suggestionId}
             replyingToId={replyingToId}
             editingId={editingId}
+            submitting={submitting}
             onStartReply={onStartReply}
             onCancelReply={onCancelReply}
             onSubmitReply={onSubmitReply}

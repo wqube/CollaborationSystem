@@ -1,10 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '../components/ui/Button/Button';
 import { SuggestionHeader } from '../components/SuggestionDetailPage/SuggestionHeader';
 import { VotePanel } from '../components/SuggestionDetailPage/VotePanel';
 import { CommentsSection } from '../components/SuggestionDetailPage/CommentsSection';
-import { useLocation } from 'react-router-dom';
+import { Breadcrumbs } from '../components/Breadcrumbs/BreadCrumbs';
 import {
   getSuggestionDetails,
   updateSuggestionStatus,
@@ -26,9 +26,7 @@ import type {
   ProjectRole,
 } from '../types/api';
 import styles from '../assets/SuggestionDetailPage.module.css';
-import { Breadcrumbs } from '../components/Breadcrumbs/BreadCrumbs';
 
-// !!!!!!!!!!!!!!!!!!!!!! Вынести построение дерева в utils !!!!!!!!!!!!!!!!!!!!!!!
 const buildCommentTree = (comments: CommentDto[]): CommentNode[] => {
   const map: Record<string, CommentNode> = {};
   const roots: CommentNode[] = [];
@@ -45,17 +43,14 @@ const buildCommentTree = (comments: CommentDto[]): CommentNode[] => {
     }
   });
 
-  // Сортировка по дате, новые сверху
   const byDate = (a: CommentNode, b: CommentNode) =>
     new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-
   roots.sort(byDate);
-  const sortChildrens = (node: CommentNode) => {
+  const sortChildren = (node: CommentNode) => {
     node.children.sort(byDate);
-    node.children.forEach(sortChildrens);
+    node.children.forEach(sortChildren);
   };
-  roots.forEach(sortChildrens);
-
+  roots.forEach(sortChildren);
   return roots;
 };
 
@@ -67,70 +62,78 @@ export function SuggestionDetailPage() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Состояния данных
   const [detail, setDetail] = useState<SuggestionDetails | null>(null);
   const [commentTree, setCommentTree] = useState<CommentNode[]>([]);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [isSubmittingComment, setIsSubmittingComment] = useState(false);
 
   const userRoleFromState = location.state as
     | { userRole?: ProjectRole }
     | undefined;
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [userRole, _setUserRole] = useState<ProjectRole>(
+  const [userRole] = useState<ProjectRole>(
     userRoleFromState?.userRole ?? 'Member',
   );
 
-  // UI состояния для комментариев
   const [replyingToId, setReplyingToId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
 
-  // Загрузка данных
-  const fetchData = useCallback(async () => {
-    if (!projectId || !suggestionId) return;
-    setLoading(true);
-    setError(null);
-    try {
-      const [detailsRes, commentsRes] = await Promise.all([
-        getSuggestionDetails(projectId, suggestionId),
-        getComments(projectId, suggestionId),
-      ]);
-      setDetail(detailsRes);
-      setCommentTree(buildCommentTree(commentsRes));
-    } catch {
-      setError('Ошибка загрузки данных');
-    } finally {
-      setLoading(false);
-    }
-  }, [projectId, suggestionId]);
+  const fetchData = useCallback(
+    async (silent = false) => {
+      if (!projectId || !suggestionId) return;
+      if (!silent) setLoading(true);
+      setError(null);
+      try {
+        const [detailsRes, commentsRes] = await Promise.all([
+          getSuggestionDetails(projectId, suggestionId),
+          getComments(projectId, suggestionId),
+        ]);
+        setDetail(detailsRes);
+        setCommentTree(buildCommentTree(commentsRes));
+      } catch {
+        setError('Ошибка загрузки данных');
+      } finally {
+        setLoading(false);
+      }
+    },
+    [projectId, suggestionId],
+  );
 
   useEffect(() => {
-    fetchData();
+    fetchData(false);
   }, [fetchData]);
 
-  // Хендлеры
   const handleSendMain = async (text: string): Promise<void> => {
     if (!projectId || !suggestionId || !text.trim()) return;
-
+    setIsSubmittingComment(true);
     try {
       await createComment(projectId, suggestionId, {
         text: text.trim(),
         parentCommentId: null,
       });
-      // Черновик очистится внутри CommentsSection через useCommentDraft
+      await fetchData(true);
     } catch {
       setError('Не удалось отправить комментарий');
+    } finally {
+      setIsSubmittingComment(false);
     }
   };
 
   const handleSubmitReply = async (parentId: string, text: string) => {
     if (!projectId || !suggestionId) return;
-    await createComment(projectId, suggestionId, {
-      text,
-      parentCommentId: parentId,
-    });
-    setReplyingToId(null);
-    await fetchData();
+    setIsSubmittingComment(true);
+    try {
+      await createComment(projectId, suggestionId, {
+        text,
+        parentCommentId: parentId,
+      });
+      setReplyingToId(null);
+      await fetchData(true);
+    } catch {
+      setError('Не удалось отправить ответ');
+    } finally {
+      setIsSubmittingComment(false);
+    }
   };
 
   const handleSaveEdit = async (id: string, text: string) => {
@@ -138,7 +141,7 @@ export function SuggestionDetailPage() {
     try {
       await updateComment(projectId, id, { text });
       setEditingId(null);
-      await fetchData();
+      await fetchData(true);
     } catch {
       alert('Ошибка при обновлении комментария');
     }
@@ -146,31 +149,15 @@ export function SuggestionDetailPage() {
 
   const handleDeleteComment = async (id: string) => {
     if (!projectId) return;
+    setIsSubmittingComment(true);
     try {
       await deleteComment(projectId, id);
-      await fetchData();
+      await fetchData(true);
     } catch {
       alert('Ошибка при удалении комментария');
+    } finally {
+      setIsSubmittingComment(false);
     }
-  };
-
-  const handleCopyLink = () => {
-    const url = window.location.href;
-    navigator.clipboard
-      .writeText(url)
-      .then(() => {
-        alert('Ссылка скопирована');
-      })
-      .catch(() => {
-        // Fallback для старых браузеров
-        const textArea = document.createElement('textarea');
-        textArea.value = url;
-        document.body.appendChild(textArea);
-        textArea.select();
-        document.execCommand('copy');
-        document.body.removeChild(textArea);
-        alert('Ссылка скопирована');
-      });
   };
 
   const handleStatusChange = async (newStatus: SuggestionStatus) => {
@@ -179,23 +166,15 @@ export function SuggestionDetailPage() {
       await updateSuggestionStatus(projectId, suggestionId, {
         status: newStatus,
       });
-      await fetchData();
+      await fetchData(true);
     } catch (err: unknown) {
-      if (
-        typeof err === 'object' &&
-        err !== null &&
-        'response' in err &&
-        typeof (err as { response?: { statys?: number } }).response?.statys ===
-          'number'
-      ) {
-        const status = (err as { response: { status: number } }).response
-          .status;
-        if (status === 403) {
-          setError('Недостаточно прав для изменения статуса');
-          return;
-        }
-      }
-      setError('Ошибка при обновлении статуса');
+      const status = (err as { response?: { status?: number } })?.response
+        ?.status;
+      setError(
+        status === 403
+          ? 'Недостаточно прав для изменения статуса'
+          : 'Ошибка при обновлении статуса',
+      );
     }
   };
 
@@ -206,7 +185,6 @@ export function SuggestionDetailPage() {
         voteType === null
           ? await deleteVote(projectId, suggestionId)
           : await voteSuggestion(projectId, suggestionId, { voteType });
-
       setDetail((prev) =>
         prev
           ? {
@@ -221,12 +199,16 @@ export function SuggestionDetailPage() {
     }
   };
 
-  if (loading) return <p className={styles.state}>Загрузка...</p>;
+  const handleCopyLink = () => {
+    navigator.clipboard.writeText(window.location.href).catch(() => {});
+  };
+
   if (error || !detail)
     return <p className={styles.error}>{error || 'Не найдено'}</p>;
 
   return (
     <div className={styles.page}>
+      {loading && <div className={styles.overlayLoader}>Загрузка...</div>}
       <Breadcrumbs />
       <div className={styles.topBar}>
         <Button variant="outline" size="md" onClick={() => navigate(-1)}>
@@ -237,20 +219,19 @@ export function SuggestionDetailPage() {
 
       <div className={styles.twoColumns}>
         <div className={styles.main}>
-          {/* Заголовок с предложением */}
           <SuggestionHeader
             detail={detail}
             userRole={userRole}
             onStatusChange={handleStatusChange}
           />
 
-          {/* Блок обсуждения */}
           <CommentsSection
             projectId={projectId!}
             suggestionId={suggestionId!}
             comments={commentTree}
             replyingToId={replyingToId}
             editingId={editingId}
+            submitting={isSubmittingComment}
             onSendMain={handleSendMain}
             onClearMainDraft={() => {}}
             onStartReply={(id) => setReplyingToId(id)}
@@ -265,9 +246,7 @@ export function SuggestionDetailPage() {
         </div>
 
         <div className={styles.sidebar}>
-          {/* Блок голосования */}
           <VotePanel detail={detail} loading={loading} onVote={handleVote} />
-
           <div className={styles.card}>
             <h4>Действия</h4>
             <Button variant="outline" fullWidth onClick={handleCopyLink}>
