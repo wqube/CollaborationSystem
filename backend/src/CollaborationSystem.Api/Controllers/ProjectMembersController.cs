@@ -45,6 +45,7 @@ public class ProjectMembersController(IProjectMemberService projectMemberService
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
     public async Task<ActionResult<ProjectMemberResponse>> UpdateMemberRole(
         Guid projectId,
         Guid userId,
@@ -101,6 +102,9 @@ public class ProjectMembersController(IProjectMemberService projectMemberService
             ProjectMemberOperationStatus.MemberNotFound => Problem(
                 statusCode: StatusCodes.Status404NotFound,
                 title: "Project member not found."),
+            ProjectMemberOperationStatus.LastProjectAdmin => Problem(
+                statusCode: StatusCodes.Status409Conflict,
+                title: "Project must have at least one admin."),
             _ => Problem(
                 statusCode: StatusCodes.Status400BadRequest,
                 title: "Project member operation failed.")
