@@ -7,5 +7,6 @@ public enum ProjectMemberOperationStatus
     ProjectNotFound = 3,
     UserNotFound = 4,
     MemberAlreadyExists = 5,
-    MemberNotFound = 6
+    MemberNotFound = 6,
+    LastProjectAdmin = 7
 }

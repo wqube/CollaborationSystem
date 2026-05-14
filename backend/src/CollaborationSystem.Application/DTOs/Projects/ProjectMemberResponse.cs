@@ -14,5 +14,5 @@ public sealed class ProjectMemberResponse
 
     public ProjectRole Role { get; set; }
 
-    public DateTime JoinedAtUtc { get; set; }
+    public DateTime JoinedAt { get; set; }
 }

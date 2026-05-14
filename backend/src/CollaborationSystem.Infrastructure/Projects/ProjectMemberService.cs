@@ -91,6 +91,19 @@ public sealed class ProjectMemberService(
             return ProjectMemberOperationResult.Failure(ProjectMemberOperationStatus.UserNotFound);
         }
 
+        if (member.Role == ProjectRole.Admin && request.Role != ProjectRole.Admin)
+        {
+            var adminCount = await dbContext.ProjectMembers
+                .CountAsync(
+                    x => x.ProjectId == projectId && x.Role == ProjectRole.Admin,
+                    cancellationToken);
+
+            if (adminCount <= 1)
+            {
+                return ProjectMemberOperationResult.Failure(ProjectMemberOperationStatus.LastProjectAdmin);
+            }
+        }
+
         member.Role = request.Role;
         member.UpdatedAtUtc = DateTime.UtcNow;
 
@@ -158,6 +171,6 @@ public sealed class ProjectMemberService(
             DisplayName = user.DisplayName,
             Email = user.Email,
             Role = member.Role,
-            JoinedAtUtc = member.JoinedAtUtc
+            JoinedAt = member.JoinedAtUtc
         };
 }

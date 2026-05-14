@@ -256,7 +256,7 @@ public sealed class ProjectService(
                 DisplayName = x.User == null ? string.Empty : x.User.DisplayName,
                 Email = x.User == null ? string.Empty : x.User.Email,
                 Role = x.Role,
-                JoinedAtUtc = x.JoinedAtUtc
+                JoinedAt = x.JoinedAtUtc
             })
             .ToListAsync(cancellationToken);
 

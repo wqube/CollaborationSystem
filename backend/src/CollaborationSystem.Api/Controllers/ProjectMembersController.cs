@@ -74,6 +74,9 @@ public class ProjectMembersController(IProjectMemberService projectMemberService
             ProjectMemberOperationStatus.MemberNotFound => NotFound(CreateProblemDetails(
                 StatusCodes.Status404NotFound,
                 "Project member not found.")),
+            ProjectMemberOperationStatus.LastProjectAdmin => Conflict(CreateProblemDetails(
+                StatusCodes.Status409Conflict,
+                "Project must have at least one admin.")),
             _ => BadRequest(CreateProblemDetails(
                 StatusCodes.Status400BadRequest,
                 "Project member operation failed."))
