@@ -1,4 +1,6 @@
 export type SuggestionStatus = 'New' | 'InProgress' | 'Accepted' | 'Rejected';
+export type SuggestionSort = 'createdAt' | 'updatedAt' | 'score';
+export type OrderSort = 'asc' | 'desc';
 export type VoteType = 'Up' | 'Down';
 export type DraftType = 'Suggestion' | 'Comment';
 export type ProjectRole = 'Member' | 'Admin';
@@ -71,7 +73,7 @@ export interface ProjectDetails {
   description: string;
   createdByUserId: string;
   createdAt: string;
-  members: ProjectMemberDto;
+  members: ProjectMemberDto[];
 }
 
 export interface CommentDto {
@@ -89,6 +91,7 @@ export interface CommentNode extends CommentDto {
 }
 
 export interface SuggestionSummary {
+  currentUserVote: null;
   id: string;
   projectId: string;
   text: string;

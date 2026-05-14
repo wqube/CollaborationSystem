@@ -3,12 +3,12 @@
   align-items: center;
   justify-content: center;
   border-radius: 8px;
-  border: 1px solid var(--border);
+  border: 1px solid #e0e0e0;
   background: white;
   font-weight: 700;
   cursor: pointer;
   transition: all 0.2s;
-  color: var(--black);
+  color: #1a1a1a;
 }
 
 .voteBtn:disabled {
@@ -16,45 +16,41 @@
   cursor: not-allowed;
 }
 
-/* Sizes */
+/* Размер sm — для таблиц и списков */
 .sm {
   width: 28px;
   height: 28px;
   font-size: 16px;
 }
 
-.md {
-  width: 36px;
-  height: 36px;
-  font-size: 20px;
-}
-
+/* Размер lg — для детальной страницы */
 .lg {
   width: 48px;
   height: 48px;
   font-size: 28px;
 }
 
-/* Hover states */
+/* Hover на неактивных кнопках */
 .voteBtn:hover:not(:disabled):not(.active-up):not(.active-down) {
-  background: var(--light-gray);
+  background: #f5f5f5;
 }
 
-/* Active states */
+/* Активная ЗА (зелёная) */
 .active-up {
-  background: var(--green);
+  background: #00a86b;
   color: white;
-  border-color: var(--green);
+  border-color: #00a86b;
 }
 
 .active-up:hover:not(:disabled) {
   background: #008f59;
 }
 
+/* Активная ПРОТИВ (красная) */
 .active-down {
-  background: var(--red);
+  background: #e31c3d;
   color: white;
-  border-color: var(--red);
+  border-color: #e31c3d;
 }
 
 .active-down:hover:not(:disabled) {

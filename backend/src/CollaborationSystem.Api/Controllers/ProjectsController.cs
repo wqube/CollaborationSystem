@@ -7,12 +7,21 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace CollaborationSystem.Api.Controllers;
 
+/// <summary>
+/// Provides project listing, creation, details, and dashboard endpoints.
+/// </summary>
 [ApiController]
 [Authorize]
 [Route("api/v1/projects")]
 public class ProjectsController(IProjectService projectService) : ControllerBase
 {
+    /// <summary>
+    /// Returns a paged list of projects visible to the current user.
+    /// </summary>
     [HttpGet]
+    [ProducesResponseType(typeof(PagedResponse<ProjectSummaryResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<PagedResponse<ProjectSummaryResponse>>> GetProjects(
         [FromQuery] GetProjectsQuery query,
         CancellationToken cancellationToken)
@@ -22,7 +31,13 @@ public class ProjectsController(IProjectService projectService) : ControllerBase
         return Ok(response);
     }
 
+    /// <summary>
+    /// Creates a project and adds the creator as an admin member.
+    /// </summary>
     [HttpPost]
+    [ProducesResponseType(typeof(ProjectSummaryResponse), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<ProjectSummaryResponse>> CreateProject(
         [FromBody] CreateProjectRequest request,
         CancellationToken cancellationToken)
@@ -32,7 +47,14 @@ public class ProjectsController(IProjectService projectService) : ControllerBase
         return CreatedAtAction(nameof(GetProjectById), new { projectId = createdProject.Id }, createdProject);
     }
 
+    /// <summary>
+    /// Returns project details by project id.
+    /// </summary>
     [HttpGet("{projectId:guid}")]
+    [ProducesResponseType(typeof(ProjectDetailsResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<ActionResult<ProjectDetailsResponse>> GetProjectById(
         Guid projectId,
         CancellationToken cancellationToken)
@@ -42,7 +64,15 @@ public class ProjectsController(IProjectService projectService) : ControllerBase
         return ToProjectActionResult(result);
     }
 
+    /// <summary>
+    /// Returns dashboard data for a project.
+    /// </summary>
     [HttpGet("{projectId:guid}/dashboard")]
+    [ProducesResponseType(typeof(ProjectDashboardResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<ActionResult<ProjectDashboardResponse>> GetDashboard(
         Guid projectId,
         [FromQuery] GetProjectDashboardQuery query,
@@ -63,19 +93,12 @@ public class ProjectsController(IProjectService projectService) : ControllerBase
         return result.Status switch
         {
             ProjectOperationStatus.Forbidden => Forbid(),
-            ProjectOperationStatus.ProjectNotFound => NotFound(CreateProblemDetails(
-                StatusCodes.Status404NotFound,
-                "Project not found.")),
-            _ => BadRequest(CreateProblemDetails(
-                StatusCodes.Status400BadRequest,
-                "Project operation failed."))
+            ProjectOperationStatus.ProjectNotFound => Problem(
+                statusCode: StatusCodes.Status404NotFound,
+                title: "Project not found."),
+            _ => Problem(
+                statusCode: StatusCodes.Status400BadRequest,
+                title: "Project operation failed.")
         };
     }
-
-    private static ProblemDetails CreateProblemDetails(int status, string title) =>
-        new()
-        {
-            Status = status,
-            Title = title
-        };
 }

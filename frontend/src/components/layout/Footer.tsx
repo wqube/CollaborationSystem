@@ -5,7 +5,7 @@ export function Footer() {
   return (
     <footer className={styles.footer}>
       <div className={styles.container}>
-        <p>{currentYear} Система совместной работы. Все права защищены.</p>
+        <p>{currentYear} Система совместной работы.</p>
       </div>
     </footer>
   );

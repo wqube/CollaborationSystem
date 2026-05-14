@@ -7,12 +7,23 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace CollaborationSystem.Api.Controllers;
 
+/// <summary>
+/// Provides draft endpoints for project suggestions and comments.
+/// </summary>
 [ApiController]
 [Authorize]
 [Route("api/v1/projects/{projectId:guid}/drafts")]
 public class DraftsController(IDraftService draftService) : ControllerBase
 {
+    /// <summary>
+    /// Returns a filtered and paged list of drafts.
+    /// </summary>
     [HttpGet]
+    [ProducesResponseType(typeof(PagedResponse<DraftResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<ActionResult<PagedResponse<DraftResponse>>> GetDrafts(
         Guid projectId,
         [FromQuery] GetDraftsQuery query,
@@ -22,7 +33,15 @@ public class DraftsController(IDraftService draftService) : ControllerBase
         return ToActionResult(result, value => Ok(value));
     }
 
+    /// <summary>
+    /// Creates or updates a suggestion draft.
+    /// </summary>
     [HttpPut("suggestion/{draftId:guid}")]
+    [ProducesResponseType(typeof(DraftResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<ActionResult<DraftResponse>> UpsertSuggestionDraft(
         Guid projectId,
         Guid draftId,
@@ -38,7 +57,15 @@ public class DraftsController(IDraftService draftService) : ControllerBase
         return ToActionResult(result, value => Ok(value));
     }
 
+    /// <summary>
+    /// Creates or updates a comment draft.
+    /// </summary>
     [HttpPut("comment/{draftId:guid}")]
+    [ProducesResponseType(typeof(DraftResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<ActionResult<DraftResponse>> UpsertCommentDraft(
         Guid projectId,
         Guid draftId,
@@ -54,7 +81,14 @@ public class DraftsController(IDraftService draftService) : ControllerBase
         return ToActionResult(result, value => Ok(value));
     }
 
+    /// <summary>
+    /// Deletes a draft.
+    /// </summary>
     [HttpDelete("{draftId:guid}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DeleteDraft(
         Guid projectId,
         Guid draftId,
@@ -86,24 +120,17 @@ public class DraftsController(IDraftService draftService) : ControllerBase
         status switch
         {
             DraftOperationStatus.Forbidden => Forbid(),
-            DraftOperationStatus.ProjectNotFound => NotFound(CreateProblemDetails(
-                StatusCodes.Status404NotFound,
-                "Project not found.")),
-            DraftOperationStatus.DraftNotFound => NotFound(CreateProblemDetails(
-                StatusCodes.Status404NotFound,
-                "Draft not found.")),
-            DraftOperationStatus.InvalidRequest => BadRequest(CreateProblemDetails(
-                StatusCodes.Status400BadRequest,
-                "Draft request is invalid.")),
-            _ => BadRequest(CreateProblemDetails(
-                StatusCodes.Status400BadRequest,
-                "Draft operation failed."))
-        };
-
-    private static ProblemDetails CreateProblemDetails(int status, string title) =>
-        new()
-        {
-            Status = status,
-            Title = title
+            DraftOperationStatus.ProjectNotFound => Problem(
+                statusCode: StatusCodes.Status404NotFound,
+                title: "Project not found."),
+            DraftOperationStatus.DraftNotFound => Problem(
+                statusCode: StatusCodes.Status404NotFound,
+                title: "Draft not found."),
+            DraftOperationStatus.InvalidRequest => Problem(
+                statusCode: StatusCodes.Status400BadRequest,
+                title: "Draft request is invalid."),
+            _ => Problem(
+                statusCode: StatusCodes.Status400BadRequest,
+                title: "Draft operation failed.")
         };
 }

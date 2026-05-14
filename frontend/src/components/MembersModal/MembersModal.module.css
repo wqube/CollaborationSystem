@@ -1,0 +1,107 @@
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.addSection h4 {
+  margin-bottom: 16px;
+}
+
+.addForm {
+  display: flex;
+  gap: 12px;
+}
+
+.searchInput {
+  flex: 1;
+  padding: 10px 14px;
+  border: 1px solid #e0e0e0;
+  border-radius: 12px;
+  font-size: 14px;
+}
+
+.roleSelect {
+  width: 120px;
+  padding: 10px 14px;
+  border: 1px solid #e0e0e0;
+  border-radius: 12px;
+}
+
+hr {
+  border: none;
+  border-top: 1px solid #e0e0e0;
+}
+
+.membersList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.memberItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  background: #f5f5f5;
+  border-radius: 12px;
+}
+
+.memberInfo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.avatar {
+  width: 40px;
+  height: 40px;
+  background: #1a1a1a;
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.email {
+  display: block;
+  font-size: 13px;
+  color: #8a8a8a;
+}
+
+.joined {
+  display: block;
+  font-size: 11px;
+  color: #8a8a8a;
+}
+
+.memberActions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.roleSelectSm {
+  width: 100px;
+  padding: 6px 10px;
+  font-size: 13px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+}
+
+.removeBtn {
+  padding: 6px 10px;
+  border-radius: 8px;
+  color: #e31c3d;
+  cursor: pointer;
+  background: none;
+  border: none;
+}
+
+.removeBtn:hover {
+  background: #ffebee;
+}

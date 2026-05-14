@@ -1,32 +1,41 @@
-//Кнопка голосования Up/Down
-import React from 'react';
 import styles from './VoteButton.module.css';
 
-export type VoteType = 'up' | 'down';
-
-interface VoteButtonProps {
-  type: VoteType;
+export interface VoteButtonProps {
+  type: 'up' | 'down';
+  size?: 'sm' | 'lg';
   active?: boolean;
   onClick?: () => void;
   disabled?: boolean;
-  size?: 'sm' | 'md' | 'lg';
+  className?: string;
 }
 
-export const VoteButton: React.FC<VoteButtonProps> = ({
+export const VoteButton = ({
   type,
+  size = 'sm',
   active = false,
   onClick,
   disabled = false,
-  size = 'md',
-}) => {
+  className = '',
+}: VoteButtonProps) => {
+  const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!disabled && onClick) {
+      onClick();
+    }
+  };
+
+  const activeClass = active
+    ? type === 'up'
+      ? 'active-up'
+      : 'active-down'
+    : '';
+
   return (
     <button
-      className={`
-        ${styles.voteBtn} 
-        ${styles[size]} 
-        ${active ? styles[`active-${type}`] : ''}
-      `}
-      onClick={onClick}
+      type="button"
+      className={`${styles.voteBtn} ${styles[size]} ${activeClass ? styles[activeClass] : ''} ${className}`}
+      onClick={handleClick}
       disabled={disabled}
       aria-label={type === 'up' ? 'Голосовать за' : 'Голосовать против'}
     >

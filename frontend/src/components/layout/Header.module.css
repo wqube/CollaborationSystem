@@ -15,6 +15,12 @@
   font-weight: 700;
   font-size: 20px;
   cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.logo span {
+  white-space: nowrap;
 }
 
 .logo_icon {
@@ -33,6 +39,7 @@
   display: flex;
   cursor: pointer;
   align-items: center;
+  flex-shrink: 0;
 }
 .user_avatar {
   width: 40px;
@@ -49,4 +56,42 @@
 .text_small {
   font-size: 13px;
   color: var(--t-gray);
+}
+
+.left {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.separator {
+  color: var(--t-gray);
+  font-weight: 400;
+}
+
+.projectSelector {
+  padding: 8px 36px 8px 14px;
+  background: white;
+  border: 1px solid var(--t-border);
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--t-black);
+  cursor: pointer;
+  min-width: 220px;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%231A1A1A' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  transition: border-color 0.2s;
+}
+
+.projectSelector:hover {
+  border-color: var(--t-yellow);
+}
+
+.projectSelector:focus {
+  outline: none;
+  border-color: var(--t-yellow);
+  box-shadow: 0 0 0 3px rgba(255, 221, 45, 0.2);
 }

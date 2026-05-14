@@ -6,12 +6,22 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace CollaborationSystem.Api.Controllers;
 
+/// <summary>
+/// Provides comment endpoints for project suggestions.
+/// </summary>
 [ApiController]
 [Authorize]
 [Route("api/v1/projects/{projectId:guid}")]
 public class CommentsController(ISuggestionService suggestionService) : ControllerBase
 {
+    /// <summary>
+    /// Returns comments for a suggestion.
+    /// </summary>
     [HttpGet("suggestions/{suggestionId:guid}/comments")]
+    [ProducesResponseType(typeof(IReadOnlyList<CommentResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<ActionResult<IReadOnlyList<CommentResponse>>> GetComments(
         Guid projectId,
         Guid suggestionId,
@@ -22,7 +32,15 @@ public class CommentsController(ISuggestionService suggestionService) : Controll
         return ToActionResult(result, value => Ok(value));
     }
 
+    /// <summary>
+    /// Creates a comment for a suggestion.
+    /// </summary>
     [HttpPost("suggestions/{suggestionId:guid}/comments")]
+    [ProducesResponseType(typeof(CommentResponse), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<ActionResult<CommentResponse>> CreateComment(
         Guid projectId,
         Guid suggestionId,
@@ -38,7 +56,15 @@ public class CommentsController(ISuggestionService suggestionService) : Controll
                 comment));
     }
 
+    /// <summary>
+    /// Updates a comment.
+    /// </summary>
     [HttpPatch("comments/{commentId:guid}")]
+    [ProducesResponseType(typeof(CommentResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<ActionResult<CommentResponse>> UpdateComment(
         Guid projectId,
         Guid commentId,
@@ -50,7 +76,14 @@ public class CommentsController(ISuggestionService suggestionService) : Controll
         return ToActionResult(result, value => Ok(value));
     }
 
+    /// <summary>
+    /// Deletes a comment.
+    /// </summary>
     [HttpDelete("comments/{commentId:guid}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DeleteComment(
         Guid projectId,
         Guid commentId,
@@ -79,27 +112,20 @@ public class CommentsController(ISuggestionService suggestionService) : Controll
         status switch
         {
             SuggestionOperationStatus.Forbidden => Forbid(),
-            SuggestionOperationStatus.ProjectNotFound => NotFound(CreateProblemDetails(
-                StatusCodes.Status404NotFound,
-                "Project not found.")),
-            SuggestionOperationStatus.SuggestionNotFound => NotFound(CreateProblemDetails(
-                StatusCodes.Status404NotFound,
-                "Suggestion not found.")),
-            SuggestionOperationStatus.CommentNotFound => NotFound(CreateProblemDetails(
-                StatusCodes.Status404NotFound,
-                "Comment not found.")),
-            SuggestionOperationStatus.InvalidRequest => BadRequest(CreateProblemDetails(
-                StatusCodes.Status400BadRequest,
-                "Comment request is invalid.")),
-            _ => BadRequest(CreateProblemDetails(
-                StatusCodes.Status400BadRequest,
-                "Comment operation failed."))
-        };
-
-    private static ProblemDetails CreateProblemDetails(int status, string title) =>
-        new()
-        {
-            Status = status,
-            Title = title
+            SuggestionOperationStatus.ProjectNotFound => Problem(
+                statusCode: StatusCodes.Status404NotFound,
+                title: "Project not found."),
+            SuggestionOperationStatus.SuggestionNotFound => Problem(
+                statusCode: StatusCodes.Status404NotFound,
+                title: "Suggestion not found."),
+            SuggestionOperationStatus.CommentNotFound => Problem(
+                statusCode: StatusCodes.Status404NotFound,
+                title: "Comment not found."),
+            SuggestionOperationStatus.InvalidRequest => Problem(
+                statusCode: StatusCodes.Status400BadRequest,
+                title: "Comment request is invalid."),
+            _ => Problem(
+                statusCode: StatusCodes.Status400BadRequest,
+                title: "Comment operation failed.")
         };
 }

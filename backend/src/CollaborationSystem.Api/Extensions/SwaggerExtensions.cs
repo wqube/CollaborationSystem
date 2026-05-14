@@ -1,3 +1,4 @@
+using System.Reflection;
 using Microsoft.OpenApi.Models;
 
 namespace CollaborationSystem.Api.Extensions;
@@ -14,6 +15,13 @@ public static class SwaggerExtensions
                 Title = "Collaboration System API",
                 Version = "v1"
             });
+
+            var xmlFileName = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+            var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFileName);
+            if (File.Exists(xmlPath))
+            {
+                options.IncludeXmlComments(xmlPath, includeControllerXmlComments: true);
+            }
 
             var securityScheme = new OpenApiSecurityScheme
             {

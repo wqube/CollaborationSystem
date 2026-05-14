@@ -4,11 +4,13 @@ import type { UserDto } from '../../types/api';
 interface AuthState {
   accessToken: string | null;
   user: UserDto | null;
+  initialized: boolean;
 }
 
 const initialState: AuthState = {
   accessToken: null,
   user: null,
+  initialized: false,
 };
 
 const authSlice = createSlice({
@@ -21,11 +23,13 @@ const authSlice = createSlice({
     ) => {
       state.accessToken = action.payload.token;
       state.user = action.payload.user;
+      state.initialized = true;
     },
 
     clearAuth: (state) => {
       state.accessToken = null;
       state.user = null;
+      state.initialized = true;
     },
   },
 });
