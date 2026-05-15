@@ -5,7 +5,7 @@ import { Badge } from '../components/ui/Badge/Badge';
 import { useAppDispatcher, userAppSelector } from '../shared/store/hooks';
 import { fetchProjects } from '../shared/store/projectsSlice';
 import styles from '../assets/ProfilePage.module.css';
-import { Breadcrumbs } from '../components/Breadcrumbs/BreadCrumbs';
+import { Breadcrumbs } from '../components/Breadcrumbs/Breadcrumbs';
 
 export function ProfilePage() {
   const navigate = useNavigate();
@@ -22,16 +22,6 @@ export function ProfilePage() {
   return (
     <div className={styles.page}>
       <Breadcrumbs />
-      <div className={styles.topBar}>
-        <Button
-          variant="outline"
-          size="md"
-          onClick={() => navigate(`/projects`)}
-        >
-          <img src="/left-arrow.png" width={16} height={16} alt="Назад" />
-        </Button>
-        <h1>Профиль</h1>
-      </div>
       <div className={styles.card}>
         <div className={styles.profileHeader}>
           <div className={styles.avatar}>

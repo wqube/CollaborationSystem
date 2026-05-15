@@ -23,6 +23,10 @@
   color: var(--t-gray, #8a8a8a);
   text-decoration: none;
   transition: color 0.2s;
+  max-width: 250px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .link:hover {
@@ -33,4 +37,8 @@
 .current {
   color: var(--t-black, #1a1a1a);
   font-weight: 600;
+  max-width: 300px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
