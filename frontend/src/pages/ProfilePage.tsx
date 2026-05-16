@@ -63,7 +63,7 @@ export function ProfilePage() {
               onClick={() => navigate(`/projects/${p.id}`)}
             >
               <div>
-                <strong>{p.name}</strong>
+                <strong className={styles.projectName}>{p.name}</strong>
                 <span className={styles.projectDesc}>{p.description}</span>
               </div>
               <Badge variant={getProjectRoleBadgeVariant(p.role)} />

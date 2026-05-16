@@ -265,7 +265,9 @@ export function ProjectPage() {
                     className={styles.row}
                   >
                     <td>
-                      <strong>{s.text}</strong>
+                      <strong className={styles.suggestionText}>
+                        {s.text}
+                      </strong>
                       <br />
                       <span className={styles.idText}>
                         id: {s.id.slice(0, 8)}...

@@ -36,6 +36,7 @@
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
+  gap: 16px;
   margin-bottom: 24px;
 }
 
@@ -187,4 +188,22 @@
   padding: 4px 10px;
   border-radius: 20px;
   font-size: 13px;
+}
+
+.suggestionTitle {
+  font-size: 24px;
+  margin: 0;
+  flex: 1;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  min-width: 0;
+}
+
+.statusSelect {
+  padding: 8px 32px 8px 16px;
+  border: 1px solid #e0e0e0;
+  border-radius: 12px;
+  flex-shrink: 0;
+  width: auto;
+  min-width: 150px;
 }
