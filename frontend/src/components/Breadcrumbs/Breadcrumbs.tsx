@@ -58,16 +58,61 @@ export function Breadcrumbs() {
   const previousPath = (location.state as { from?: string })?.from || '';
 
   const pathParts = location.pathname.split('/').filter(Boolean);
-  const crumbs: Crumb[] = [];
+  const crumbs: Crumb[] = [{ label: 'Мои проекты', path: '/projects' }];
 
-  // 1. Страница профиля – строим крошки из previousPath
-  if (pathParts.length === 1 && pathParts[0] === 'profile') {
-    if (previousPath) {
+  useEffect(() => {
+    if (
+      pathParts.length >= 4 &&
+      pathParts[0] === 'projects' &&
+      pathParts[2] === 'suggestions' &&
+      projectId &&
+      suggestionId
+    ) {
+      apiClient
+        .get<SuggestionSummary>(
+          `/projects/${projectId}/suggestions/${suggestionId}`,
+        )
+        .then((res) => setSuggestionTitle(res.data.text))
+        .catch(() => setSuggestionTitle('Предложение'));
+      return;
+    }
+
+    setSuggestionTitle('');
+  }, [location.pathname, projectId, suggestionId]);
+
+  useEffect(() => {
+    if (pathParts.length === 1 && pathParts[0] === 'profile' && previousPath) {
       const prevParts = previousPath.split('/').filter(Boolean);
-      // Строим базовые крошки до последнего значимого сегмента
-      const baseCrumbs = useCrumbsFromPath(previousPath, projects, true);
 
-      // Определяем, нужно ли добавить название предложения
+      if (
+        prevParts.length >= 4 &&
+        prevParts[0] === 'projects' &&
+        prevParts[2] === 'suggestions'
+      ) {
+        const prevProjectId = prevParts[1];
+        const prevSuggestionId = prevParts[3];
+
+        apiClient
+          .get<SuggestionSummary>(
+            `/projects/${prevProjectId}/suggestions/${prevSuggestionId}`,
+          )
+          .then((res) => setProfileSourceTitle(res.data.text))
+          .catch(() => setProfileSourceTitle('Предложение'));
+        return;
+      }
+    }
+
+    setProfileSourceTitle('');
+  }, [location.pathname, previousPath]);
+
+  const isProfilePage = pathParts.length === 1 && pathParts[0] === 'profile';
+
+  if (isProfilePage) {
+    if (previousPath) {
+      const prevCrumbs = useCrumbsFromPath(previousPath, projects, true);
+      crumbs.push(...prevCrumbs.slice(1));
+
+      const prevParts = previousPath.split('/').filter(Boolean);
       const isSuggestionDetail =
         prevParts.length >= 4 &&
         prevParts[0] === 'projects' &&
@@ -76,36 +121,16 @@ export function Breadcrumbs() {
       if (isSuggestionDetail) {
         const prevProjectId = prevParts[1];
         const prevSuggestionId = prevParts[3];
-        // Загружаем название предложения
-        useEffect(() => {
-          if (!prevProjectId || !prevSuggestionId) return;
-          apiClient
-            .get<SuggestionSummary>(
-              `/projects/${prevProjectId}/suggestions/${prevSuggestionId}`,
-            )
-            .then((res) => setProfileSourceTitle(res.data.text))
-            .catch(() => setProfileSourceTitle('Предложение'));
-        }, [prevProjectId, prevSuggestionId]);
 
-        if (profileSourceTitle) {
-          baseCrumbs.push({
-            label: profileSourceTitle,
-            path: `/projects/${prevProjectId}/suggestions/${prevSuggestionId}`,
-          });
-        }
+        crumbs.push({
+          label: profileSourceTitle || 'Предложение',
+          path: `/projects/${prevProjectId}/suggestions/${prevSuggestionId}`,
+        });
       }
-
-      crumbs.push(...baseCrumbs);
-    } else {
-      // Если нет previousPath, показываем только Мои проекты -> Профиль
-      crumbs.push({ label: 'Мои проекты', path: '/projects' });
     }
-    crumbs.push({ label: 'Профиль', path: '/profile' });
-  }
-  // 2. Обычные страницы
-  else {
-    crumbs.push({ label: 'Мои проекты', path: '/projects' });
 
+    crumbs.push({ label: 'Профиль', path: '/profile' });
+  } else {
     if (pathParts.length >= 2 && pathParts[0] === 'projects' && projectId) {
       const project = projects.find((p) => p.id === projectId);
       crumbs.push({
@@ -132,20 +157,6 @@ export function Breadcrumbs() {
       pathParts[2] === 'suggestions' &&
       suggestionId
     ) {
-      useEffect(() => {
-        if (!projectId || !suggestionId) return;
-        apiClient
-          .get<SuggestionSummary>(
-            `/projects/${projectId}/suggestions/${suggestionId}`,
-          )
-          .then((res) => setSuggestionTitle(res.data.text))
-          .catch(() => setSuggestionTitle('Предложение'));
-      }, [projectId, suggestionId]);
-
-      // Если пришли со списка предложений, крошка "Все предложения" уже добавлена
-      if (!previousPath.includes('/suggestions')) {
-        // Удалим предпоследний элемент (Все предложения) и добавим заново, если нужно
-      }
       crumbs.push({
         label: suggestionTitle || 'Предложение',
         path: location.pathname,

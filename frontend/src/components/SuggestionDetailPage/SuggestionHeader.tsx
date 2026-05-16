@@ -4,6 +4,7 @@ import type {
   SuggestionDetails,
   SuggestionStatus,
 } from '../../types/api';
+import { canManageProjectSettings } from '../../shared/utils/projectRole';
 import styles from '../../assets/SuggestionDetailPage.module.css';
 
 interface SuggestionHeaderProps {
@@ -39,7 +40,7 @@ export function SuggestionHeader({
   userRole,
   onStatusChange,
 }: SuggestionHeaderProps) {
-  const isAdmin = userRole === 'Admin';
+  const canChangeStatus = canManageProjectSettings(userRole);
 
   return (
     <div className={styles.card}>
@@ -57,10 +58,9 @@ export function SuggestionHeader({
           className={styles.statusSelect}
           value={detail.status}
           onChange={(e) => onStatusChange(e.target.value as SuggestionStatus)}
-          // Только администраторы могут менять статус (предполагаем, что эта информация есть в project.role)
-          disabled={!isAdmin}
+          disabled={!canChangeStatus}
           title={
-            !isAdmin
+            !canChangeStatus
               ? 'Только администраторы могут менять статус'
               : 'Изменить статус'
           }

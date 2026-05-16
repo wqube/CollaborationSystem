@@ -11,6 +11,7 @@ import {
   voteSuggestion,
   deleteVote,
 } from '../shared/api/suggestions';
+import { getDashboard } from '../shared/api/dashboard';
 import {
   createComment,
   deleteComment,
@@ -68,11 +69,11 @@ export function SuggestionDetailPage() {
   const [loading, setLoading] = useState(true);
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
 
-  const userRoleFromState = location.state as
-    | { userRole?: ProjectRole }
-    | undefined;
-  const [userRole] = useState<ProjectRole>(
-    userRoleFromState?.userRole ?? 'Member',
+  const userRoleFromState = (
+    location.state as { userRole?: ProjectRole } | undefined
+  )?.userRole;
+  const [userRole, setUserRole] = useState<ProjectRole>(
+    userRoleFromState ?? 'Member',
   );
 
   const [replyingToId, setReplyingToId] = useState<string | null>(null);
@@ -102,6 +103,29 @@ export function SuggestionDetailPage() {
   useEffect(() => {
     fetchData(false);
   }, [fetchData]);
+
+  useEffect(() => {
+    if (userRoleFromState) {
+      setUserRole(userRoleFromState);
+      return;
+    }
+
+    if (!projectId) return;
+
+    let ignore = false;
+
+    getDashboard(projectId, { pageSize: 1 })
+      .then((data) => {
+        if (!ignore) {
+          setUserRole(data.project.role);
+        }
+      })
+      .catch(() => {});
+
+    return () => {
+      ignore = true;
+    };
+  }, [projectId, userRoleFromState]);
 
   const handleSendMain = async (text: string): Promise<void> => {
     if (!projectId || !suggestionId || !text.trim()) return;

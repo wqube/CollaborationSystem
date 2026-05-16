@@ -8,15 +8,24 @@ import type {
   ProjectMemberDto,
   ProjectRole,
 } from '../../types/api';
+import { getProjectRoleBadgeVariant } from '../../shared/utils/projectRole';
 import styles from '../MembersModal/MembersModal.module.css';
 
 interface MembersModalProps {
   open: boolean;
   onClose: () => void;
   projectId: string;
+  canManageMembers: boolean;
+  canManageRoles: boolean;
 }
 
-export function MembersModal({ open, onClose, projectId }: MembersModalProps) {
+export function MembersModal({
+  open,
+  onClose,
+  projectId,
+  canManageMembers,
+  canManageRoles,
+}: MembersModalProps) {
   const [members, setMembers] = useState<ProjectMemberDto[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -40,7 +49,7 @@ export function MembersModal({ open, onClose, projectId }: MembersModalProps) {
   }, [open, projectId]);
 
   const handleAddMember = async () => {
-    if (!searchUser.trim()) return;
+    if (!canManageMembers || !searchUser.trim()) return;
 
     try {
       setError(null);
@@ -57,6 +66,8 @@ export function MembersModal({ open, onClose, projectId }: MembersModalProps) {
   };
 
   const handleChangeRole = async (userId: string, role: ProjectRole) => {
+    if (!canManageRoles) return;
+
     try {
       await apiClient.patch(`/projects/${projectId}/members/${userId}`, {
         role,
@@ -70,6 +81,8 @@ export function MembersModal({ open, onClose, projectId }: MembersModalProps) {
   };
 
   const handleRemoveMember = async (userId: string) => {
+    if (!canManageMembers) return;
+
     try {
       await apiClient.delete(`/projects/${projectId}/members/${userId}`);
       setMembers((prev) => prev.filter((m) => m.userId !== userId));
@@ -88,29 +101,31 @@ export function MembersModal({ open, onClose, projectId }: MembersModalProps) {
   return (
     <Modal isOpen={open} onClose={onClose} title="Участники проекта" size="lg">
       <div className={styles.content}>
-        <div className={styles.addSection}>
-          <h4>Добавить участника</h4>
-          <div className={styles.addForm}>
-            <input
-              type="text"
-              placeholder="Поиск по имени или email..."
-              value={searchUser}
-              onChange={(e) => setSearchUser(e.target.value)}
-              className={styles.searchInput}
-            />
-            <select
-              className={styles.roleSelect}
-              value={newRole}
-              onChange={(e) => setNewRole(e.target.value as ProjectRole)}
-            >
-              <option value="Member">Member</option>
-              <option value="Admin">Admin</option>
-            </select>
-            <Button variant="primary" onClick={handleAddMember}>
-              Добавить
-            </Button>
+        {canManageMembers && (
+          <div className={styles.addSection}>
+            <h4>Добавить участника</h4>
+            <div className={styles.addForm}>
+              <input
+                type="text"
+                placeholder="Поиск по имени или email..."
+                value={searchUser}
+                onChange={(e) => setSearchUser(e.target.value)}
+                className={styles.searchInput}
+              />
+              <select
+                className={styles.roleSelect}
+                value={newRole}
+                onChange={(e) => setNewRole(e.target.value as ProjectRole)}
+              >
+                <option value="Member">Member</option>
+                <option value="Admin">Admin</option>
+              </select>
+              <Button variant="primary" onClick={handleAddMember}>
+                Добавить
+              </Button>
+            </div>
           </div>
-        </div>
+        )}
 
         {error && <p className={styles.errorText}>{error}</p>}
         {loading && <p>Загрузка...</p>}
@@ -137,26 +152,38 @@ export function MembersModal({ open, onClose, projectId }: MembersModalProps) {
                 </div>
               </div>
               <div className={styles.memberActions}>
-                <Badge variant={member.role === 'Admin' ? 'admin' : 'member'} />
-                <select
-                  value={member.role}
-                  onChange={(e) =>
-                    handleChangeRole(
-                      member.userId,
-                      e.target.value as ProjectRole,
-                    )
-                  }
-                  className={styles.roleSelectSm}
-                >
-                  <option value="Admin">Admin</option>
-                  <option value="Member">Member</option>
-                </select>
-                <button
-                  className={styles.removeBtn}
-                  onClick={() => handleRemoveMember(member.userId)}
-                >
-                  X
-                </button>
+                <Badge variant={getProjectRoleBadgeVariant(member.role)} />
+                {canManageRoles && (
+                  <>
+                    <select
+                      value={member.role}
+                      onChange={(e) =>
+                        handleChangeRole(
+                          member.userId,
+                          e.target.value as ProjectRole,
+                        )
+                      }
+                      className={styles.roleSelectSm}
+                    >
+                      <option value="Admin">Admin</option>
+                      <option value="Member">Member</option>
+                    </select>
+                    <button
+                      className={styles.removeBtn}
+                      onClick={() => handleRemoveMember(member.userId)}
+                    >
+                      X
+                    </button>
+                  </>
+                )}
+                {!canManageRoles && canManageMembers && (
+                  <button
+                    className={styles.removeBtn}
+                    onClick={() => handleRemoveMember(member.userId)}
+                  >
+                    X
+                  </button>
+                )}
               </div>
             </div>
           ))}
