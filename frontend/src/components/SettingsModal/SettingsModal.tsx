@@ -1,4 +1,5 @@
-import { useState } from 'react';
+// SettingsModal.tsx
+import { useState, useEffect } from 'react';
 import { Modal } from '../ui/Modal/Modal';
 import { Button } from '../ui/Button/Button';
 import styles from '../SettingsModal/SettingsModal.module.css';
@@ -22,6 +23,14 @@ export function SettingsModal({
   const [description, setDescription] = useState(projectDescription);
   const [loading, setLoading] = useState(false);
 
+  // Синхронизируем состояние при открытии
+  useEffect(() => {
+    if (open) {
+      setName(projectName);
+      setDescription(projectDescription);
+    }
+  }, [open, projectName, projectDescription]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -43,20 +52,24 @@ export function SettingsModal({
             className={styles.disabled}
           />
         </div>
+
         <div className={styles.field}>
           <label>Название проекта</label>
           <input
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
+            placeholder="Введите название проекта"
           />
         </div>
+
         <div className={styles.field}>
           <label>Описание</label>
           <textarea
             rows={3}
             value={description}
             onChange={(e) => setDescription(e.target.value)}
+            placeholder="Введите описание прокта"
           />
         </div>
 

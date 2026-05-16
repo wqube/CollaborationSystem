@@ -4,7 +4,7 @@ import { Button } from '../components/ui/Button/Button';
 import { SuggestionHeader } from '../components/SuggestionDetailPage/SuggestionHeader';
 import { VotePanel } from '../components/SuggestionDetailPage/VotePanel';
 import { CommentsSection } from '../components/SuggestionDetailPage/CommentsSection';
-import { Breadcrumbs } from '../components/Breadcrumbs/BreadCrumbs';
+import { Breadcrumbs } from '../components/Breadcrumbs/Breadcrumbs';
 import {
   getSuggestionDetails,
   updateSuggestionStatus,
@@ -210,12 +210,6 @@ export function SuggestionDetailPage() {
     <div className={styles.page}>
       {loading && <div className={styles.overlayLoader}>Загрузка...</div>}
       <Breadcrumbs />
-      <div className={styles.topBar}>
-        <Button variant="outline" size="md" onClick={() => navigate(-1)}>
-          <img src="/left-arrow.png" width={16} height={16} alt="Назад" />
-        </Button>
-        <h1>Страница предложения</h1>
-      </div>
 
       <div className={styles.twoColumns}>
         <div className={styles.main}>

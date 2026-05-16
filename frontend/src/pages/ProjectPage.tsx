@@ -16,7 +16,7 @@ import type {
 } from '../types/api';
 import { CreateSuggestionButton } from '../components/CreateSuggestionButton/CreateSuggestionButton';
 import { SuggestionVoteCell } from '../components/SuggestionVoteCell/SuggestionVoteCell';
-import { Breadcrumbs } from '../components/Breadcrumbs/BreadCrumbs';
+import { Breadcrumbs } from '../components/Breadcrumbs/Breadcrumbs';
 
 export interface suggestionsPreviewInterface {
   suggestionsPreview: SuggestionSummary[];
@@ -90,7 +90,6 @@ export function ProjectPage() {
   return (
     <div className={styles.page}>
       <Breadcrumbs />
-      {project && <h1 className={styles.projectTitle}>{project.name}</h1>}
       <div className={styles.header}>
         <Tabs tabs={TABS} activeTab={activeTab} onChange={handleTabChange} />
         <div className={styles.actions}>
