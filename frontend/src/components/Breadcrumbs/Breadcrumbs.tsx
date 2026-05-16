@@ -34,10 +34,13 @@ export function Breadcrumbs() {
     });
   }
 
-  // /projects/:id/suggestions или /projects/:id/drafts
-  if (pathParts.length >= 3 && pathParts[0] === 'projects') {
+  // /projects/:id/drafts
+  if (
+    pathParts.length >= 3 &&
+    pathParts[0] === 'projects' &&
+    pathParts[2] === 'drafts'
+  ) {
     const sectionMap: Record<string, string> = {
-      suggestions: 'Все предложения',
       drafts: 'Черновики',
     };
     const section = sectionMap[pathParts[2]] || pathParts[2];

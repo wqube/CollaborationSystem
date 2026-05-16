@@ -4,6 +4,7 @@ import { Button } from '../components/ui/Button/Button';
 import { Badge } from '../components/ui/Badge/Badge';
 import { useAppDispatcher, userAppSelector } from '../shared/store/hooks';
 import { fetchProjects } from '../shared/store/projectsSlice';
+import { getProjectRoleBadgeVariant } from '../shared/utils/projectRole';
 import styles from '../assets/ProfilePage.module.css';
 import { Breadcrumbs } from '../components/Breadcrumbs/BreadCrumbs';
 
@@ -75,7 +76,7 @@ export function ProfilePage() {
                 <strong>{p.name}</strong>
                 <span className={styles.projectDesc}>{p.description}</span>
               </div>
-              <Badge variant={p.role === 'Admin' ? 'admin' : 'member'} />
+              <Badge variant={getProjectRoleBadgeVariant(p.role)} />
             </div>
           ))}
         </div>

@@ -6,7 +6,6 @@ import { ProjectPage } from '../pages/ProjectPage';
 import { DraftsPage } from '../pages/DraftsPage';
 import { Layout } from '../components/layout/Layout';
 import { ProfilePage } from '../pages/ProfilePage';
-import { SuggestionListPage } from '../pages/SuggestionListPage';
 import { ProtectedRoute } from '../components/ProtectedRoute/ProtectedRoute';
 import { SmartRedirect } from '../components/SmartRedirect/SmartRedirect';
 
@@ -24,11 +23,6 @@ export function AppRouter() {
 
           <Route path="/projects" element={<ProjectListPage />} />
           <Route path="/projects/:projectId" element={<ProjectPage />} />
-
-          <Route
-            path="/projects/:projectId/suggestions"
-            element={<SuggestionListPage />}
-          />
 
           <Route
             path="/projects/:projectId/suggestions/:suggestionId"
