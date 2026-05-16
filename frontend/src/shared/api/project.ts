@@ -14,3 +14,7 @@ export const createProjectApi = async (
   const response = await apiClient.post<ProjectSummary>('/projects', data);
   return response.data;
 };
+
+export const deleteProjectApi = async (projectId: string): Promise<void> => {
+  await apiClient.delete(`/projects/${projectId}`);
+};

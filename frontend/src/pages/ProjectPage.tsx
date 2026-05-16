@@ -120,6 +120,12 @@ export function ProjectPage() {
     setPage(1);
   };
 
+  const handleProjectDeleted = useCallback(async () => {
+    setSettingsModalOpen(false);
+    await dispatch(fetchProjects());
+    navigate('/projects');
+  }, [dispatch, navigate]);
+
   const formatDate = (iso: string) =>
     new Date(iso).toLocaleDateString('ru-RU', {
       year: 'numeric',
@@ -348,6 +354,7 @@ export function ProjectPage() {
           projectId={projectId!}
           projectName={project?.name ?? ''}
           projectDescription={project?.description ?? ''}
+          onDeleted={handleProjectDeleted}
         />
       )}
       <MembersModal
