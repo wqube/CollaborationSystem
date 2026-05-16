@@ -45,14 +45,7 @@ export function SuggestionHeader({
   return (
     <div className={styles.card}>
       <div className={styles.top}>
-        <div>
-          <h1>{detail.text}</h1>
-          <div className={styles.meta}>
-            <Badge variant={getBadgeVariant(detail.status)} />
-            <span>Автор: {detail.author.displayName}</span>
-            <span>Создано: {formatDate(detail.createdAt)}</span>
-          </div>
-        </div>
+        <h1 className={styles.suggestionTitle}>{detail.text}</h1>
 
         <select
           className={styles.statusSelect}
@@ -71,6 +64,13 @@ export function SuggestionHeader({
           <option value="Rejected">Rejected</option>
         </select>
       </div>
+
+      <div className={styles.meta}>
+        <Badge variant={getBadgeVariant(detail.status)} />
+        <span>Автор: {detail.author.displayName}</span>
+        <span>Создано: {formatDate(detail.createdAt)}</span>
+      </div>
+
       <p className={styles.description}>{detail.text}</p>
       <div className={styles.meta}>
         id: {detail.id.slice(0, 8)}... | updated: {formatDate(detail.updatedAt)}

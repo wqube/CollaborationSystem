@@ -1,4 +1,3 @@
-// Breadcrumbs.tsx (итоговая версия)
 import { useLocation, useParams, Link } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { userAppSelector } from '../../shared/store/hooks';
@@ -9,41 +8,6 @@ import styles from './Breadcrumbs.module.css';
 interface Crumb {
   label: string;
   path: string;
-}
-
-// Функция построения крошек по произвольному пути
-function useCrumbsFromPath(
-  path: string,
-  projects: any[],
-  skipLast: boolean = false,
-) {
-  const parts = path.split('/').filter(Boolean);
-  const crumbs: Crumb[] = [{ label: 'Мои проекты', path: '/projects' }];
-
-  if (parts[0] !== 'projects' || parts.length < 2) return crumbs;
-
-  const projectId = parts[1];
-  const project = projects.find((p) => p.id === projectId);
-  crumbs.push({
-    label: project?.name || 'Проект',
-    path: `/projects/${projectId}`,
-  });
-
-  if (parts.length >= 3) {
-    const sectionMap: Record<string, string> = {
-      suggestions: 'Все предложения',
-      drafts: 'Черновики',
-    };
-    const section = sectionMap[parts[2]] || parts[2];
-    if (!skipLast || parts.length > 3) {
-      crumbs.push({
-        label: section,
-        path: `/${parts.slice(0, 3).join('/')}`,
-      });
-    }
-  }
-
-  return crumbs;
 }
 
 export function Breadcrumbs() {
@@ -60,6 +24,7 @@ export function Breadcrumbs() {
   const pathParts = location.pathname.split('/').filter(Boolean);
   const crumbs: Crumb[] = [{ label: 'Мои проекты', path: '/projects' }];
 
+  // Загружаем название предложения для страницы детализации
   useEffect(() => {
     if (
       pathParts.length >= 4 &&
@@ -80,6 +45,7 @@ export function Breadcrumbs() {
     setSuggestionTitle('');
   }, [location.pathname, projectId, suggestionId]);
 
+  // Загружаем название предложения для страницы профиля
   useEffect(() => {
     if (pathParts.length === 1 && pathParts[0] === 'profile' && previousPath) {
       const prevParts = previousPath.split('/').filter(Boolean);
@@ -109,10 +75,28 @@ export function Breadcrumbs() {
 
   if (isProfilePage) {
     if (previousPath) {
-      const prevCrumbs = useCrumbsFromPath(previousPath, projects, true);
-      crumbs.push(...prevCrumbs.slice(1));
-
       const prevParts = previousPath.split('/').filter(Boolean);
+
+      if (prevParts.length >= 2 && prevParts[0] === 'projects') {
+        const prevProjectId = prevParts[1];
+        const project = projects.find((p) => p.id === prevProjectId);
+        crumbs.push({
+          label: project?.name || 'Проект',
+          path: `/projects/${prevProjectId}`,
+        });
+      }
+
+      if (
+        prevParts.length === 3 &&
+        prevParts[0] === 'projects' &&
+        prevParts[2] === 'drafts'
+      ) {
+        crumbs.push({
+          label: 'Черновики',
+          path: `/${prevParts.join('/')}`,
+        });
+      }
+
       const isSuggestionDetail =
         prevParts.length >= 4 &&
         prevParts[0] === 'projects' &&
@@ -131,6 +115,8 @@ export function Breadcrumbs() {
 
     crumbs.push({ label: 'Профиль', path: '/profile' });
   } else {
+    // ← ЭТОГО БЛОКА НЕ БЫЛО
+    // Обычные страницы (не профиль)
     if (pathParts.length >= 2 && pathParts[0] === 'projects' && projectId) {
       const project = projects.find((p) => p.id === projectId);
       crumbs.push({
@@ -139,18 +125,19 @@ export function Breadcrumbs() {
       });
     }
 
-    if (pathParts.length >= 3 && pathParts[0] === 'projects') {
-      const sectionMap: Record<string, string> = {
-        suggestions: 'Все предложения',
-        drafts: 'Черновики',
-      };
-      const section = sectionMap[pathParts[2]] || pathParts[2];
+    // Черновики
+    if (
+      pathParts.length === 3 &&
+      pathParts[0] === 'projects' &&
+      pathParts[2] === 'drafts'
+    ) {
       crumbs.push({
-        label: section,
-        path: `/${pathParts.slice(0, 3).join('/')}`,
+        label: 'Черновики',
+        path: `/${pathParts.join('/')}`,
       });
     }
 
+    // Предложение
     if (
       pathParts.length >= 4 &&
       pathParts[0] === 'projects' &&
