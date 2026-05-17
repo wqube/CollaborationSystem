@@ -128,6 +128,14 @@ export function ProjectPage() {
     setPage(1);
   };
 
+  const handleProjectSaved = useCallback(
+    async (updateProject: ProjectSummary) => {
+      setProject(updateProject);
+      await dispatch(fetchProjects());
+    },
+    [dispatch],
+  );
+
   const handleProjectDeleted = useCallback(async () => {
     setSettingsModalOpen(false);
     await dispatch(fetchProjects());
@@ -403,6 +411,7 @@ export function ProjectPage() {
           projectDescription={project?.description ?? ''}
           voteSettings={voteSettings}
           onDeleted={handleProjectDeleted}
+          onProjectSaved={handleProjectSaved}
           onSettingsSaved={handleProjectSettingsSaved}
         />
       )}
