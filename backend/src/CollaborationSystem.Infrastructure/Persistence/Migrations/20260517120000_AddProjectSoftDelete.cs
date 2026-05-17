@@ -11,12 +11,11 @@ namespace CollaborationSystem.Infrastructure.Persistence.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.AddColumn<DateTime>(
-                name: "DeletedAtUtc",
-                schema: "public",
-                table: "Projects",
-                type: "timestamp with time zone",
-                nullable: true);
+            migrationBuilder.Sql(
+                """
+                ALTER TABLE "public"."Projects"
+                ADD COLUMN IF NOT EXISTS "DeletedAtUtc" timestamp with time zone NULL;
+                """);
 
             migrationBuilder.Sql(
                 """
@@ -39,27 +38,27 @@ namespace CollaborationSystem.Infrastructure.Persistence.Migrations
                   );
                 """);
 
-            migrationBuilder.CreateIndex(
-                name: "IX_AuthSessions_UserId_Active",
-                schema: "public",
-                table: "AuthSessions",
-                column: "UserId",
-                unique: true,
-                filter: "\"RevokedAtUtc\" IS NULL");
+            migrationBuilder.Sql(
+                """
+                CREATE UNIQUE INDEX IF NOT EXISTS "IX_AuthSessions_UserId_Active"
+                ON "public"."AuthSessions" ("UserId")
+                WHERE "RevokedAtUtc" IS NULL;
+                """);
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropIndex(
-                name: "IX_AuthSessions_UserId_Active",
-                schema: "public",
-                table: "AuthSessions");
+            migrationBuilder.Sql(
+                """
+                DROP INDEX IF EXISTS "public"."IX_AuthSessions_UserId_Active";
+                """);
 
-            migrationBuilder.DropColumn(
-                name: "DeletedAtUtc",
-                schema: "public",
-                table: "Projects");
+            migrationBuilder.Sql(
+                """
+                ALTER TABLE "public"."Projects"
+                DROP COLUMN IF EXISTS "DeletedAtUtc";
+                """);
         }
     }
 }
