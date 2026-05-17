@@ -36,8 +36,58 @@ namespace CollaborationSystem.Infrastructure.Persistence.Migrations
 
             migrationBuilder.Sql(
                 """
+                WITH duplicates AS (
+                    SELECT
+                        "Id",
+                        "NormalizedName",
+                        row_number() OVER (
+                            PARTITION BY "NormalizedName"
+                            ORDER BY "CreatedAtUtc", "Id"
+                        ) AS duplicate_number,
+                        count(*) OVER (PARTITION BY "NormalizedName") AS duplicate_count
+                    FROM "public"."Projects"
+                    WHERE "DeletedAtUtc" IS NULL
+                )
+                UPDATE "public"."Projects" AS project
+                SET "NormalizedName" = left(duplicates."NormalizedName", 191)
+                    || '-'
+                    || left(project."Id"::text, 8)
+                FROM duplicates
+                WHERE project."Id" = duplicates."Id"
+                  AND duplicates.duplicate_count > 1
+                  AND duplicates.duplicate_number > 1;
+                """);
+
+            migrationBuilder.Sql(
+                """
                 UPDATE "public"."Suggestions"
                 SET "NormalizedText" = lower(btrim("Text"));
+                """);
+
+            migrationBuilder.Sql(
+                """
+                WITH duplicates AS (
+                    SELECT
+                        "Id",
+                        "ProjectId",
+                        "NormalizedText",
+                        row_number() OVER (
+                            PARTITION BY "ProjectId", "NormalizedText"
+                            ORDER BY "CreatedAtUtc", "Id"
+                        ) AS duplicate_number,
+                        count(*) OVER (
+                            PARTITION BY "ProjectId", "NormalizedText"
+                        ) AS duplicate_count
+                    FROM "public"."Suggestions"
+                )
+                UPDATE "public"."Suggestions" AS suggestion
+                SET "NormalizedText" = left(duplicates."NormalizedText", 3991)
+                    || '-'
+                    || left(suggestion."Id"::text, 8)
+                FROM duplicates
+                WHERE suggestion."Id" = duplicates."Id"
+                  AND duplicates.duplicate_count > 1
+                  AND duplicates.duplicate_number > 1;
                 """);
 
             migrationBuilder.Sql(
