@@ -1,10 +1,13 @@
 using CollaborationSystem.Application.Abstractions;
 using CollaborationSystem.Application.Auth;
+using CollaborationSystem.Domain.Entities;
+using CollaborationSystem.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 
 namespace CollaborationSystem.Infrastructure.Auth;
 
-public sealed class DevUserStore : IDevUserStore
+public sealed class DevUserStore(AppDbContext dbContext) : IDevUserStore
 {
     private static readonly SeedUser[] SeedUsers =
     [
@@ -22,65 +25,81 @@ public sealed class DevUserStore : IDevUserStore
             "password")
     ];
 
-    private readonly PasswordHasher<StoredDevUser> passwordHasher = new();
-    private readonly IReadOnlyList<StoredDevUser> users;
+    private const string LegacySeedPasswordHash = "DEV_PASSWORD_HASH";
+    private readonly PasswordHasher<AppUser> passwordHasher = new();
 
-    public DevUserStore()
-    {
-        users = SeedUsers
-            .Select(seed =>
-            {
-                var user = new StoredDevUser(
-                    seed.Id,
-                    seed.Email,
-                    seed.DisplayName,
-                    seed.DomainLogin,
-                    PasswordHash: string.Empty);
-
-                return user with
-                {
-                    PasswordHash = passwordHasher.HashPassword(user, seed.Password)
-                };
-            })
-            .ToArray();
-    }
-
-    public Task<DevUser?> FindByIdAsync(Guid userId, CancellationToken cancellationToken = default)
+    public async Task<DevUser?> FindByIdAsync(Guid userId, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        var user = users.FirstOrDefault(x => x.Id == userId);
+        var user = await dbContext.UsersProfile
+            .AsNoTracking()
+            .FirstOrDefaultAsync(x => x.Id == userId, cancellationToken);
 
-        return Task.FromResult(user is null ? null : ToDevUser(user));
+        return user is null ? null : ToDevUser(user);
     }
 
-    public Task<DevUser?> ValidateCredentialsAsync(
+    public async Task<DevUser?> ValidateCredentialsAsync(
         string email,
         string password,
         CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        var user = users.FirstOrDefault(x =>
-            string.Equals(x.Email, email, StringComparison.OrdinalIgnoreCase));
+        var normalizedEmail = email.Trim().ToLowerInvariant();
+        var user = await dbContext.UsersProfile
+            .FirstOrDefaultAsync(x => x.Email.ToLower() == normalizedEmail, cancellationToken);
 
         if (user is null)
         {
-            return Task.FromResult<DevUser?>(null);
+            var seed = SeedUsers.FirstOrDefault(x =>
+                string.Equals(x.Email, normalizedEmail, StringComparison.OrdinalIgnoreCase) &&
+                x.Password == password);
+
+            if (seed is null)
+            {
+                return null;
+            }
+
+            user = new AppUser
+            {
+                Id = seed.Id,
+                Email = seed.Email,
+                DisplayName = seed.DisplayName,
+                DomainLogin = seed.DomainLogin
+            };
+            user.PasswordHash = passwordHasher.HashPassword(user, password);
+
+            dbContext.UsersProfile.Add(user);
+            await dbContext.SaveChangesAsync(cancellationToken);
+
+            return ToDevUser(user);
         }
 
-        var verificationResult = passwordHasher.VerifyHashedPassword(
-            user,
-            user.PasswordHash,
-            password);
+        if (user.PasswordHash == LegacySeedPasswordHash)
+        {
+            var seed = SeedUsers.FirstOrDefault(x =>
+                string.Equals(x.Email, user.Email, StringComparison.OrdinalIgnoreCase) &&
+                x.Password == password);
 
-        return Task.FromResult(
-            verificationResult == PasswordVerificationResult.Failed
-                ? null
-                : ToDevUser(user));
+            if (seed is null)
+            {
+                return null;
+            }
+
+            user.PasswordHash = passwordHasher.HashPassword(user, password);
+            user.UpdatedAtUtc = DateTime.UtcNow;
+            await dbContext.SaveChangesAsync(cancellationToken);
+
+            return ToDevUser(user);
+        }
+
+        var verificationResult = passwordHasher.VerifyHashedPassword(user, user.PasswordHash, password);
+
+        return verificationResult == PasswordVerificationResult.Failed ? null : ToDevUser(user);
     }
 
-    private static DevUser ToDevUser(StoredDevUser user) =>
+    private static DevUser ToDevUser(AppUser user) =>
         new(user.Id, user.Email, user.DisplayName, user.DomainLogin);
 
     private sealed record SeedUser(
@@ -89,11 +108,4 @@ public sealed class DevUserStore : IDevUserStore
         string DisplayName,
         string DomainLogin,
         string Password);
-
-    private sealed record StoredDevUser(
-        Guid Id,
-        string Email,
-        string DisplayName,
-        string DomainLogin,
-        string PasswordHash);
 }

@@ -284,6 +284,8 @@ Cookie устанавливается сервером через Set-Cookie:
 
 #### `AddProjectMemberRequest`
 
+Only `Member` or `Admin` can be sent here.
+
 ```json
 {
   "userId": "3f11a6dc-79a6-43f7-ac88-bb78dd70d712",
@@ -300,6 +302,8 @@ Cookie устанавливается сервером через Set-Cookie:
   "role": "Admin"
 }
 ```
+
+Only `Member` or `Admin` can be sent here.
 
 #### `CreateSuggestionRequest`
 
@@ -545,7 +549,7 @@ Query params:
 
 ### 4.7 `POST /api/v1/projects`
 
-Назначение: создать новый проект. Создатель автоматически становится администратором.
+Назначение: создать новый проект. Создатель автоматически становится `Admin`.
 
 Тело запроса: `CreateProjectRequest`.
 
@@ -639,7 +643,25 @@ Path params:
 
 Ошибки: `400`, `401`, `403`, `404`, `409`.
 
+### 4.9.1 `DELETE /api/v1/projects/{projectId}`
+
+Purpose: soft delete a project.
+
+Access: project `Admin` only.
+
+Rules:
+
+- if the project does not exist or was soft-deleted, return `404`;
+- if the current user is not a project member, return `403`;
+- if the current user is `Member`, return `403`;
+- on success set `DeletedAtUtc` and return `204 No Content`;
+- a deleted project is hidden from project list, details, dashboard, suggestions, comments, votes, and drafts endpoints.
+
+Errors: `401`, `403`, `404`.
+
 ### 4.10 `PATCH /api/v1/projects/{projectId}/members/{userId}`
+
+Additional rule: returns `409` if the change would leave the project without any `Admin`.
 
 Назначение: изменить роль участника проекта.
 
@@ -676,6 +698,8 @@ Path params:
 
 ### 4.11 `DELETE /api/v1/projects/{projectId}/members/{userId}`
 
+Additional rule: returns `409` if deleting the member would leave the project without any `Admin`.
+
 Назначение: удалить участника из проекта.
 
 Доступ: только администратор проекта.
@@ -688,6 +712,22 @@ Path params:
 Пример ответа: `204 No Content`
 
 Ошибки: `401`, `403`, `404`.
+
+### 4.11.1 `DELETE /api/v1/projects/{projectId}/members/me`
+
+Purpose: leave the project as the current user.
+
+Rules:
+
+- the current user can remove only their own membership;
+- `Member` can always leave an active project;
+- `Admin` can leave only if another `Admin` remains in the project;
+- the last `Admin` receives `409 Conflict` with message `Project must have at least one admin.`;
+- leaving a project never deletes the project itself.
+
+Response: `204 No Content`.
+
+Errors: `401`, `403`, `404`, `409`.
 
 ### 4.12 `GET /api/v1/projects/{projectId}/suggestions`
 
@@ -1269,7 +1309,10 @@ Path params:
 
 ## 5. Согласованные ограничения модели
 
-- Роль администратора проекта хранится в membership-модели, отдельная таблица `project_admins` не требуется.
+- Роли проекта хранятся в membership-модели, отдельная таблица `project_admins` не требуется.
+- `Creator` как отдельная роль не используется; создатель проекта становится `Admin`.
+- Проект всегда должен иметь хотя бы одного `Admin`.
+- Удаленные проекты помечаются через `DeletedAtUtc` и скрываются из всех project endpoints.
 - Агрегированный `score` предложения вычисляется из активных голосов.
 - Комментарии в API возвращаются плоским списком с `parentCommentId`; дерево строится на клиенте.
 - Для MVP комментарии возвращаются без пагинации, целиком по предложению.

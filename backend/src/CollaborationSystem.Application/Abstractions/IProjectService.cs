@@ -21,4 +21,8 @@ public interface IProjectService
     Task<ProjectSummaryResponse> CreateProjectAsync(
         CreateProjectRequest request,
         CancellationToken cancellationToken = default);
+
+    Task<ProjectOperationResult<bool>> DeleteProjectAsync(
+        Guid projectId,
+        CancellationToken cancellationToken = default);
 }

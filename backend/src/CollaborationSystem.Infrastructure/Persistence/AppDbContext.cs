@@ -96,6 +96,12 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
             .IsUnique();
 
         builder.Entity<RefreshSession>()
+            .HasIndex(x => x.UserId)
+            .IsUnique()
+            .HasDatabaseName("IX_AuthSessions_UserId_Active")
+            .HasFilter("\"RevokedAtUtc\" IS NULL");
+
+        builder.Entity<RefreshSession>()
             .Property(x => x.RefreshTokenHash)
             .HasMaxLength(256);
 

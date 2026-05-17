@@ -4,7 +4,7 @@ import { Button } from '../components/ui/Button/Button';
 import { SuggestionHeader } from '../components/SuggestionDetailPage/SuggestionHeader';
 import { VotePanel } from '../components/SuggestionDetailPage/VotePanel';
 import { CommentsSection } from '../components/SuggestionDetailPage/CommentsSection';
-import { Breadcrumbs } from '../components/Breadcrumbs/BreadCrumbs';
+import { Breadcrumbs } from '../components/Breadcrumbs/Breadcrumbs';
 import {
   getSuggestionDetails,
   updateSuggestionStatus,

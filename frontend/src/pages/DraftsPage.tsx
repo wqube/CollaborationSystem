@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/Button/Button';
 import apiClient from '../shared/api/client';
 import styles from '../assets/DraftsPage.module.css';
-import { Breadcrumbs } from '../components/Breadcrumbs/BreadCrumbs';
+import { Breadcrumbs } from '../components/Breadcrumbs/Breadcrumbs';
 
 type DraftType = 'Suggestion' | 'Comment';
 
@@ -28,9 +28,9 @@ interface DraftDto {
 type ActiveTab = 'all' | 'Suggestion' | 'Comment';
 
 function isCommentPayload(
-  payload: SuggestionPayload | CommentPayload,
+  _payload: SuggestionPayload | CommentPayload,
   type: DraftType,
-): payload is CommentPayload {
+): _payload is CommentPayload {
   return type === 'Comment';
 }
 

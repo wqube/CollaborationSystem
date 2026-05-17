@@ -21,7 +21,7 @@ public sealed class ProjectService(
         var projectMembershipsQuery = dbContext.ProjectMembers
             .AsNoTracking()
             .Where(x => x.UserId == currentUserId)
-            .Where(x => x.Project != null);
+            .Where(x => x.Project != null && x.Project.DeletedAtUtc == null);
 
         var total = await projectMembershipsQuery.CountAsync(cancellationToken);
         var items = await projectMembershipsQuery
@@ -102,7 +102,11 @@ public sealed class ProjectService(
 
         var projectWithRole = await dbContext.ProjectMembers
             .AsNoTracking()
-            .Where(x => x.ProjectId == projectId && x.UserId == currentUserId)
+            .Where(x =>
+                x.ProjectId == projectId &&
+                x.UserId == currentUserId &&
+                x.Project != null &&
+                x.Project.DeletedAtUtc == null)
             .Select(x => new
             {
                 x.Role,
@@ -228,13 +232,46 @@ public sealed class ProjectService(
         };
     }
 
+    public async Task<ProjectOperationResult<bool>> DeleteProjectAsync(
+        Guid projectId,
+        CancellationToken cancellationToken = default)
+    {
+        var project = await dbContext.Projects
+            .FirstOrDefaultAsync(x => x.Id == projectId && x.DeletedAtUtc == null, cancellationToken);
+
+        if (project is null)
+        {
+            return ProjectOperationResult<bool>.Failure(ProjectOperationStatus.ProjectNotFound);
+        }
+
+        var currentUserId = currentUserService.GetRequiredUserId();
+        var currentMember = await dbContext.ProjectMembers
+            .AsNoTracking()
+            .FirstOrDefaultAsync(
+                x => x.ProjectId == projectId && x.UserId == currentUserId,
+                cancellationToken);
+
+        if (currentMember is null || currentMember.Role != ProjectRole.Admin)
+        {
+            return ProjectOperationResult<bool>.Failure(ProjectOperationStatus.Forbidden);
+        }
+
+        var utcNow = DateTime.UtcNow;
+        project.DeletedAtUtc = utcNow;
+        project.UpdatedAtUtc = utcNow;
+
+        await dbContext.SaveChangesAsync(cancellationToken);
+
+        return ProjectOperationResult<bool>.Success(true);
+    }
+
     private async Task<ProjectOperationStatus> GetProjectAccessStatusAsync(
         Guid projectId,
         CancellationToken cancellationToken)
     {
         var projectExists = await dbContext.Projects
             .AsNoTracking()
-            .AnyAsync(x => x.Id == projectId, cancellationToken);
+            .AnyAsync(x => x.Id == projectId && x.DeletedAtUtc == null, cancellationToken);
 
         if (!projectExists)
         {

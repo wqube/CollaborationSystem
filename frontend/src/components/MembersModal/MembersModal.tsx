@@ -137,7 +137,7 @@ export function MembersModal({ open, onClose, projectId }: MembersModalProps) {
                 </div>
               </div>
               <div className={styles.memberActions}>
-                <Badge variant={member.role === 'Admin' ? 'admin' : 'member'} />
+                <Badge variant={member.role === 'Member' ? 'member' : 'admin'} />
                 <select
                   value={member.role}
                   onChange={(e) =>

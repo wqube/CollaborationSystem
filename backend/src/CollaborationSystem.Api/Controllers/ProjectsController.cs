@@ -83,6 +83,25 @@ public class ProjectsController(IProjectService projectService) : ControllerBase
         return ToProjectActionResult(result);
     }
 
+    /// <summary>
+    /// Soft deletes a project.
+    /// </summary>
+    [HttpDelete("{projectId:guid}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> DeleteProject(
+        Guid projectId,
+        CancellationToken cancellationToken)
+    {
+        var result = await projectService.DeleteProjectAsync(projectId, cancellationToken);
+
+        return result.Status == ProjectOperationStatus.Success
+            ? NoContent()
+            : ToProjectErrorActionResult(result.Status);
+    }
+
     private ActionResult<T> ToProjectActionResult<T>(ProjectOperationResult<T> result)
     {
         if (result.Status == ProjectOperationStatus.Success && result.Value is not null)
@@ -91,6 +110,20 @@ public class ProjectsController(IProjectService projectService) : ControllerBase
         }
 
         return result.Status switch
+        {
+            ProjectOperationStatus.Forbidden => Forbid(),
+            ProjectOperationStatus.ProjectNotFound => Problem(
+                statusCode: StatusCodes.Status404NotFound,
+                title: "Project not found."),
+            _ => Problem(
+                statusCode: StatusCodes.Status400BadRequest,
+                title: "Project operation failed.")
+        };
+    }
+
+    private ActionResult ToProjectErrorActionResult(ProjectOperationStatus status)
+    {
+        return status switch
         {
             ProjectOperationStatus.Forbidden => Forbid(),
             ProjectOperationStatus.ProjectNotFound => Problem(

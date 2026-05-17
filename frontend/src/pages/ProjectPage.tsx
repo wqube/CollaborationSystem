@@ -16,7 +16,7 @@ import type {
 } from '../types/api';
 import { CreateSuggestionButton } from '../components/CreateSuggestionButton/CreateSuggestionButton';
 import { SuggestionVoteCell } from '../components/SuggestionVoteCell/SuggestionVoteCell';
-import { Breadcrumbs } from '../components/Breadcrumbs/BreadCrumbs';
+import { Breadcrumbs } from '../components/Breadcrumbs/Breadcrumbs';
 
 export interface suggestionsPreviewInterface {
   suggestionsPreview: SuggestionSummary[];

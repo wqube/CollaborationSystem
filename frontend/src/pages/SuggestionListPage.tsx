@@ -12,7 +12,7 @@ import styles from '../assets/SuggestionListPage.module.css';
 import { useCallback, useEffect, useState } from 'react';
 import { CreateSuggestionButton } from '../components/CreateSuggestionButton/CreateSuggestionButton';
 import { SuggestionVoteCell } from '../components/SuggestionVoteCell/SuggestionVoteCell';
-import { Breadcrumbs } from '../components/Breadcrumbs/BreadCrumbs';
+import { Breadcrumbs } from '../components/Breadcrumbs/Breadcrumbs';
 
 const PAGE_SIZE = 10;
 

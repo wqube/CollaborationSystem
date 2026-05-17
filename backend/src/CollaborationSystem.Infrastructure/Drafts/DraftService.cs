@@ -246,7 +246,7 @@ public sealed class DraftService(
     {
         var projectExists = await dbContext.Projects
             .AsNoTracking()
-            .AnyAsync(x => x.Id == projectId, cancellationToken);
+            .AnyAsync(x => x.Id == projectId && x.DeletedAtUtc == null, cancellationToken);
 
         if (!projectExists)
         {

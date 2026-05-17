@@ -5,7 +5,7 @@ import { Badge } from '../components/ui/Badge/Badge';
 import { useAppDispatcher, userAppSelector } from '../shared/store/hooks';
 import { fetchProjects } from '../shared/store/projectsSlice';
 import styles from '../assets/ProfilePage.module.css';
-import { Breadcrumbs } from '../components/Breadcrumbs/BreadCrumbs';
+import { Breadcrumbs } from '../components/Breadcrumbs/Breadcrumbs';
 
 export function ProfilePage() {
   const navigate = useNavigate();
