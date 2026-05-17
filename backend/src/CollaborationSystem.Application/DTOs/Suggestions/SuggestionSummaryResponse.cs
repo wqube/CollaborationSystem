@@ -16,6 +16,8 @@ public class SuggestionSummaryResponse
 
     public int Score { get; set; }
 
+    public VoteType? CurrentUserVote { get; set; }
+
     public DateTime CreatedAt { get; set; }
 
     public DateTime UpdatedAt { get; set; }
