@@ -16,10 +16,10 @@ public sealed class ProjectMemberService(
         AddProjectMemberRequest request,
         CancellationToken cancellationToken = default)
     {
-        var projectExists = await dbContext.Projects
-            .AnyAsync(x => x.Id == projectId, cancellationToken);
+        var project = await dbContext.Projects
+            .FirstOrDefaultAsync(x => x.Id == projectId, cancellationToken);
 
-        if (!projectExists)
+        if (project is null)
         {
             return ProjectMemberOperationResult.Failure(ProjectMemberOperationStatus.ProjectNotFound);
         }
@@ -45,13 +45,18 @@ public sealed class ProjectMemberService(
             return ProjectMemberOperationResult.Failure(ProjectMemberOperationStatus.MemberAlreadyExists);
         }
 
+        var utcNow = DateTime.UtcNow;
         var member = new ProjectMember
         {
             ProjectId = projectId,
             UserId = request.UserId,
-            Role = request.Role
+            Role = request.Role,
+            JoinedAtUtc = utcNow,
+            CreatedAtUtc = utcNow,
+            UpdatedAtUtc = utcNow
         };
 
+        VoteQuotaService.InitializeQuota(project, member, utcNow);
         dbContext.ProjectMembers.Add(member);
         await dbContext.SaveChangesAsync(cancellationToken);
 

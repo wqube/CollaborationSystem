@@ -83,6 +83,25 @@ public class ProjectsController(IProjectService projectService) : ControllerBase
         return ToProjectActionResult(result);
     }
 
+    /// <summary>
+    /// Updates project voting settings.
+    /// </summary>
+    [HttpPatch("{projectId:guid}/settings")]
+    [ProducesResponseType(typeof(ProjectVoteSettingsResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<ProjectVoteSettingsResponse>> UpdateSettings(
+        Guid projectId,
+        [FromBody] UpdateProjectSettingsRequest request,
+        CancellationToken cancellationToken)
+    {
+        var result = await projectService.UpdateProjectSettingsAsync(projectId, request, cancellationToken);
+
+        return ToProjectActionResult(result);
+    }
+
     private ActionResult<T> ToProjectActionResult<T>(ProjectOperationResult<T> result)
     {
         if (result.Status == ProjectOperationStatus.Success && result.Value is not null)
