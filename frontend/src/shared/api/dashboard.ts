@@ -1,5 +1,7 @@
 import apiClient from './client';
 import type {
+  CurrentUserVoteQuota,
+  ProjectVoteSettings,
   ProjectSummary,
   SuggestionSummary,
   SuggestionStatus,
@@ -8,6 +10,8 @@ import type {
 
 export interface DashboardResponse {
   project: ProjectSummary;
+  voteSettings: ProjectVoteSettings;
+  currentUserVoteQuota: CurrentUserVoteQuota;
   membersPreview: {
     userId: string;
     displayName: string;

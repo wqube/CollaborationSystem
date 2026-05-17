@@ -16,7 +16,9 @@ import {
   canManageProjectSettings,
 } from '../shared/utils/projectRole';
 import type {
+  CurrentUserVoteQuota,
   OrderSort,
+  ProjectVoteSettings,
   ProjectSummary,
   SuggestionSort,
   SuggestionStatus,
@@ -56,6 +58,10 @@ export function ProjectPage() {
   const [projectLoading, setProjectLoading] = useState(true);
   const [suggestionsLoading, setSuggestionsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [voteSettings, setVoteSettings] = useState<ProjectVoteSettings | null>(
+    null,
+  );
+  const [voteQuota, setVoteQuota] = useState<CurrentUserVoteQuota | null>(null);
 
   const [settingsModalOpen, setSettingsModalOpen] = useState(false);
   const [membersModalOpen, setMembersModalOpen] = useState(false);
@@ -69,6 +75,8 @@ export function ProjectPage() {
     try {
       const data = await getDashboard(projectId, { pageSize: 1 });
       setProject(data.project);
+      setVoteSettings(data.voteSettings);
+      setVoteQuota(data.currentUserVoteQuota);
     } catch {
       setError('Не удалось загрузить данные проекта');
     } finally {
@@ -126,11 +134,29 @@ export function ProjectPage() {
     navigate('/projects');
   }, [dispatch, navigate]);
 
+  const handleProjectSettingsSaved = useCallback(
+    async (settings: ProjectVoteSettings) => {
+      setVoteSettings(settings);
+      await fetchProject();
+      await dispatch(fetchProjects());
+    },
+    [dispatch, fetchProject],
+  );
+
   const formatDate = (iso: string) =>
     new Date(iso).toLocaleDateString('ru-RU', {
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',
+    });
+
+  const formatDateTime = (iso: string) =>
+    new Date(iso).toLocaleString('ru-RU', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
     });
 
   const canManageSettings = canManageProjectSettings(project?.role);
@@ -180,6 +206,15 @@ export function ProjectPage() {
 
       {!projectLoading && !error && (
         <>
+          {voteQuota && (
+            <div className={styles.quotaBar}>
+              <span>
+                Голоса: {voteQuota.votesRemaining} из {voteQuota.votesLimit}
+              </span>
+              <span>Сброс: {formatDateTime(voteQuota.nextResetAt)}</span>
+            </div>
+          )}
+
           <div className={styles.filters}>
             <div className={styles.filterGroup}>
               <label>Поиск</label>
@@ -284,11 +319,23 @@ export function ProjectPage() {
                       <SuggestionVoteCell
                         projectId={projectId!}
                         suggestion={s}
-                        onVoteSuccess={(id, newScore) => {
+                        voteQuota={voteQuota}
+                        onVoteQuotaChange={setVoteQuota}
+                        onVoteSuccess={(
+                          id,
+                          newScore,
+                          currentUserVote,
+                          nextVoteQuota,
+                        ) => {
+                          setVoteQuota(nextVoteQuota);
                           setSuggestions((prev) =>
                             prev.map((item) =>
                               item.id === id
-                                ? { ...item, score: newScore }
+                                ? {
+                                    ...item,
+                                    score: newScore,
+                                    currentUserVote,
+                                  }
                                 : item,
                             ),
                           );
@@ -354,7 +401,9 @@ export function ProjectPage() {
           projectId={projectId!}
           projectName={project?.name ?? ''}
           projectDescription={project?.description ?? ''}
+          voteSettings={voteSettings}
           onDeleted={handleProjectDeleted}
+          onSettingsSaved={handleProjectSettingsSaved}
         />
       )}
       <MembersModal

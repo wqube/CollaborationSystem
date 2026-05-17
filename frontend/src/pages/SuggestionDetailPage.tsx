@@ -6,7 +6,9 @@ import { VotePanel } from '../components/SuggestionDetailPage/VotePanel';
 import { CommentsSection } from '../components/SuggestionDetailPage/CommentsSection';
 import { Breadcrumbs } from '../components/Breadcrumbs/Breadcrumbs';
 import {
+  getVoteQuotaFromError,
   getSuggestionDetails,
+  isVoteLimitExceededError,
   updateSuggestionText,
   updateSuggestionStatus,
   voteSuggestion,
@@ -26,6 +28,7 @@ import type {
   SuggestionStatus,
   VoteType,
   ProjectRole,
+  CurrentUserVoteQuota,
 } from '../types/api';
 import { userAppSelector } from '../shared/store/hooks';
 import styles from '../assets/SuggestionDetailPage.module.css';
@@ -68,6 +71,8 @@ export function SuggestionDetailPage() {
   const [detail, setDetail] = useState<SuggestionDetails | null>(null);
   const [commentTree, setCommentTree] = useState<CommentNode[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [voteError, setVoteError] = useState<string | null>(null);
+  const [voteQuota, setVoteQuota] = useState<CurrentUserVoteQuota | null>(null);
   const [loading, setLoading] = useState(true);
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
 
@@ -109,7 +114,6 @@ export function SuggestionDetailPage() {
   useEffect(() => {
     if (userRoleFromState) {
       setUserRole(userRoleFromState);
-      return;
     }
 
     if (!projectId) return;
@@ -119,7 +123,8 @@ export function SuggestionDetailPage() {
     getDashboard(projectId, { pageSize: 1 })
       .then((data) => {
         if (!ignore) {
-          setUserRole(data.project.role);
+          setUserRole(userRoleFromState ?? data.project.role);
+          setVoteQuota(data.currentUserVoteQuota);
         }
       })
       .catch(() => {});
@@ -235,10 +240,12 @@ export function SuggestionDetailPage() {
   const handleVote = async (voteType: VoteType | null) => {
     if (!projectId || !suggestionId) return;
     try {
+      setVoteError(null);
       const result =
         voteType === null
           ? await deleteVote(projectId, suggestionId)
           : await voteSuggestion(projectId, suggestionId, { voteType });
+      setVoteQuota(result.voteQuota);
       setDetail((prev) =>
         prev
           ? {
@@ -248,8 +255,16 @@ export function SuggestionDetailPage() {
             }
           : prev,
       );
-    } catch {
-      setError('Ошибка голосования');
+    } catch (err: unknown) {
+      const updatedQuota = getVoteQuotaFromError(err);
+      if (updatedQuota) {
+        setVoteQuota(updatedQuota);
+      }
+      setVoteError(
+        isVoteLimitExceededError(err)
+          ? 'Лимит голосов исчерпан'
+          : 'Ошибка голосования',
+      );
     }
   };
 
@@ -296,7 +311,13 @@ export function SuggestionDetailPage() {
         </div>
 
         <div className={styles.sidebar}>
-          <VotePanel detail={detail} loading={loading} onVote={handleVote} />
+          <VotePanel
+            detail={detail}
+            loading={loading}
+            voteQuota={voteQuota}
+            error={voteError}
+            onVote={handleVote}
+          />
           <div className={styles.card}>
             <h4>Действия</h4>
             <Button variant="outline" fullWidth onClick={handleCopyLink}>

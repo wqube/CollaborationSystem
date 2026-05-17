@@ -6,6 +6,7 @@ import type {
   SuggestionSort,
   OrderSort,
   VoteType,
+  CurrentUserVoteQuota,
   CreateSuggestionRequest,
   UpdateSuggestionRequest,
 } from '../../types/api';
@@ -38,7 +39,36 @@ export interface VoteResponse {
   suggestionId: string;
   currentUserVote: VoteType | null;
   score: number;
+  voteQuota: CurrentUserVoteQuota;
 }
+
+interface VoteLimitProblemDetails {
+  status?: number;
+  code?: string;
+  title?: string;
+  voteQuota?: CurrentUserVoteQuota;
+}
+
+export const getVoteQuotaFromError = (
+  error: unknown,
+): CurrentUserVoteQuota | null => {
+  const data = (error as { response?: { data?: VoteLimitProblemDetails } })
+    ?.response?.data;
+
+  return data?.voteQuota ?? null;
+};
+
+export const isVoteLimitExceededError = (error: unknown): boolean => {
+  const response = (
+    error as { response?: { status?: number; data?: VoteLimitProblemDetails } }
+  )?.response;
+
+  return (
+    response?.status === 409 &&
+    (response.data?.code === 'VoteLimitExceeded' ||
+      response.data?.title === 'Vote limit exceeded.')
+  );
+};
 
 export const getSuggestions = async (
   projectId: string,

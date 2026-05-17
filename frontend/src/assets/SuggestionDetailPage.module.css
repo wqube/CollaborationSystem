@@ -202,6 +202,19 @@
   margin: 20px 0;
 }
 
+.voteQuota {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 14px;
+  border: 1px solid #d8e6df;
+  border-radius: 10px;
+  background: #f4fbf7;
+  color: #1f5c3d;
+  font-size: 14px;
+  font-weight: 600;
+}
+
 .bigScore {
   font-size: 32px;
   font-weight: 700;
