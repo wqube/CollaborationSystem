@@ -61,6 +61,14 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
             .Property(x => x.Name)
             .HasMaxLength(200);
 
+        builder.Entity<Project>()
+            .Property(x => x.VotesPerUser)
+            .HasDefaultValue(Project.DefaultVotesPerUser);
+
+        builder.Entity<Project>()
+            .Property(x => x.VoteResetPeriodDays)
+            .HasDefaultValue(Project.DefaultVoteResetPeriodDays);
+
         builder.Entity<ProjectMember>()
             .Property(x => x.Role)
             .HasConversion<string>();
