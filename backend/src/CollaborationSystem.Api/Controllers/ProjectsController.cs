@@ -1,14 +1,14 @@
 using CollaborationSystem.Application.Abstractions;
 using CollaborationSystem.Application.DTOs.Projects;
 using CollaborationSystem.Application.DTOs.Suggestions;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CollaborationSystem.Api.Controllers;
 
 /// <summary>
-/// Provides project listing, creation, details, and dashboard endpoints.
+/// Provides project listing, creation, details, dashboard, settings, and deletion endpoints.
 /// </summary>
 [ApiController]
 [Authorize]
@@ -84,6 +84,25 @@ public class ProjectsController(IProjectService projectService) : ControllerBase
     }
 
     /// <summary>
+    /// Updates project voting settings.
+    /// </summary>
+    [HttpPatch("{projectId:guid}/settings")]
+    [ProducesResponseType(typeof(ProjectVoteSettingsResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<ProjectVoteSettingsResponse>> UpdateSettings(
+        Guid projectId,
+        [FromBody] UpdateProjectSettingsRequest request,
+        CancellationToken cancellationToken)
+    {
+        var result = await projectService.UpdateProjectSettingsAsync(projectId, request, cancellationToken);
+
+        return ToProjectActionResult(result);
+    }
+
+    /// <summary>
     /// Soft deletes a project.
     /// </summary>
     [HttpDelete("{projectId:guid}")]
@@ -109,21 +128,11 @@ public class ProjectsController(IProjectService projectService) : ControllerBase
             return Ok(result.Value);
         }
 
-        return result.Status switch
-        {
-            ProjectOperationStatus.Forbidden => Forbid(),
-            ProjectOperationStatus.ProjectNotFound => Problem(
-                statusCode: StatusCodes.Status404NotFound,
-                title: "Project not found."),
-            _ => Problem(
-                statusCode: StatusCodes.Status400BadRequest,
-                title: "Project operation failed.")
-        };
+        return ToProjectErrorActionResult(result.Status);
     }
 
-    private ActionResult ToProjectErrorActionResult(ProjectOperationStatus status)
-    {
-        return status switch
+    private ActionResult ToProjectErrorActionResult(ProjectOperationStatus status) =>
+        status switch
         {
             ProjectOperationStatus.Forbidden => Forbid(),
             ProjectOperationStatus.ProjectNotFound => Problem(
@@ -133,5 +142,4 @@ public class ProjectsController(IProjectService projectService) : ControllerBase
                 statusCode: StatusCodes.Status400BadRequest,
                 title: "Project operation failed.")
         };
-    }
 }

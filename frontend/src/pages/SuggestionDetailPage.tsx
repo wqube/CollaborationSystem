@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { useParams, useLocation } from 'react-router-dom';
 import { Button } from '../components/ui/Button/Button';
 import { SuggestionHeader } from '../components/SuggestionDetailPage/SuggestionHeader';
 import { VotePanel } from '../components/SuggestionDetailPage/VotePanel';
@@ -11,6 +11,7 @@ import {
   voteSuggestion,
   deleteVote,
 } from '../shared/api/suggestions';
+import { getDashboard } from '../shared/api/dashboard';
 import {
   createComment,
   deleteComment,
@@ -59,7 +60,6 @@ export function SuggestionDetailPage() {
     projectId: string;
     suggestionId: string;
   }>();
-  const navigate = useNavigate();
   const location = useLocation();
 
   const [detail, setDetail] = useState<SuggestionDetails | null>(null);
@@ -68,11 +68,11 @@ export function SuggestionDetailPage() {
   const [loading, setLoading] = useState(true);
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
 
-  const userRoleFromState = location.state as
-    | { userRole?: ProjectRole }
-    | undefined;
-  const [userRole] = useState<ProjectRole>(
-    userRoleFromState?.userRole ?? 'Member',
+  const userRoleFromState = (
+    location.state as { userRole?: ProjectRole } | undefined
+  )?.userRole;
+  const [userRole, setUserRole] = useState<ProjectRole>(
+    userRoleFromState ?? 'Member',
   );
 
   const [replyingToId, setReplyingToId] = useState<string | null>(null);
@@ -102,6 +102,29 @@ export function SuggestionDetailPage() {
   useEffect(() => {
     fetchData(false);
   }, [fetchData]);
+
+  useEffect(() => {
+    if (userRoleFromState) {
+      setUserRole(userRoleFromState);
+      return;
+    }
+
+    if (!projectId) return;
+
+    let ignore = false;
+
+    getDashboard(projectId, { pageSize: 1 })
+      .then((data) => {
+        if (!ignore) {
+          setUserRole(data.project.role);
+        }
+      })
+      .catch(() => {});
+
+    return () => {
+      ignore = true;
+    };
+  }, [projectId, userRoleFromState]);
 
   const handleSendMain = async (text: string): Promise<void> => {
     if (!projectId || !suggestionId || !text.trim()) return;
@@ -210,12 +233,6 @@ export function SuggestionDetailPage() {
     <div className={styles.page}>
       {loading && <div className={styles.overlayLoader}>Загрузка...</div>}
       <Breadcrumbs />
-      <div className={styles.topBar}>
-        <Button variant="outline" size="md" onClick={() => navigate(-1)}>
-          <img src="/left-arrow.png" width={16} height={16} alt="Назад" />
-        </Button>
-        <h1>Страница предложения</h1>
-      </div>
 
       <div className={styles.twoColumns}>
         <div className={styles.main}>

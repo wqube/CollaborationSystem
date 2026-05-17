@@ -71,13 +71,17 @@ export function Header() {
       <div className={styles.user}>
         <span
           className={styles.text_small}
-          onClick={() => navigate('/profile')}
+          onClick={() =>
+            navigate('/profile', { state: { from: location.pathname } })
+          }
         >
           {userName}
         </span>
         <div
           className={styles.user_avatar}
-          onClick={() => navigate('/profile')}
+          onClick={() =>
+            navigate('/profile', { state: { from: location.pathname } })
+          }
         >
           {userInitials}
         </div>

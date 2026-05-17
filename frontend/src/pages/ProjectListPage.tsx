@@ -6,7 +6,6 @@ import { ProjectCard } from '../components/ProjectCard/ProjectCard';
 import { CreateProjectModal } from '../components/CreateProjectModal/CreateProjectModal';
 import { Button } from '../components/ui/Button/Button';
 import styles from '../assets/ProjectListPage.module.css';
-//import { Breadcrumbs } from '../components/Breadcrumbs/Breadcrumbs';
 
 export function ProjectListPage() {
   const navigate = useNavigate();
@@ -34,7 +33,6 @@ export function ProjectListPage() {
 
   return (
     <div className={styles.page}>
-      {/* <Breadcrumbs /> */}
       <div className={styles.header}>
         <h1>Мои проекты</h1>
         <Button variant="primary" size="md" onClick={() => setModalOpen(true)}>

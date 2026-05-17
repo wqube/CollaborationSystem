@@ -94,16 +94,7 @@ export function DraftsPage() {
   return (
     <div className={styles.page}>
       <Breadcrumbs />
-      <div className={styles.topBar}>
-        <Button
-          variant="outline"
-          size="md"
-          onClick={() => navigate(`/projects/${projectId}`)}
-        >
-          <img src="/left-arrow.png" width={16} height={16} alt="Назад" />
-        </Button>
-        <h1>Черновики</h1>
-      </div>
+      <div className={styles.topBar}></div>
 
       <div className={styles.tabs}>
         {(['all', 'Suggestion', 'Comment'] as const).map((tab) => (

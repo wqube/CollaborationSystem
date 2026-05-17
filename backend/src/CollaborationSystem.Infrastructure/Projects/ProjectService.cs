@@ -10,7 +10,8 @@ namespace CollaborationSystem.Infrastructure.Projects;
 
 public sealed class ProjectService(
     AppDbContext dbContext,
-    ICurrentUserService currentUserService) : IProjectService
+    ICurrentUserService currentUserService,
+    VoteQuotaService voteQuotaService) : IProjectService
 {
     public async Task<PagedResponse<ProjectSummaryResponse>> GetProjectsAsync(
         GetProjectsQuery query,
@@ -55,22 +56,34 @@ public sealed class ProjectService(
         Guid projectId,
         CancellationToken cancellationToken = default)
     {
-        var accessStatus = await GetProjectAccessStatusAsync(projectId, cancellationToken);
+        var currentUserId = currentUserService.GetRequiredUserId();
+        var member = await dbContext.ProjectMembers
+            .Include(x => x.Project)
+            .FirstOrDefaultAsync(
+                x => x.ProjectId == projectId && x.UserId == currentUserId,
+                cancellationToken);
 
-        if (accessStatus != ProjectOperationStatus.Success)
+        if (member is null)
         {
-            return ProjectOperationResult<ProjectDetailsResponse>.Failure(accessStatus);
+            var projectExists = await dbContext.Projects
+                .AsNoTracking()
+                .AnyAsync(x => x.Id == projectId && x.DeletedAtUtc == null, cancellationToken);
+
+            return ProjectOperationResult<ProjectDetailsResponse>.Failure(
+                projectExists ? ProjectOperationStatus.Forbidden : ProjectOperationStatus.ProjectNotFound);
         }
 
-        var project = await dbContext.Projects
-            .AsNoTracking()
-            .Where(x => x.Id == projectId)
-            .Select(ToProjectSummaryExpression())
-            .FirstOrDefaultAsync(cancellationToken);
-
-        if (project is null)
+        var project = member.Project!;
+        if (project.DeletedAtUtc is not null)
         {
             return ProjectOperationResult<ProjectDetailsResponse>.Failure(ProjectOperationStatus.ProjectNotFound);
+        }
+
+        var utcNow = DateTime.UtcNow;
+
+        if (voteQuotaService.ApplyLazyReset(project, member, utcNow))
+        {
+            await dbContext.SaveChangesAsync(cancellationToken);
         }
 
         var members = await GetProjectMembersAsync(projectId, cancellationToken);
@@ -83,6 +96,8 @@ public sealed class ProjectService(
             CreatedByUserId = project.CreatedByUserId,
             CreatedAtUtc = project.CreatedAtUtc,
             UpdatedAtUtc = project.UpdatedAtUtc,
+            VoteSettings = ToVoteSettingsResponse(project),
+            CurrentUserVoteQuota = voteQuotaService.ToResponse(project, member),
             Members = members
         });
     }
@@ -92,31 +107,34 @@ public sealed class ProjectService(
         GetProjectDashboardQuery query,
         CancellationToken cancellationToken = default)
     {
-        var accessStatus = await GetProjectAccessStatusAsync(projectId, cancellationToken);
-        if (accessStatus != ProjectOperationStatus.Success)
+        var currentUserId = currentUserService.GetRequiredUserId();
+        var member = await dbContext.ProjectMembers
+            .Include(x => x.Project)
+            .FirstOrDefaultAsync(
+                x => x.ProjectId == projectId && x.UserId == currentUserId,
+                cancellationToken);
+
+        if (member is null)
         {
-            return ProjectOperationResult<ProjectDashboardResponse>.Failure(accessStatus);
+            var projectExists = await dbContext.Projects
+                .AsNoTracking()
+                .AnyAsync(x => x.Id == projectId && x.DeletedAtUtc == null, cancellationToken);
+
+            return ProjectOperationResult<ProjectDashboardResponse>.Failure(
+                projectExists ? ProjectOperationStatus.Forbidden : ProjectOperationStatus.ProjectNotFound);
         }
 
-        var currentUserId = currentUserService.GetRequiredUserId();
-
-        var projectWithRole = await dbContext.ProjectMembers
-            .AsNoTracking()
-            .Where(x =>
-                x.ProjectId == projectId &&
-                x.UserId == currentUserId &&
-                x.Project != null &&
-                x.Project.DeletedAtUtc == null)
-            .Select(x => new
-            {
-                x.Role,
-                Project = x.Project!
-            })
-            .FirstOrDefaultAsync(cancellationToken);
-
-        if (projectWithRole is null)
+        var project = member.Project!;
+        if (project.DeletedAtUtc is not null)
         {
-            return ProjectOperationResult<ProjectDashboardResponse>.Failure(ProjectOperationStatus.Forbidden);
+            return ProjectOperationResult<ProjectDashboardResponse>.Failure(ProjectOperationStatus.ProjectNotFound);
+        }
+
+        var utcNow = DateTime.UtcNow;
+
+        if (voteQuotaService.ApplyLazyReset(project, member, utcNow))
+        {
+            await dbContext.SaveChangesAsync(cancellationToken);
         }
 
         var membersPreview = await dbContext.ProjectMembers
@@ -164,6 +182,10 @@ public sealed class ProjectService(
                 },
                 Score = x.Votes.Count(v => v.VoteType == VoteType.Up) -
                         x.Votes.Count(v => v.VoteType == VoteType.Down),
+                CurrentUserVote = x.Votes
+                    .Where(v => v.UserId == currentUserId)
+                    .Select(v => (VoteType?)v.VoteType)
+                    .FirstOrDefault(),
                 CreatedAt = x.CreatedAtUtc,
                 UpdatedAt = x.UpdatedAtUtc
             })
@@ -173,12 +195,14 @@ public sealed class ProjectService(
         {
             Project = new ProjectDashboardProjectResponse
             {
-                Id = projectWithRole.Project.Id,
-                Name = projectWithRole.Project.Name,
-                Description = projectWithRole.Project.Description,
-                Role = projectWithRole.Role,
-                LastAccessedAt = projectWithRole.Project.UpdatedAtUtc
+                Id = project.Id,
+                Name = project.Name,
+                Description = project.Description,
+                Role = member.Role,
+                LastAccessedAt = project.UpdatedAtUtc
             },
+            VoteSettings = ToVoteSettingsResponse(project),
+            CurrentUserVoteQuota = voteQuotaService.ToResponse(project, member),
             MembersPreview = membersPreview,
             Suggestions = new PagedResponse<SuggestionSummaryResponse>
             {
@@ -207,7 +231,7 @@ public sealed class ProjectService(
         };
 
         dbContext.Projects.Add(project);
-        dbContext.ProjectMembers.Add(new ProjectMember
+        var member = new ProjectMember
         {
             ProjectId = project.Id,
             UserId = currentUserId,
@@ -215,7 +239,10 @@ public sealed class ProjectService(
             JoinedAtUtc = utcNow,
             CreatedAtUtc = utcNow,
             UpdatedAtUtc = utcNow
-        });
+        };
+
+        VoteQuotaService.InitializeQuota(project, member, utcNow);
+        dbContext.ProjectMembers.Add(member);
 
         await dbContext.SaveChangesAsync(cancellationToken);
 
@@ -265,25 +292,49 @@ public sealed class ProjectService(
         return ProjectOperationResult<bool>.Success(true);
     }
 
-    private async Task<ProjectOperationStatus> GetProjectAccessStatusAsync(
+    public async Task<ProjectOperationResult<ProjectVoteSettingsResponse>> UpdateProjectSettingsAsync(
         Guid projectId,
-        CancellationToken cancellationToken)
+        UpdateProjectSettingsRequest request,
+        CancellationToken cancellationToken = default)
     {
-        var projectExists = await dbContext.Projects
-            .AsNoTracking()
-            .AnyAsync(x => x.Id == projectId && x.DeletedAtUtc == null, cancellationToken);
+        var currentUserId = currentUserService.GetRequiredUserId();
+        var member = await dbContext.ProjectMembers
+            .Include(x => x.Project)
+            .FirstOrDefaultAsync(
+                x => x.ProjectId == projectId && x.UserId == currentUserId,
+                cancellationToken);
 
-        if (!projectExists)
+        if (member is null)
         {
-            return ProjectOperationStatus.ProjectNotFound;
+            var projectExists = await dbContext.Projects
+                .AsNoTracking()
+                .AnyAsync(x => x.Id == projectId && x.DeletedAtUtc == null, cancellationToken);
+
+            return ProjectOperationResult<ProjectVoteSettingsResponse>.Failure(
+                projectExists ? ProjectOperationStatus.Forbidden : ProjectOperationStatus.ProjectNotFound);
         }
 
-        var currentUserId = currentUserService.GetRequiredUserId();
-        var isMember = await dbContext.ProjectMembers
-            .AsNoTracking()
-            .AnyAsync(x => x.ProjectId == projectId && x.UserId == currentUserId, cancellationToken);
+        if (member.Project is null || member.Project.DeletedAtUtc is not null)
+        {
+            return ProjectOperationResult<ProjectVoteSettingsResponse>.Failure(ProjectOperationStatus.ProjectNotFound);
+        }
 
-        return isMember ? ProjectOperationStatus.Success : ProjectOperationStatus.Forbidden;
+        if (member.Role != ProjectRole.Admin)
+        {
+            return ProjectOperationResult<ProjectVoteSettingsResponse>.Failure(ProjectOperationStatus.Forbidden);
+        }
+
+        var project = member.Project!;
+        var utcNow = DateTime.UtcNow;
+
+        project.VotesPerUser = request.VotesPerUser;
+        project.VoteResetPeriodDays = request.VoteResetPeriodDays;
+        project.UpdatedAtUtc = utcNow;
+
+        await voteQuotaService.RecalculateProjectQuotasAsync(project, utcNow, cancellationToken);
+        await dbContext.SaveChangesAsync(cancellationToken);
+
+        return ProjectOperationResult<ProjectVoteSettingsResponse>.Success(ToVoteSettingsResponse(project));
     }
 
     private async Task<IReadOnlyList<ProjectMemberResponse>> GetProjectMembersAsync(
@@ -305,15 +356,10 @@ public sealed class ProjectService(
             })
             .ToListAsync(cancellationToken);
 
-    private static System.Linq.Expressions.Expression<Func<Project, ProjectSummaryResponse>> ToProjectSummaryExpression() =>
-        x => new ProjectSummaryResponse
+    private static ProjectVoteSettingsResponse ToVoteSettingsResponse(Project project) =>
+        new()
         {
-            Id = x.Id,
-            Name = x.Name,
-            Description = x.Description,
-            LastAccessedAt = x.UpdatedAtUtc,
-            CreatedByUserId = x.CreatedByUserId,
-            CreatedAtUtc = x.CreatedAtUtc,
-            UpdatedAtUtc = x.UpdatedAtUtc
+            VotesPerUser = project.VotesPerUser,
+            VoteResetPeriodDays = project.VoteResetPeriodDays
         };
 }

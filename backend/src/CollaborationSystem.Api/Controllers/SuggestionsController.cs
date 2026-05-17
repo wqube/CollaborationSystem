@@ -1,4 +1,5 @@
 using CollaborationSystem.Application.Abstractions;
+using CollaborationSystem.Application.DTOs.Projects;
 using CollaborationSystem.Application.DTOs.Suggestions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -133,6 +134,7 @@ public class SuggestionsController(ISuggestionService suggestionService) : Contr
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
     public async Task<ActionResult<VoteResponse>> Vote(
         Guid projectId,
         Guid suggestionId,
@@ -175,11 +177,11 @@ public class SuggestionsController(ISuggestionService suggestionService) : Contr
             return onSuccess(result.Value);
         }
 
-        return ToErrorActionResult(result.Status);
+        return ToErrorActionResult(result);
     }
 
-    private ActionResult ToErrorActionResult(SuggestionOperationStatus status) =>
-        status switch
+    private ActionResult ToErrorActionResult<T>(SuggestionOperationResult<T> result) =>
+        result.Status switch
         {
             SuggestionOperationStatus.Forbidden => Forbid(),
             SuggestionOperationStatus.ProjectNotFound => Problem(
@@ -194,6 +196,7 @@ public class SuggestionsController(ISuggestionService suggestionService) : Contr
             SuggestionOperationStatus.Conflict => Problem(
                 statusCode: StatusCodes.Status409Conflict,
                 title: "Suggestion operation conflicts with the current state."),
+            SuggestionOperationStatus.VoteLimitExceeded => VoteLimitExceeded(result.ErrorDetails),
             SuggestionOperationStatus.InvalidRequest => Problem(
                 statusCode: StatusCodes.Status400BadRequest,
                 title: "Suggestion request is invalid."),
@@ -201,4 +204,23 @@ public class SuggestionsController(ISuggestionService suggestionService) : Contr
                 statusCode: StatusCodes.Status400BadRequest,
                 title: "Suggestion operation failed.")
         };
+
+    private ActionResult VoteLimitExceeded(object? errorDetails)
+    {
+        var problemDetails = new ProblemDetails
+        {
+            Status = StatusCodes.Status409Conflict,
+            Title = "Vote limit exceeded."
+        };
+
+        problemDetails.Extensions["code"] = "VoteLimitExceeded";
+
+        if (errorDetails is CurrentUserVoteQuotaResponse quota)
+        {
+            problemDetails.Extensions["nextResetAt"] = quota.NextResetAt;
+            problemDetails.Extensions["voteQuota"] = quota;
+        }
+
+        return Conflict(problemDetails);
+    }
 }

@@ -3,13 +3,15 @@ using CollaborationSystem.Application.DTOs.Suggestions;
 using CollaborationSystem.Domain.Entities;
 using CollaborationSystem.Domain.Enums;
 using CollaborationSystem.Infrastructure.Persistence;
+using CollaborationSystem.Infrastructure.Projects;
 using Microsoft.EntityFrameworkCore;
 
 namespace CollaborationSystem.Infrastructure.Suggestions;
 
 public sealed class SuggestionService(
     AppDbContext dbContext,
-    ICurrentUserService currentUserService) : ISuggestionService
+    ICurrentUserService currentUserService,
+    VoteQuotaService voteQuotaService) : ISuggestionService
 {
     public async Task<SuggestionOperationResult<PagedResponse<SuggestionSummaryResponse>>> GetSuggestionsAsync(
         Guid projectId,
@@ -55,6 +57,10 @@ public sealed class SuggestionService(
             AuthorDisplayName = x.Author == null ? string.Empty : x.Author.DisplayName,
             Score = x.Votes.Count(v => v.VoteType == VoteType.Up) -
                     x.Votes.Count(v => v.VoteType == VoteType.Down),
+            CurrentUserVote = x.Votes
+                .Where(v => v.UserId == currentUserId)
+                .Select(v => (VoteType?)v.VoteType)
+                .FirstOrDefault(),
             CreatedAtUtc = x.CreatedAtUtc,
             UpdatedAtUtc = x.UpdatedAtUtc
         });
@@ -80,6 +86,7 @@ public sealed class SuggestionService(
                     DisplayName = x.AuthorDisplayName
                 },
                 Score = x.Score,
+                CurrentUserVote = x.CurrentUserVote,
                 CreatedAt = x.CreatedAtUtc,
                 UpdatedAt = x.UpdatedAtUtc
             })
@@ -281,10 +288,20 @@ public sealed class SuggestionService(
 
         var currentUserId = currentUserService.GetRequiredUserId();
 
-        if (!await IsCurrentUserProjectMemberAsync(projectId, currentUserId, cancellationToken))
+        var member = await dbContext.ProjectMembers
+            .Include(x => x.Project)
+            .FirstOrDefaultAsync(
+                x => x.ProjectId == projectId && x.UserId == currentUserId,
+                cancellationToken);
+
+        if (member is null)
         {
             return SuggestionOperationResult<VoteResponse>.Failure(SuggestionOperationStatus.Forbidden);
         }
+
+        var project = member.Project!;
+        var utcNow = DateTime.UtcNow;
+        voteQuotaService.ApplyLazyReset(project, member, utcNow);
 
         var suggestionExists = await dbContext.Suggestions
             .AsNoTracking()
@@ -302,17 +319,32 @@ public sealed class SuggestionService(
 
         if (existingVote is null)
         {
+            if (member.VotesRemaining <= 0)
+            {
+                await dbContext.SaveChangesAsync(cancellationToken);
+
+                return SuggestionOperationResult<VoteResponse>.Failure(
+                    SuggestionOperationStatus.VoteLimitExceeded,
+                    voteQuotaService.ToResponse(project, member));
+            }
+
             dbContext.Votes.Add(new Vote
             {
                 SuggestionId = suggestionId,
                 UserId = currentUserId,
-                VoteType = request.VoteType
+                VoteType = request.VoteType,
+                BudgetPeriodStartedAtUtc = member.VotePeriodStartedAtUtc,
+                CreatedAtUtc = utcNow,
+                UpdatedAtUtc = utcNow
             });
+
+            member.VotesRemaining -= 1;
+            member.UpdatedAtUtc = utcNow;
         }
         else if (existingVote.VoteType != request.VoteType)
         {
             existingVote.VoteType = request.VoteType;
-            existingVote.UpdatedAtUtc = DateTime.UtcNow;
+            existingVote.UpdatedAtUtc = utcNow;
         }
 
         await dbContext.SaveChangesAsync(cancellationToken);
@@ -323,7 +355,8 @@ public sealed class SuggestionService(
         {
             SuggestionId = suggestionId,
             CurrentUserVote = request.VoteType,
-            Score = score
+            Score = score,
+            VoteQuota = voteQuotaService.ToResponse(project, member)
         });
     }
 
@@ -339,10 +372,20 @@ public sealed class SuggestionService(
 
         var currentUserId = currentUserService.GetRequiredUserId();
 
-        if (!await IsCurrentUserProjectMemberAsync(projectId, currentUserId, cancellationToken))
+        var member = await dbContext.ProjectMembers
+            .Include(x => x.Project)
+            .FirstOrDefaultAsync(
+                x => x.ProjectId == projectId && x.UserId == currentUserId,
+                cancellationToken);
+
+        if (member is null)
         {
             return SuggestionOperationResult<VoteResponse>.Failure(SuggestionOperationStatus.Forbidden);
         }
+
+        var project = member.Project!;
+        var utcNow = DateTime.UtcNow;
+        voteQuotaService.ApplyLazyReset(project, member, utcNow);
 
         var suggestionExists = await dbContext.Suggestions
             .AsNoTracking()
@@ -360,9 +403,16 @@ public sealed class SuggestionService(
 
         if (existingVote is not null)
         {
+            if (existingVote.BudgetPeriodStartedAtUtc == member.VotePeriodStartedAtUtc)
+            {
+                member.VotesRemaining = Math.Min(project.VotesPerUser, member.VotesRemaining + 1);
+                member.UpdatedAtUtc = utcNow;
+            }
+
             dbContext.Votes.Remove(existingVote);
-            await dbContext.SaveChangesAsync(cancellationToken);
         }
+
+        await dbContext.SaveChangesAsync(cancellationToken);
 
         var score = await GetSuggestionScoreAsync(suggestionId, cancellationToken);
 
@@ -370,7 +420,8 @@ public sealed class SuggestionService(
         {
             SuggestionId = suggestionId,
             CurrentUserVote = null,
-            Score = score
+            Score = score,
+            VoteQuota = voteQuotaService.ToResponse(project, member)
         });
     }
 
@@ -777,6 +828,8 @@ public sealed class SuggestionService(
         public string AuthorDisplayName { get; init; } = string.Empty;
 
         public int Score { get; init; }
+
+        public VoteType? CurrentUserVote { get; init; }
 
         public DateTime CreatedAtUtc { get; init; }
 

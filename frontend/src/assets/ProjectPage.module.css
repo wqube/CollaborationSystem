@@ -16,6 +16,36 @@
   gap: 16px;
 }
 
+.filters {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr;
+  gap: 16px;
+  background: white;
+  padding: 20px;
+  border-radius: 12px;
+  border: 1px solid #e0e0e0;
+  margin-bottom: 24px;
+}
+
+.filterGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.filterGroup label {
+  font-size: 13px;
+  color: #8a8a8a;
+}
+
+.filterGroup input,
+.filterGroup select {
+  padding: 10px 14px;
+  border: 1px solid #e0e0e0;
+  border-radius: 10px;
+  font-size: 14px;
+}
+
 .table {
   background: white;
   border-radius: 12px;
@@ -69,8 +99,49 @@
   text-align: center;
 }
 
-.viewAll {
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   margin-top: 24px;
+}
+
+.pagination button {
+  min-width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  border: 1px solid #e0e0e0;
+  background: white;
+  cursor: pointer;
+}
+
+.pagination button.active {
+  background: #1a1a1a;
+  color: white;
+  border-color: #1a1a1a;
+}
+
+.pagination button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.pagination span {
+  margin-left: 16px;
+  color: #8a8a8a;
+}
+
+.state {
+  color: #8a8a8a;
+}
+
+.error {
+  color: #d32f2f;
+}
+
+.empty {
+  color: #8a8a8a;
   text-align: center;
 }
 
@@ -79,4 +150,26 @@
   font-weight: 700;
   margin-bottom: 20px;
   color: var(--t-black, #1a1a1a);
+}
+
+.suggestionText {
+  word-break: break-word;
+  overflow-wrap: break-word;
+  max-width: 400px;
+}
+
+@media (max-width: 900px) {
+  .header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .actions {
+    flex-wrap: wrap;
+  }
+
+  .filters {
+    grid-template-columns: 1fr;
+  }
 }

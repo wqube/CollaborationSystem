@@ -22,6 +22,11 @@ public interface IProjectService
         CreateProjectRequest request,
         CancellationToken cancellationToken = default);
 
+    Task<ProjectOperationResult<ProjectVoteSettingsResponse>> UpdateProjectSettingsAsync(
+        Guid projectId,
+        UpdateProjectSettingsRequest request,
+        CancellationToken cancellationToken = default);
+
     Task<ProjectOperationResult<bool>> DeleteProjectAsync(
         Guid projectId,
         CancellationToken cancellationToken = default);

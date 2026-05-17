@@ -16,10 +16,10 @@ public sealed class ProjectMemberService(
         AddProjectMemberRequest request,
         CancellationToken cancellationToken = default)
     {
-        var projectExists = await dbContext.Projects
-            .AnyAsync(x => x.Id == projectId && x.DeletedAtUtc == null, cancellationToken);
+        var project = await dbContext.Projects
+            .FirstOrDefaultAsync(x => x.Id == projectId && x.DeletedAtUtc == null, cancellationToken);
 
-        if (!projectExists)
+        if (project is null)
         {
             return ProjectMemberOperationResult.Failure(ProjectMemberOperationStatus.ProjectNotFound);
         }
@@ -45,13 +45,18 @@ public sealed class ProjectMemberService(
             return ProjectMemberOperationResult.Failure(ProjectMemberOperationStatus.MemberAlreadyExists);
         }
 
+        var utcNow = DateTime.UtcNow;
         var member = new ProjectMember
         {
             ProjectId = projectId,
             UserId = request.UserId,
-            Role = request.Role
+            Role = request.Role,
+            JoinedAtUtc = utcNow,
+            CreatedAtUtc = utcNow,
+            UpdatedAtUtc = utcNow
         };
 
+        VoteQuotaService.InitializeQuota(project, member, utcNow);
         dbContext.ProjectMembers.Add(member);
         await dbContext.SaveChangesAsync(cancellationToken);
 
@@ -64,8 +69,7 @@ public sealed class ProjectMemberService(
         UpdateProjectMemberRoleRequest request,
         CancellationToken cancellationToken = default)
     {
-        var projectExists = await dbContext.Projects
-            .AnyAsync(x => x.Id == projectId && x.DeletedAtUtc == null, cancellationToken);
+        var projectExists = await ProjectExistsAsync(projectId, cancellationToken);
 
         if (!projectExists)
         {
@@ -93,10 +97,7 @@ public sealed class ProjectMemberService(
 
         if (member.Role == ProjectRole.Admin && request.Role == ProjectRole.Member)
         {
-            var adminCount = await dbContext.ProjectMembers
-                .CountAsync(
-                    x => x.ProjectId == projectId && x.Role == ProjectRole.Admin,
-                    cancellationToken);
+            var adminCount = await CountProjectAdminsAsync(projectId, cancellationToken);
 
             if (adminCount <= 1)
             {
@@ -117,8 +118,7 @@ public sealed class ProjectMemberService(
         Guid userId,
         CancellationToken cancellationToken = default)
     {
-        var projectExists = await dbContext.Projects
-            .AnyAsync(x => x.Id == projectId && x.DeletedAtUtc == null, cancellationToken);
+        var projectExists = await ProjectExistsAsync(projectId, cancellationToken);
 
         if (!projectExists)
         {
@@ -130,39 +130,14 @@ public sealed class ProjectMemberService(
             return ProjectMemberOperationResult.Failure(ProjectMemberOperationStatus.Forbidden);
         }
 
-        var member = await dbContext.ProjectMembers
-            .FirstOrDefaultAsync(x => x.ProjectId == projectId && x.UserId == userId, cancellationToken);
-
-        if (member is null)
-        {
-            return ProjectMemberOperationResult.Failure(ProjectMemberOperationStatus.MemberNotFound);
-        }
-
-        if (member.Role == ProjectRole.Admin)
-        {
-            var adminCount = await dbContext.ProjectMembers
-                .CountAsync(
-                    x => x.ProjectId == projectId && x.Role == ProjectRole.Admin,
-                    cancellationToken);
-
-            if (adminCount <= 1)
-            {
-                return ProjectMemberOperationResult.Failure(ProjectMemberOperationStatus.LastProjectAdmin);
-            }
-        }
-
-        dbContext.ProjectMembers.Remove(member);
-        await dbContext.SaveChangesAsync(cancellationToken);
-
-        return ProjectMemberOperationResult.Success();
+        return await RemoveMemberInternalAsync(projectId, userId, cancellationToken);
     }
 
     public async Task<ProjectMemberOperationResult> RemoveCurrentMemberAsync(
         Guid projectId,
         CancellationToken cancellationToken = default)
     {
-        var projectExists = await dbContext.Projects
-            .AnyAsync(x => x.Id == projectId && x.DeletedAtUtc == null, cancellationToken);
+        var projectExists = await ProjectExistsAsync(projectId, cancellationToken);
 
         if (!projectExists)
         {
@@ -175,10 +150,16 @@ public sealed class ProjectMemberService(
             return ProjectMemberOperationResult.Failure(ProjectMemberOperationStatus.Forbidden);
         }
 
+        return await RemoveMemberInternalAsync(projectId, currentUserId, cancellationToken);
+    }
+
+    private async Task<ProjectMemberOperationResult> RemoveMemberInternalAsync(
+        Guid projectId,
+        Guid userId,
+        CancellationToken cancellationToken)
+    {
         var member = await dbContext.ProjectMembers
-            .FirstOrDefaultAsync(
-                x => x.ProjectId == projectId && x.UserId == currentUserId,
-                cancellationToken);
+            .FirstOrDefaultAsync(x => x.ProjectId == projectId && x.UserId == userId, cancellationToken);
 
         if (member is null)
         {
@@ -187,10 +168,7 @@ public sealed class ProjectMemberService(
 
         if (member.Role == ProjectRole.Admin)
         {
-            var adminCount = await dbContext.ProjectMembers
-                .CountAsync(
-                    x => x.ProjectId == projectId && x.Role == ProjectRole.Admin,
-                    cancellationToken);
+            var adminCount = await CountProjectAdminsAsync(projectId, cancellationToken);
 
             if (adminCount <= 1)
             {
@@ -222,6 +200,14 @@ public sealed class ProjectMemberService(
                      x.Role == ProjectRole.Admin,
                 cancellationToken);
     }
+
+    private async Task<int> CountProjectAdminsAsync(Guid projectId, CancellationToken cancellationToken) =>
+        await dbContext.ProjectMembers
+            .CountAsync(x => x.ProjectId == projectId && x.Role == ProjectRole.Admin, cancellationToken);
+
+    private async Task<bool> ProjectExistsAsync(Guid projectId, CancellationToken cancellationToken) =>
+        await dbContext.Projects
+            .AnyAsync(x => x.Id == projectId && x.DeletedAtUtc == null, cancellationToken);
 
     private static ProjectMemberResponse ToResponse(ProjectMember member, AppUser user) =>
         new()

@@ -4,6 +4,7 @@ import { Button } from '../components/ui/Button/Button';
 import { Badge } from '../components/ui/Badge/Badge';
 import { useAppDispatcher, userAppSelector } from '../shared/store/hooks';
 import { fetchProjects } from '../shared/store/projectsSlice';
+import { getProjectRoleBadgeVariant } from '../shared/utils/projectRole';
 import styles from '../assets/ProfilePage.module.css';
 import { Breadcrumbs } from '../components/Breadcrumbs/Breadcrumbs';
 
@@ -22,16 +23,6 @@ export function ProfilePage() {
   return (
     <div className={styles.page}>
       <Breadcrumbs />
-      <div className={styles.topBar}>
-        <Button
-          variant="outline"
-          size="md"
-          onClick={() => navigate(`/projects`)}
-        >
-          <img src="/left-arrow.png" width={16} height={16} alt="Назад" />
-        </Button>
-        <h1>Профиль</h1>
-      </div>
       <div className={styles.card}>
         <div className={styles.profileHeader}>
           <div className={styles.avatar}>
@@ -72,10 +63,10 @@ export function ProfilePage() {
               onClick={() => navigate(`/projects/${p.id}`)}
             >
               <div>
-                <strong>{p.name}</strong>
+                <strong className={styles.projectName}>{p.name}</strong>
                 <span className={styles.projectDesc}>{p.description}</span>
               </div>
-              <Badge variant={p.role === 'Admin' ? 'admin' : 'member'} />
+              <Badge variant={getProjectRoleBadgeVariant(p.role)} />
             </div>
           ))}
         </div>

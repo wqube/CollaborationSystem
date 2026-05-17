@@ -7,10 +7,18 @@ import { SettingsModal } from '../components/SettingsModal/SettingsModal';
 import { MembersModal } from '../components/MembersModal/MembersModal';
 import styles from '../assets/ProjectPage.module.css';
 import { getDashboard } from '../shared/api/dashboard';
+import { getSuggestions } from '../shared/api/suggestions';
 import { useAppDispatcher, userAppSelector } from '../shared/store/hooks';
 import { fetchProjects } from '../shared/store/projectsSlice';
+import {
+  canManageProjectMembers,
+  canManageProjectRoles,
+  canManageProjectSettings,
+} from '../shared/utils/projectRole';
 import type {
+  OrderSort,
   ProjectSummary,
+  SuggestionSort,
   SuggestionStatus,
   SuggestionSummary,
 } from '../types/api';
@@ -18,11 +26,12 @@ import { CreateSuggestionButton } from '../components/CreateSuggestionButton/Cre
 import { SuggestionVoteCell } from '../components/SuggestionVoteCell/SuggestionVoteCell';
 import { Breadcrumbs } from '../components/Breadcrumbs/Breadcrumbs';
 
-export interface suggestionsPreviewInterface {
-  suggestionsPreview: SuggestionSummary[];
-}
+const PAGE_SIZE = 5;
+
+type StatusFilter = SuggestionStatus | '';
 
 const TABS: TabItem[] = [
+  { id: '', label: 'Все' },
   { id: 'New', label: 'New' },
   { id: 'InProgress', label: 'InProgress' },
   { id: 'Accepted', label: 'Accepted' },
@@ -36,35 +45,61 @@ export function ProjectPage() {
   const dispatch = useAppDispatcher();
   const { list: projects } = userAppSelector((state) => state.projects);
 
-  const [activeTab, setActiveTab] = useState<SuggestionStatus>('New');
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('New');
+  const [search, setSearch] = useState('');
+  const [sort, setSort] = useState<SuggestionSort>('score');
+  const [order, setOrder] = useState<OrderSort>('desc');
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
   const [suggestions, setSuggestions] = useState<SuggestionSummary[]>([]);
   const [project, setProject] = useState<ProjectSummary | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [projectLoading, setProjectLoading] = useState(true);
+  const [suggestionsLoading, setSuggestionsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const [settingsModalOpen, setSettingsModalOpen] = useState(false);
   const [membersModalOpen, setMembersModalOpen] = useState(false);
 
-  const fetchDashboard = useCallback(
-    async (status: SuggestionStatus) => {
-      if (!projectId) return;
+  const fetchProject = useCallback(async () => {
+    if (!projectId) return;
 
-      setLoading(true);
-      setError(null);
+    setProjectLoading(true);
+    setError(null);
 
-      try {
-        const data = await getDashboard(projectId, { status, pageSize: 5 });
+    try {
+      const data = await getDashboard(projectId, { pageSize: 1 });
+      setProject(data.project);
+    } catch {
+      setError('Не удалось загрузить данные проекта');
+    } finally {
+      setProjectLoading(false);
+    }
+  }, [projectId]);
 
-        setProject(data.project);
-        setSuggestions(data.suggestions.items);
-      } catch {
-        setError('Не удалось загрузить данные проекта');
-      } finally {
-        setLoading(false);
-      }
-    },
-    [projectId],
-  );
+  const fetchSuggestions = useCallback(async () => {
+    if (!projectId) return;
+
+    setSuggestionsLoading(true);
+    setError(null);
+
+    try {
+      const data = await getSuggestions(projectId, {
+        status: statusFilter || undefined,
+        search: search || undefined,
+        sort,
+        order,
+        page,
+        pageSize: PAGE_SIZE,
+      });
+
+      setSuggestions(data.items);
+      setTotal(data.total);
+    } catch {
+      setError('Не удалось загрузить предложения');
+    } finally {
+      setSuggestionsLoading(false);
+    }
+  }, [projectId, statusFilter, search, sort, order, page]);
 
   useEffect(() => {
     if (projects.length === 0) {
@@ -73,12 +108,23 @@ export function ProjectPage() {
   }, [dispatch, projects.length]);
 
   useEffect(() => {
-    fetchDashboard(activeTab);
-  }, [projectId, activeTab]);
+    fetchProject();
+  }, [fetchProject]);
+
+  useEffect(() => {
+    fetchSuggestions();
+  }, [fetchSuggestions]);
 
   const handleTabChange = (tab: string) => {
-    setActiveTab(tab as SuggestionStatus);
+    setStatusFilter(tab as StatusFilter);
+    setPage(1);
   };
+
+  const handleProjectDeleted = useCallback(async () => {
+    setSettingsModalOpen(false);
+    await dispatch(fetchProjects());
+    navigate('/projects');
+  }, [dispatch, navigate]);
 
   const formatDate = (iso: string) =>
     new Date(iso).toLocaleDateString('ru-RU', {
@@ -87,12 +133,16 @@ export function ProjectPage() {
       day: '2-digit',
     });
 
+  const canManageSettings = canManageProjectSettings(project?.role);
+  const canManageMembers = canManageProjectMembers(project?.role);
+  const canManageRoles = canManageProjectRoles(project?.role);
+  const totalPages = Math.ceil(total / PAGE_SIZE);
+
   return (
     <div className={styles.page}>
       <Breadcrumbs />
-      {project && <h1 className={styles.projectTitle}>{project.name}</h1>}
       <div className={styles.header}>
-        <Tabs tabs={TABS} activeTab={activeTab} onChange={handleTabChange} />
+        <Tabs tabs={TABS} activeTab={statusFilter} onChange={handleTabChange} />
         <div className={styles.actions}>
           <Button
             variant="outline"
@@ -105,24 +155,92 @@ export function ProjectPage() {
             Участники
           </Button>
 
-          <Button variant="outline" onClick={() => setSettingsModalOpen(true)}>
-            Настройки
-          </Button>
+          {canManageSettings && (
+            <Button
+              variant="outline"
+              onClick={() => setSettingsModalOpen(true)}
+            >
+              Настройки
+            </Button>
+          )}
 
           <CreateSuggestionButton
             projectId={projectId!}
-            onRefresh={() => fetchDashboard(activeTab)}
+            onRefresh={fetchSuggestions}
             variant="primary"
             buttonText="Предложить идею"
           />
         </div>
       </div>
 
-      {loading && <p className={styles.state}>Загрузка...</p>}
+      {(projectLoading || suggestionsLoading) && (
+        <p className={styles.state}>Загрузка...</p>
+      )}
       {error && <p className={styles.error}>{error}</p>}
 
-      {!loading && !error && (
+      {!projectLoading && !error && (
         <>
+          <div className={styles.filters}>
+            <div className={styles.filterGroup}>
+              <label>Поиск</label>
+              <input
+                type="text"
+                placeholder="Поиск по тексту..."
+                value={search}
+                onChange={(e) => {
+                  setSearch(e.target.value);
+                  setPage(1);
+                }}
+              />
+            </div>
+
+            <div className={styles.filterGroup}>
+              <label>Статус</label>
+              <select
+                value={statusFilter}
+                onChange={(e) => {
+                  setStatusFilter(e.target.value as StatusFilter);
+                  setPage(1);
+                }}
+              >
+                <option value="">Все статусы</option>
+                <option value="New">New</option>
+                <option value="InProgress">InProgress</option>
+                <option value="Accepted">Accepted</option>
+                <option value="Rejected">Rejected</option>
+              </select>
+            </div>
+
+            <div className={styles.filterGroup}>
+              <label>Сортировка</label>
+              <select
+                value={sort}
+                onChange={(e) => {
+                  setSort(e.target.value as SuggestionSort);
+                  setPage(1);
+                }}
+              >
+                <option value="score">По рейтингу</option>
+                <option value="createdAt">По дате создания</option>
+                <option value="updatedAt">По обновлению</option>
+              </select>
+            </div>
+
+            <div className={styles.filterGroup}>
+              <label>Порядок</label>
+              <select
+                value={order}
+                onChange={(e) => {
+                  setOrder(e.target.value as OrderSort);
+                  setPage(1);
+                }}
+              >
+                <option value="desc">По убыванию</option>
+                <option value="asc">По возрастанию</option>
+              </select>
+            </div>
+          </div>
+
           <div className={styles.table}>
             <table>
               <thead>
@@ -153,7 +271,9 @@ export function ProjectPage() {
                     className={styles.row}
                   >
                     <td>
-                      <strong>{s.text}</strong>
+                      <strong className={styles.suggestionText}>
+                        {s.text}
+                      </strong>
                       <br />
                       <span className={styles.idText}>
                         id: {s.id.slice(0, 8)}...
@@ -195,28 +315,54 @@ export function ProjectPage() {
             </table>
           </div>
 
-          <div className={styles.viewAll}>
-            <Button
-              variant="outline"
-              onClick={() => navigate(`/projects/${projectId}/suggestions`)}
-            >
-              Все предложения →
-            </Button>
-          </div>
+          {totalPages > 1 && (
+            <div className={styles.pagination}>
+              <button
+                disabled={page === 1}
+                onClick={() => setPage((p) => p - 1)}
+              >
+                ←
+              </button>
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+                <button
+                  key={p}
+                  className={p === page ? styles.active : ''}
+                  onClick={() => setPage(p)}
+                >
+                  {p}
+                </button>
+              ))}
+              <button
+                disabled={page === totalPages}
+                onClick={() => setPage((p) => p + 1)}
+              >
+                →
+              </button>
+              <span>
+                {(page - 1) * PAGE_SIZE + 1}-{Math.min(page * PAGE_SIZE, total)}{' '}
+                из {total}
+              </span>
+            </div>
+          )}
         </>
       )}
 
-      <SettingsModal
-        open={settingsModalOpen}
-        onClose={() => setSettingsModalOpen(false)}
-        projectId={projectId!}
-        projectName={project?.name ?? ''}
-        projectDescription={project?.description ?? ''}
-      />
+      {canManageSettings && (
+        <SettingsModal
+          open={settingsModalOpen}
+          onClose={() => setSettingsModalOpen(false)}
+          projectId={projectId!}
+          projectName={project?.name ?? ''}
+          projectDescription={project?.description ?? ''}
+          onDeleted={handleProjectDeleted}
+        />
+      )}
       <MembersModal
         open={membersModalOpen}
         onClose={() => setMembersModalOpen(false)}
         projectId={projectId!}
+        canManageMembers={canManageMembers}
+        canManageRoles={canManageRoles}
       />
     </div>
   );

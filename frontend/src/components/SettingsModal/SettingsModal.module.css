@@ -57,3 +57,31 @@
   justify-content: flex-end;
   gap: 12px;
 }
+
+.dangerZone {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px;
+  border: 1px solid #ffcdd2;
+  border-radius: 12px;
+  background: #ffebee;
+}
+
+.dangerZone h4 {
+  margin: 0 0 6px;
+  color: #b71c1c;
+}
+
+.dangerZone p {
+  margin: 0;
+  color: #6b6b6b;
+  font-size: 13px;
+}
+
+.errorText {
+  margin: 0;
+  color: #d32f2f;
+  font-size: 14px;
+}

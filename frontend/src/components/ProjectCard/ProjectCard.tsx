@@ -1,4 +1,5 @@
 import type { ProjectSummary } from '../../types/api';
+import { getProjectRoleBadgeVariant } from '../../shared/utils/projectRole';
 import { Badge } from '../ui/Badge/Badge';
 import styles from './ProjectCard.module.css';
 
@@ -9,7 +10,7 @@ interface ProjectCardProps {
 
 export function ProjectCard({ project, onClick }: ProjectCardProps) {
   const firstLetter = project.name.charAt(0).toUpperCase();
-  const roleVariant = project.role === 'Admin' ? 'admin' : 'member';
+  const roleVariant = getProjectRoleBadgeVariant(project.role);
 
   const formattedDate = new Date(project.lastAccessedAt).toLocaleDateString(
     'ru-RU',

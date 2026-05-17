@@ -18,62 +18,137 @@ export function Breadcrumbs() {
   }>();
   const { list: projects } = userAppSelector((state) => state.projects);
   const [suggestionTitle, setSuggestionTitle] = useState('');
+  const [profileSourceTitle, setProfileSourceTitle] = useState('');
+  const previousPath = (location.state as { from?: string })?.from || '';
 
   const pathParts = location.pathname.split('/').filter(Boolean);
-  const crumbs: Crumb[] = [];
+  const crumbs: Crumb[] = [{ label: 'Мои проекты', path: '/projects' }];
 
-  // Всегда начинаем с "Мои проекты"
-  crumbs.push({ label: 'Мои проекты', path: '/projects' });
-
-  // /projects/:id
-  if (pathParts.length >= 2 && pathParts[0] === 'projects' && projectId) {
-    const project = projects.find((p) => p.id === projectId);
-    crumbs.push({
-      label: project?.name || 'Проект',
-      path: `/projects/${projectId}`,
-    });
-  }
-
-  // /projects/:id/suggestions или /projects/:id/drafts
-  if (pathParts.length >= 3 && pathParts[0] === 'projects') {
-    const sectionMap: Record<string, string> = {
-      suggestions: 'Все предложения',
-      drafts: 'Черновики',
-    };
-    const section = sectionMap[pathParts[2]] || pathParts[2];
-    crumbs.push({
-      label: section,
-      path: `/${pathParts.slice(0, 3).join('/')}`,
-    });
-  }
-
-  // /projects/:id/suggestions/:sId
-  if (
-    pathParts.length >= 4 &&
-    pathParts[0] === 'projects' &&
-    pathParts[2] === 'suggestions' &&
-    suggestionId
-  ) {
-    // Загружаем название предложения
-    useEffect(() => {
-      if (!projectId || !suggestionId) return;
+  // Загружаем название предложения для страницы детализации
+  useEffect(() => {
+    if (
+      pathParts.length >= 4 &&
+      pathParts[0] === 'projects' &&
+      pathParts[2] === 'suggestions' &&
+      projectId &&
+      suggestionId
+    ) {
       apiClient
         .get<SuggestionSummary>(
           `/projects/${projectId}/suggestions/${suggestionId}`,
         )
         .then((res) => setSuggestionTitle(res.data.text))
         .catch(() => setSuggestionTitle('Предложение'));
-    }, [projectId, suggestionId]);
+      return;
+    }
 
-    crumbs.push({
-      label: suggestionTitle || 'Предложение',
-      path: location.pathname,
-    });
-  }
+    setSuggestionTitle('');
+  }, [location.pathname, projectId, suggestionId]);
 
-  // /profile
-  if (pathParts.length === 1 && pathParts[0] === 'profile') {
+  // Загружаем название предложения для страницы профиля
+  useEffect(() => {
+    if (pathParts.length === 1 && pathParts[0] === 'profile' && previousPath) {
+      const prevParts = previousPath.split('/').filter(Boolean);
+
+      if (
+        prevParts.length >= 4 &&
+        prevParts[0] === 'projects' &&
+        prevParts[2] === 'suggestions'
+      ) {
+        const prevProjectId = prevParts[1];
+        const prevSuggestionId = prevParts[3];
+
+        apiClient
+          .get<SuggestionSummary>(
+            `/projects/${prevProjectId}/suggestions/${prevSuggestionId}`,
+          )
+          .then((res) => setProfileSourceTitle(res.data.text))
+          .catch(() => setProfileSourceTitle('Предложение'));
+        return;
+      }
+    }
+
+    setProfileSourceTitle('');
+  }, [location.pathname, previousPath]);
+
+  const isProfilePage = pathParts.length === 1 && pathParts[0] === 'profile';
+
+  if (isProfilePage) {
+    if (previousPath) {
+      const prevParts = previousPath.split('/').filter(Boolean);
+
+      if (prevParts.length >= 2 && prevParts[0] === 'projects') {
+        const prevProjectId = prevParts[1];
+        const project = projects.find((p) => p.id === prevProjectId);
+        crumbs.push({
+          label: project?.name || 'Проект',
+          path: `/projects/${prevProjectId}`,
+        });
+      }
+
+      if (
+        prevParts.length === 3 &&
+        prevParts[0] === 'projects' &&
+        prevParts[2] === 'drafts'
+      ) {
+        crumbs.push({
+          label: 'Черновики',
+          path: `/${prevParts.join('/')}`,
+        });
+      }
+
+      const isSuggestionDetail =
+        prevParts.length >= 4 &&
+        prevParts[0] === 'projects' &&
+        prevParts[2] === 'suggestions';
+
+      if (isSuggestionDetail) {
+        const prevProjectId = prevParts[1];
+        const prevSuggestionId = prevParts[3];
+
+        crumbs.push({
+          label: profileSourceTitle || 'Предложение',
+          path: `/projects/${prevProjectId}/suggestions/${prevSuggestionId}`,
+        });
+      }
+    }
+
     crumbs.push({ label: 'Профиль', path: '/profile' });
+  } else {
+    // ← ЭТОГО БЛОКА НЕ БЫЛО
+    // Обычные страницы (не профиль)
+    if (pathParts.length >= 2 && pathParts[0] === 'projects' && projectId) {
+      const project = projects.find((p) => p.id === projectId);
+      crumbs.push({
+        label: project?.name || 'Проект',
+        path: `/projects/${projectId}`,
+      });
+    }
+
+    // Черновики
+    if (
+      pathParts.length === 3 &&
+      pathParts[0] === 'projects' &&
+      pathParts[2] === 'drafts'
+    ) {
+      crumbs.push({
+        label: 'Черновики',
+        path: `/${pathParts.join('/')}`,
+      });
+    }
+
+    // Предложение
+    if (
+      pathParts.length >= 4 &&
+      pathParts[0] === 'projects' &&
+      pathParts[2] === 'suggestions' &&
+      suggestionId
+    ) {
+      crumbs.push({
+        label: suggestionTitle || 'Предложение',
+        path: location.pathname,
+      });
+    }
   }
 
   return (

@@ -3,6 +3,7 @@ import type {
   ProjectSummary,
   SuggestionSummary,
   SuggestionStatus,
+  ProjectRole,
 } from '../../types/api';
 
 export interface DashboardResponse {
@@ -10,7 +11,7 @@ export interface DashboardResponse {
   membersPreview: {
     userId: string;
     displayName: string;
-    role: 'Member' | 'Admin';
+    role: ProjectRole;
   }[];
   suggestions: {
     items: SuggestionSummary[];
