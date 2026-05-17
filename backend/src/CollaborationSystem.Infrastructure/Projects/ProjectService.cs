@@ -5,6 +5,7 @@ using CollaborationSystem.Domain.Entities;
 using CollaborationSystem.Domain.Enums;
 using CollaborationSystem.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 
 namespace CollaborationSystem.Infrastructure.Projects;
 
@@ -214,16 +215,31 @@ public sealed class ProjectService(
         });
     }
 
-    public async Task<ProjectSummaryResponse> CreateProjectAsync(
+    public async Task<ProjectOperationResult<ProjectSummaryResponse>> CreateProjectAsync(
         CreateProjectRequest request,
         CancellationToken cancellationToken = default)
     {
         var currentUserId = currentUserService.GetRequiredUserId();
         var utcNow = DateTime.UtcNow;
+        var name = request.Name.Trim();
+        var normalizedName = NormalizeName(name);
+
+        var projectNameExists = await dbContext.Projects
+            .AsNoTracking()
+            .AnyAsync(
+                x => x.DeletedAtUtc == null && x.NormalizedName == normalizedName,
+                cancellationToken);
+
+        if (projectNameExists)
+        {
+            return ProjectOperationResult<ProjectSummaryResponse>.Failure(
+                ProjectOperationStatus.ProjectNameAlreadyExists);
+        }
 
         var project = new Project
         {
-            Name = request.Name.Trim(),
+            Name = name,
+            NormalizedName = normalizedName,
             Description = request.Description.Trim(),
             CreatedByUserId = currentUserId,
             CreatedAtUtc = utcNow,
@@ -244,19 +260,28 @@ public sealed class ProjectService(
         VoteQuotaService.InitializeQuota(project, member, utcNow);
         dbContext.ProjectMembers.Add(member);
 
-        await dbContext.SaveChangesAsync(cancellationToken);
-
-        return new ProjectSummaryResponse
+        try
         {
-            Id = project.Id,
-            Name = project.Name,
-            Description = project.Description,
-            Role = ProjectRole.Admin,
-            LastAccessedAt = project.UpdatedAtUtc,
-            CreatedByUserId = project.CreatedByUserId,
-            CreatedAtUtc = project.CreatedAtUtc,
-            UpdatedAtUtc = project.UpdatedAtUtc
-        };
+            await dbContext.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException exception) when (IsUniqueViolation(exception, "UX_Projects_NormalizedName_Active"))
+        {
+            return ProjectOperationResult<ProjectSummaryResponse>.Failure(
+                ProjectOperationStatus.ProjectNameAlreadyExists);
+        }
+
+        return ProjectOperationResult<ProjectSummaryResponse>.Success(
+            new ProjectSummaryResponse
+            {
+                Id = project.Id,
+                Name = project.Name,
+                Description = project.Description,
+                Role = ProjectRole.Admin,
+                LastAccessedAt = project.UpdatedAtUtc,
+                CreatedByUserId = project.CreatedByUserId,
+                CreatedAtUtc = project.CreatedAtUtc,
+                UpdatedAtUtc = project.UpdatedAtUtc
+            });
     }
 
     public async Task<ProjectOperationResult<bool>> DeleteProjectAsync(
@@ -362,4 +387,12 @@ public sealed class ProjectService(
             VotesPerUser = project.VotesPerUser,
             VoteResetPeriodDays = project.VoteResetPeriodDays
         };
+
+    private static string NormalizeName(string name) =>
+        name.Trim().ToLowerInvariant();
+
+    private static bool IsUniqueViolation(DbUpdateException exception, string constraintName) =>
+        exception.InnerException is PostgresException postgresException &&
+        postgresException.SqlState == PostgresErrorCodes.UniqueViolation &&
+        postgresException.ConstraintName == constraintName;
 }

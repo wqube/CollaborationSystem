@@ -18,7 +18,7 @@ public interface IProjectService
         GetProjectDashboardQuery query,
         CancellationToken cancellationToken = default);
 
-    Task<ProjectSummaryResponse> CreateProjectAsync(
+    Task<ProjectOperationResult<ProjectSummaryResponse>> CreateProjectAsync(
         CreateProjectRequest request,
         CancellationToken cancellationToken = default);
 

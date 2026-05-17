@@ -10,5 +10,6 @@ public enum SuggestionOperationStatus
     InvalidRequest = 6,
     Conflict = 7,
     CommentNotFound = 8,
-    VoteLimitExceeded = 9
+    VoteLimitExceeded = 9,
+    SuggestionAlreadyExists = 10
 }

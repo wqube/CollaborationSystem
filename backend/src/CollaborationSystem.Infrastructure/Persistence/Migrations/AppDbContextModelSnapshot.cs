@@ -198,6 +198,11 @@ namespace CollaborationSystem.Infrastructure.Persistence.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
 
+                    b.Property<string>("NormalizedName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
                     b.Property<DateTime>("UpdatedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
@@ -214,6 +219,11 @@ namespace CollaborationSystem.Infrastructure.Persistence.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("CreatedByUserId");
+
+                    b.HasIndex("NormalizedName")
+                        .IsUnique()
+                        .HasDatabaseName("UX_Projects_NormalizedName_Active")
+                        .HasFilter("\"DeletedAtUtc\" IS NULL");
 
                     b.ToTable("Projects", "public");
                 });
@@ -316,6 +326,11 @@ namespace CollaborationSystem.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("ProjectId")
                         .HasColumnType("uuid");
 
+                    b.Property<string>("NormalizedText")
+                        .IsRequired()
+                        .HasMaxLength(4000)
+                        .HasColumnType("character varying(4000)");
+
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasColumnType("text");
@@ -332,6 +347,10 @@ namespace CollaborationSystem.Infrastructure.Persistence.Migrations
                     b.HasIndex("AuthorId");
 
                     b.HasIndex("ProjectId");
+
+                    b.HasIndex("ProjectId", "NormalizedText")
+                        .IsUnique()
+                        .HasDatabaseName("UX_Suggestions_ProjectId_NormalizedText");
 
                     b.ToTable("Suggestions", "public");
                 });
