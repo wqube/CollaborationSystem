@@ -71,6 +71,26 @@ public class ProjectsController(IProjectService projectService) : ControllerBase
     }
 
     /// <summary>
+    /// Updates project name and description.
+    /// </summary>
+    [HttpPatch("{projectId:guid}")]
+    [ProducesResponseType(typeof(ProjectSummaryResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
+    public async Task<ActionResult<ProjectSummaryResponse>> UpdateProject(
+        Guid projectId,
+        [FromBody] UpdateProjectRequest request,
+        CancellationToken cancellationToken)
+    {
+        var result = await projectService.UpdateProjectAsync(projectId, request, cancellationToken);
+
+        return ToProjectActionResult(result);
+    }
+
+    /// <summary>
     /// Returns dashboard data for a project.
     /// </summary>
     [HttpGet("{projectId:guid}/dashboard")]

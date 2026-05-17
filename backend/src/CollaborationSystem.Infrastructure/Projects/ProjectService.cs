@@ -284,6 +284,85 @@ public sealed class ProjectService(
             });
     }
 
+    public async Task<ProjectOperationResult<ProjectSummaryResponse>> UpdateProjectAsync(
+        Guid projectId,
+        UpdateProjectRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var currentUserId = currentUserService.GetRequiredUserId();
+        var member = await dbContext.ProjectMembers
+            .Include(x => x.Project)
+            .FirstOrDefaultAsync(
+                x => x.ProjectId == projectId && x.UserId == currentUserId,
+                cancellationToken);
+
+        if (member is null)
+        {
+            var projectExists = await dbContext.Projects
+                .AsNoTracking()
+                .AnyAsync(x => x.Id == projectId && x.DeletedAtUtc == null, cancellationToken);
+
+            return ProjectOperationResult<ProjectSummaryResponse>.Failure(
+                projectExists ? ProjectOperationStatus.Forbidden : ProjectOperationStatus.ProjectNotFound);
+        }
+
+        if (member.Project is null || member.Project.DeletedAtUtc is not null)
+        {
+            return ProjectOperationResult<ProjectSummaryResponse>.Failure(ProjectOperationStatus.ProjectNotFound);
+        }
+
+        if (member.Role != ProjectRole.Admin)
+        {
+            return ProjectOperationResult<ProjectSummaryResponse>.Failure(ProjectOperationStatus.Forbidden);
+        }
+
+        var project = member.Project;
+        var name = request.Name.Trim();
+        var normalizedName = NormalizeName(name);
+
+        var projectNameExists = await dbContext.Projects
+            .AsNoTracking()
+            .AnyAsync(
+                x => x.Id != projectId &&
+                     x.DeletedAtUtc == null &&
+                     x.NormalizedName == normalizedName,
+                cancellationToken);
+
+        if (projectNameExists)
+        {
+            return ProjectOperationResult<ProjectSummaryResponse>.Failure(
+                ProjectOperationStatus.ProjectNameAlreadyExists);
+        }
+
+        var utcNow = DateTime.UtcNow;
+        project.Name = name;
+        project.NormalizedName = normalizedName;
+        project.Description = request.Description?.Trim() ?? string.Empty;
+        project.UpdatedAtUtc = utcNow;
+
+        try
+        {
+            await dbContext.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException exception) when (IsUniqueViolation(exception, "UX_Projects_NormalizedName_Active"))
+        {
+            return ProjectOperationResult<ProjectSummaryResponse>.Failure(
+                ProjectOperationStatus.ProjectNameAlreadyExists);
+        }
+
+        return ProjectOperationResult<ProjectSummaryResponse>.Success(new ProjectSummaryResponse
+        {
+            Id = project.Id,
+            Name = project.Name,
+            Description = project.Description,
+            Role = member.Role,
+            LastAccessedAt = project.UpdatedAtUtc,
+            CreatedByUserId = project.CreatedByUserId,
+            CreatedAtUtc = project.CreatedAtUtc,
+            UpdatedAtUtc = project.UpdatedAtUtc
+        });
+    }
+
     public async Task<ProjectOperationResult<bool>> DeleteProjectAsync(
         Guid projectId,
         CancellationToken cancellationToken = default)
