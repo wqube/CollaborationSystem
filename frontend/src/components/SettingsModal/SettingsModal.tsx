@@ -4,9 +4,10 @@ import { Modal } from '../ui/Modal/Modal';
 import { Button } from '../ui/Button/Button';
 import {
   deleteProjectApi,
+  updateProjectApi,
   updateProjectSettingsApi,
 } from '../../shared/api/project';
-import type { ProjectVoteSettings } from '../../types/api';
+import type { ProjectSummary, ProjectVoteSettings } from '../../types/api';
 import styles from '../SettingsModal/SettingsModal.module.css';
 
 interface SettingsModalProps {
@@ -16,6 +17,7 @@ interface SettingsModalProps {
   projectName: string;
   projectDescription: string;
   voteSettings: ProjectVoteSettings | null;
+  onProjectSaved?: (project: ProjectSummary) => void | Promise<void>;
   onDeleted?: () => void | Promise<void>;
   onSettingsSaved?: (settings: ProjectVoteSettings) => void | Promise<void>;
 }
@@ -27,6 +29,7 @@ export function SettingsModal({
   projectName,
   projectDescription,
   voteSettings,
+  onProjectSaved,
   onDeleted,
   onSettingsSaved,
 }: SettingsModalProps) {
@@ -41,6 +44,12 @@ export function SettingsModal({
   const [loading, setLoading] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const clearError = () => {
+    if (error) {
+      setError(null);
+    }
+  };
 
   // Синхронизируем состояние при открытии
   useEffect(() => {
@@ -57,6 +66,13 @@ export function SettingsModal({
     e.preventDefault();
     const parsedVotesPerUser = Number(votesPerUser);
     const parsedVoteResetPeriodDays = Number(voteResetPeriodDays);
+    const trimmedName = name.trim();
+    const trimmedDescription = description.trim();
+
+    if (!trimmedName) {
+      setError('Название проекта обязательно!');
+      return;
+    }
 
     if (
       !Number.isInteger(parsedVotesPerUser) ||
@@ -68,22 +84,58 @@ export function SettingsModal({
       return;
     }
 
+    const projectChanged =
+      trimmedName !== projectName || trimmedDescription !== projectDescription;
+
+    const settingsChanged =
+      parsedVotesPerUser !== voteSettings?.votesPerUser ||
+      parsedVoteResetPeriodDays !== voteSettings?.voteResetPeriodDays;
+
     try {
+      let updatedProject: ProjectSummary | null = null;
+      let updatedSettings: ProjectVoteSettings | null = null;
+
       setLoading(true);
       setError(null);
-      const updatedSettings = await updateProjectSettingsApi(projectId, {
-        votesPerUser: parsedVotesPerUser,
-        voteResetPeriodDays: parsedVoteResetPeriodDays,
-      });
-      await onSettingsSaved?.(updatedSettings);
+
+      if (projectChanged) {
+        updatedProject = await updateProjectApi(projectId, {
+          name: trimmedName,
+          description: trimmedDescription,
+        });
+      }
+
+      if (settingsChanged) {
+        updatedSettings = await updateProjectSettingsApi(projectId, {
+          votesPerUser: parsedVotesPerUser,
+          voteResetPeriodDays: parsedVoteResetPeriodDays,
+        });
+      }
+
+      if (updatedProject) {
+        await onProjectSaved?.(updatedProject);
+      }
+
+      if (updatedSettings) {
+        await onSettingsSaved?.(updatedSettings);
+      }
+
       onClose();
     } catch (err: unknown) {
-      const status = (err as { response?: { status?: number } })?.response
-        ?.status;
+      const response = (
+        err as { response?: { status?: number; data?: { title?: string } } }
+      )?.response;
+      const status = response?.status;
+      const isDuplicateName =
+        status === 409 ||
+        response?.data?.title === 'Project with this name already exists.';
+
       setError(
         status === 403
           ? 'Недостаточно прав для изменения настроек'
-          : 'Не удалось сохранить настройки',
+          : isDuplicateName
+            ? 'Проект с таким названием уже существует'
+            : 'Не удалось сохранить настройки проекта',
       );
     } finally {
       setLoading(false);
@@ -129,10 +181,12 @@ export function SettingsModal({
           <input
             type="text"
             value={name}
+            onChange={(e) => {
+              setName(e.target.value);
+              clearError();
+            }}
             placeholder="Введите название проекта"
-            disabled
-            readOnly
-            className={styles.disabled}
+            disabled={busy}
           />
         </div>
 
@@ -141,12 +195,20 @@ export function SettingsModal({
           <textarea
             rows={3}
             value={description}
+            onChange={(e) => {
+              setDescription(e.target.value);
+              clearError();
+            }}
             placeholder="Введите описание проекта"
-            disabled
-            readOnly
-            className={styles.disabled}
+            disabled={busy}
           />
         </div>
+
+        {error && (
+          <p className={styles.errorText} role="alert" aria-live="polite">
+            {error}
+          </p>
+        )}
 
         <div className={styles.settingsBlock}>
           <div className={styles.row}>
@@ -206,8 +268,6 @@ export function SettingsModal({
             {deleting ? 'Удаление...' : 'Удалить'}
           </Button>
         </div>
-
-        {error && <p className={styles.errorText}>{error}</p>}
       </form>
     </Modal>
   );

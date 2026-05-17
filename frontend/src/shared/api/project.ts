@@ -4,6 +4,7 @@ import type {
   CreateProjectRequest,
   ProjectVoteSettings,
   UpdateProjectSettingsRequest,
+  UpdateProjectRequest,
 } from '../../types/api';
 
 export const getProjects = async (): Promise<ProjectSummary[]> => {
@@ -22,6 +23,18 @@ export const createProjectApi = async (
 
 export const deleteProjectApi = async (projectId: string): Promise<void> => {
   await apiClient.delete(`/projects/${projectId}`);
+};
+
+export const updateProjectApi = async (
+  projectId: string,
+  data: UpdateProjectRequest,
+): Promise<ProjectSummary> => {
+  const response = await apiClient.patch<ProjectSummary>(
+    `/projects/${projectId}`,
+    data,
+  );
+
+  return response.data;
 };
 
 export const updateProjectSettingsApi = async (

@@ -151,6 +151,11 @@ export interface AddProjectMemberRequest {
   role: ProjectRole;
 }
 
+export interface UpdateProjectRequest {
+  name: string;
+  description?: string;
+}
+
 export interface UpdateProjectMemberRoleRequest {
   role: ProjectRole;
 }
