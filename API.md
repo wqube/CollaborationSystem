@@ -71,6 +71,17 @@ Cookie устанавливается сервером через Set-Cookie:
 - `score = количество голосов Up - количество голосов Down`
 - Значение `score` является вычисляемым и не хранится как отдельное обязательное поле БД
 
+### Семантика лимита голосов
+
+- Лимит голосов задается на уровне проекта через `votesPerUser`.
+- Период обновления лимита задается на уровне проекта через `voteResetPeriodDays`.
+- Каждый новый активный голос текущего пользователя в рамках проекта тратит 1 голос из его текущего лимита.
+- Голоса `Up` и `Down` одинаково тратят 1 голос.
+- Смена существующего голоса с `Up` на `Down` или с `Down` на `Up` не тратит дополнительный голос.
+- Отмена голоса возвращает 1 голос только если отменяемый голос был поставлен в текущем бюджетном периоде пользователя.
+- При наступлении `nextResetAt` счетчик текущего пользователя лениво обновляется до `votesPerUser`.
+- Старые голоса остаются активными и продолжают участвовать в `score`; сброс лимита не удаляет уже поставленные голоса.
+
 ## 2. Контрактные типы
 
 ### 2.1 Enum
@@ -162,7 +173,10 @@ Cookie устанавливается сервером через Set-Cookie:
   "name": "Core Platform",
   "description": "Проект команды Core Platform",
   "role": "Admin",
-  "lastAccessedAt": "2026-04-09T18:30:00Z"
+  "lastAccessedAt": "2026-04-09T18:30:00Z",
+  "createdByUserId": "3f11a6dc-79a6-43f7-ac88-bb78dd70d712",
+  "createdAtUtc": "2026-04-01T10:00:00Z",
+  "updatedAtUtc": "2026-04-09T18:30:00Z"
 }
 ```
 
@@ -178,6 +192,29 @@ Cookie устанавливается сервером через Set-Cookie:
 }
 ```
 
+#### `ProjectVoteSettings`
+
+```json
+{
+  "votesPerUser": 3,
+  "voteResetPeriodDays": 14
+}
+```
+
+Настройки голосования проекта.
+
+#### `CurrentUserVoteQuota`
+
+```json
+{
+  "votesLimit": 3,
+  "votesRemaining": 2,
+  "nextResetAt": "2026-04-23T10:00:00Z"
+}
+```
+
+Текущий лимит голосов пользователя в рамках проекта.
+
 #### `ProjectDetails`
 
 ```json
@@ -186,7 +223,17 @@ Cookie устанавливается сервером через Set-Cookie:
   "name": "Core Platform",
   "description": "Проект команды Core Platform",
   "createdByUserId": "3f11a6dc-79a6-43f7-ac88-bb78dd70d712",
-  "createdAt": "2026-04-01T10:00:00Z",
+  "createdAtUtc": "2026-04-01T10:00:00Z",
+  "updatedAtUtc": "2026-04-09T18:30:00Z",
+  "voteSettings": {
+    "votesPerUser": 3,
+    "voteResetPeriodDays": 14
+  },
+  "currentUserVoteQuota": {
+    "votesLimit": 3,
+    "votesRemaining": 2,
+    "nextResetAt": "2026-04-23T10:00:00Z"
+  },
   "members": []
 }
 ```
@@ -204,6 +251,7 @@ Cookie устанавливается сервером через Set-Cookie:
     "displayName": "Иван Петров"
   },
   "score": 5,
+  "currentUserVote": "Up",
   "createdAt": "2026-04-09T18:30:00Z",
   "updatedAt": "2026-04-09T18:30:00Z"
 }
@@ -301,6 +349,20 @@ Cookie устанавливается сервером через Set-Cookie:
 }
 ```
 
+#### `UpdateProjectSettingsRequest`
+
+```json
+{
+  "votesPerUser": 3,
+  "voteResetPeriodDays": 14
+}
+```
+
+Ограничения:
+
+- `votesPerUser >= 1`
+- `voteResetPeriodDays >= 1`
+
 #### `CreateSuggestionRequest`
 
 ```json
@@ -330,6 +392,21 @@ Cookie устанавливается сервером через Set-Cookie:
 ```json
 {
   "voteType": "Up"
+}
+```
+
+#### `VoteResponse`
+
+```json
+{
+  "suggestionId": "d68650b5-dfc5-45be-b525-8b0c64c4e54a",
+  "currentUserVote": "Up",
+  "score": 6,
+  "voteQuota": {
+    "votesLimit": 3,
+    "votesRemaining": 2,
+    "nextResetAt": "2026-04-23T10:00:00Z"
+  }
 }
 ```
 
@@ -387,6 +464,25 @@ Cookie устанавливается сервером через Set-Cookie:
 - `403 Forbidden` — недостаточно прав
 - `404 Not Found` — проект или сущность не найдены
 - `409 Conflict` — конфликт состояния
+
+Для превышения лимита голосов используется `409 Conflict` с кодом `VoteLimitExceeded`.
+
+Пример:
+
+```json
+{
+  "type": "https://tools.ietf.org/html/rfc9110#section-15.5.10",
+  "title": "Vote limit exceeded.",
+  "status": 409,
+  "code": "VoteLimitExceeded",
+  "nextResetAt": "2026-04-23T10:00:00Z",
+  "voteQuota": {
+    "votesLimit": 3,
+    "votesRemaining": 0,
+    "nextResetAt": "2026-04-23T10:00:00Z"
+  }
+}
+```
 
 ## 4. Endpoints
 
@@ -532,7 +628,10 @@ Query params:
       "name": "Core Platform",
       "description": "Проект команды Core Platform",
       "role": "Admin",
-      "lastAccessedAt": "2026-04-09T18:30:00Z"
+      "lastAccessedAt": "2026-04-09T18:30:00Z",
+      "createdByUserId": "3f11a6dc-79a6-43f7-ac88-bb78dd70d712",
+      "createdAtUtc": "2026-04-01T10:00:00Z",
+      "updatedAtUtc": "2026-04-09T18:30:00Z"
     }
   ],
   "page": 1,
@@ -565,9 +664,11 @@ Query params:
   "id": "7ca7d640-d843-45b2-9701-0b0efb8c4af1",
   "name": "Core Platform",
   "description": "Проект команды Core Platform",
+  "role": "Admin",
+  "lastAccessedAt": "2026-04-01T10:00:00Z",
   "createdByUserId": "3f11a6dc-79a6-43f7-ac88-bb78dd70d712",
-  "createdAt": "2026-04-01T10:00:00Z",
-  "members": []
+  "createdAtUtc": "2026-04-01T10:00:00Z",
+  "updatedAtUtc": "2026-04-01T10:00:00Z"
 }
 ```
 
@@ -589,7 +690,17 @@ Path params:
   "name": "Core Platform",
   "description": "Проект команды Core Platform",
   "createdByUserId": "3f11a6dc-79a6-43f7-ac88-bb78dd70d712",
-  "createdAt": "2026-04-01T10:00:00Z",
+  "createdAtUtc": "2026-04-01T10:00:00Z",
+  "updatedAtUtc": "2026-04-09T18:30:00Z",
+  "voteSettings": {
+    "votesPerUser": 3,
+    "voteResetPeriodDays": 14
+  },
+  "currentUserVoteQuota": {
+    "votesLimit": 3,
+    "votesRemaining": 2,
+    "nextResetAt": "2026-04-23T10:00:00Z"
+  },
   "members": [
     {
       "userId": "3f11a6dc-79a6-43f7-ac88-bb78dd70d712",
@@ -604,7 +715,41 @@ Path params:
 
 Ошибки: `401`, `403`, `404`.
 
-### 4.9 `POST /api/v1/projects/{projectId}/members`
+### 4.9 `PATCH /api/v1/projects/{projectId}/settings`
+
+Назначение: обновить настройки голосования проекта.
+
+Доступ: только администратор проекта.
+
+Path params:
+
+- `projectId`
+
+Тело запроса: `UpdateProjectSettingsRequest`.
+
+Пример запроса:
+
+```json
+{
+  "votesPerUser": 5,
+  "voteResetPeriodDays": 7
+}
+```
+
+Пример ответа:
+
+```json
+{
+  "votesPerUser": 5,
+  "voteResetPeriodDays": 7
+}
+```
+
+После изменения настроек сервер пересчитывает квоты участников проекта. Чтобы получить актуальную квоту текущего пользователя после сохранения настроек, клиенту нужно повторно запросить `GET /api/v1/projects/{projectId}` или `GET /api/v1/projects/{projectId}/dashboard`.
+
+Ошибки: `400`, `401`, `403`, `404`.
+
+### 4.10 `POST /api/v1/projects/{projectId}/members`
 
 Назначение: добавить участника в проект.
 
@@ -639,7 +784,7 @@ Path params:
 
 Ошибки: `400`, `401`, `403`, `404`, `409`.
 
-### 4.10 `PATCH /api/v1/projects/{projectId}/members/{userId}`
+### 4.11 `PATCH /api/v1/projects/{projectId}/members/{userId}`
 
 Назначение: изменить роль участника проекта.
 
@@ -674,7 +819,7 @@ Path params:
 
 Ошибки: `400`, `401`, `403`, `404`.
 
-### 4.11 `DELETE /api/v1/projects/{projectId}/members/{userId}`
+### 4.12 `DELETE /api/v1/projects/{projectId}/members/{userId}`
 
 Назначение: удалить участника из проекта.
 
@@ -689,7 +834,7 @@ Path params:
 
 Ошибки: `401`, `403`, `404`.
 
-### 4.12 `GET /api/v1/projects/{projectId}/suggestions`
+### 4.13 `GET /api/v1/projects/{projectId}/suggestions`
 
 Назначение: получить полный список предложений проекта.
 
@@ -721,6 +866,7 @@ Query params:
         "displayName": "Иван Петров"
       },
       "score": 5,
+      "currentUserVote": "Up",
       "createdAt": "2026-04-09T18:30:00Z",
       "updatedAt": "2026-04-09T18:30:00Z"
     }
@@ -733,7 +879,7 @@ Query params:
 
 Ошибки: `400`, `401`, `403`, `404`.
 
-### 4.13 `GET /api/v1/projects/{projectId}/dashboard`
+### 4.14 `GET /api/v1/projects/{projectId}/dashboard`
 
 Назначение: агрегированный endpoint для страницы проекта с коротким preview предложений.
 
@@ -745,7 +891,7 @@ Path params:
 
 Query params:
 
-- `status` — фильтр preview предложений по статусу, по умолчанию `New`
+- `status` — фильтр preview предложений по статусу, опционально
 - `page` — номер страницы для preview списка предложений, опционально
 - `pageSize` — размер страницы для preview списка предложений, опционально
 
@@ -759,6 +905,15 @@ Query params:
     "description": "Проект команды Core Platform",
     "role": "Admin",
     "lastAccessedAt": "2026-04-09T18:30:00Z"
+  },
+  "voteSettings": {
+    "votesPerUser": 3,
+    "voteResetPeriodDays": 14
+  },
+  "currentUserVoteQuota": {
+    "votesLimit": 3,
+    "votesRemaining": 2,
+    "nextResetAt": "2026-04-23T10:00:00Z"
   },
   "membersPreview": [
     {
@@ -779,6 +934,7 @@ Query params:
           "displayName": "Иван Петров"
         },
         "score": 5,
+        "currentUserVote": "Up",
         "createdAt": "2026-04-09T18:30:00Z",
         "updatedAt": "2026-04-09T18:30:00Z"
       }
@@ -790,9 +946,9 @@ Query params:
 }
 ```
 
-Ошибки: `401`, `403`, `404`.
+Ошибки: `400`, `401`, `403`, `404`.
 
-### 4.14 `POST /api/v1/projects/{projectId}/suggestions`
+### 4.15 `POST /api/v1/projects/{projectId}/suggestions`
 
 Назначение: создать новое предложение в проекте.
 
@@ -823,6 +979,7 @@ Path params:
     "displayName": "Иван Петров"
   },
   "score": 0,
+  "currentUserVote": null,
   "createdAt": "2026-04-09T18:30:00Z",
   "updatedAt": "2026-04-09T18:30:00Z"
 }
@@ -830,7 +987,7 @@ Path params:
 
 Ошибки: `400`, `401`, `403`, `404`.
 
-### 4.15 `GET /api/v1/projects/{projectId}/suggestions/{suggestionId}`
+### 4.16 `GET /api/v1/projects/{projectId}/suggestions/{suggestionId}`
 
 Назначение: получить карточку предложения.
 
@@ -868,7 +1025,7 @@ Path params:
 
 Ошибки: `401`, `403`, `404`.
 
-### 4.16 `PATCH /api/v1/projects/{projectId}/suggestions/{suggestionId}`
+### 4.17 `PATCH /api/v1/projects/{projectId}/suggestions/{suggestionId}`
 
 Назначение: изменить текст предложения.
 
@@ -905,6 +1062,7 @@ Path params:
     "displayName": "Иван Петров"
   },
   "score": 5,
+  "currentUserVote": null,
   "createdAt": "2026-04-09T18:30:00Z",
   "updatedAt": "2026-04-09T19:20:00Z"
 }
@@ -912,7 +1070,7 @@ Path params:
 
 Ошибки: `400`, `401`, `403`, `404`, `409`.
 
-### 4.17 `PATCH /api/v1/projects/{projectId}/suggestions/{suggestionId}/status`
+### 4.18 `PATCH /api/v1/projects/{projectId}/suggestions/{suggestionId}/status`
 
 Назначение: изменить статус предложения.
 
@@ -948,6 +1106,7 @@ Path params:
     "displayName": "Иван Петров"
   },
   "score": 5,
+  "currentUserVote": null,
   "createdAt": "2026-04-09T18:30:00Z",
   "updatedAt": "2026-04-09T19:20:00Z"
 }
@@ -955,7 +1114,7 @@ Path params:
 
 Ошибки: `400`, `401`, `403`, `404`, `409`.
 
-### 4.18 `PUT /api/v1/projects/{projectId}/suggestions/{suggestionId}/vote`
+### 4.19 `PUT /api/v1/projects/{projectId}/suggestions/{suggestionId}/vote`
 
 Назначение: создать новый голос или заменить существующий.
 
@@ -980,13 +1139,21 @@ Path params:
 {
   "suggestionId": "d68650b5-dfc5-45be-b525-8b0c64c4e54a",
   "currentUserVote": "Down",
-  "score": 3
+  "score": 3,
+  "voteQuota": {
+    "votesLimit": 3,
+    "votesRemaining": 2,
+    "nextResetAt": "2026-04-23T10:00:00Z"
+  }
 }
 ```
 
-Ошибки: `400`, `401`, `403`, `404`.
+Если пользователь уже голосовал за это предложение, смена направления голоса не тратит дополнительный голос.
+Если пользователь еще не голосовал за это предложение и `votesRemaining = 0`, сервер возвращает `409 Conflict` с кодом `VoteLimitExceeded`.
 
-### 4.19 `DELETE /api/v1/projects/{projectId}/suggestions/{suggestionId}/vote`
+Ошибки: `400`, `401`, `403`, `404`, `409`.
+
+### 4.20 `DELETE /api/v1/projects/{projectId}/suggestions/{suggestionId}/vote`
 
 Назначение: отменить текущий голос пользователя.
 
@@ -1001,13 +1168,21 @@ Path params:
 {
   "suggestionId": "d68650b5-dfc5-45be-b525-8b0c64c4e54a",
   "currentUserVote": null,
-  "score": 4
+  "score": 4,
+  "voteQuota": {
+    "votesLimit": 3,
+    "votesRemaining": 3,
+    "nextResetAt": "2026-04-23T10:00:00Z"
+  }
 }
 ```
 
+Если отменяемый голос был поставлен в текущем бюджетном периоде пользователя, сервер возвращает 1 голос в `votesRemaining`.
+Если голос был поставлен в прошлом бюджетном периоде, отмена не увеличивает текущий счетчик.
+
 Ошибки: `401`, `403`, `404`.
 
-### 4.20 `GET /api/v1/projects/{projectId}/suggestions/{suggestionId}/comments`
+### 4.21 `GET /api/v1/projects/{projectId}/suggestions/{suggestionId}/comments`
 
 Назначение: получить все комментарии предложения плоским списком.
 
@@ -1051,7 +1226,7 @@ Path params:
 
 Ошибки: `401`, `403`, `404`.
 
-### 4.21 `POST /api/v1/projects/{projectId}/suggestions/{suggestionId}/comments`
+### 4.22 `POST /api/v1/projects/{projectId}/suggestions/{suggestionId}/comments`
 
 Назначение: создать комментарий или ответ на комментарий.
 
@@ -1090,7 +1265,7 @@ Path params:
 
 Ошибки: `400`, `401`, `403`, `404`.
 
-### 4.22 `PATCH /api/v1/projects/{projectId}/comments/{commentId}`
+### 4.23 `PATCH /api/v1/projects/{projectId}/comments/{commentId}`
 
 Назначение: отредактировать собственный комментарий.
 
@@ -1128,7 +1303,7 @@ Path params:
 
 Ошибки: `400`, `401`, `403`, `404`.
 
-### 4.23 `DELETE /api/v1/projects/{projectId}/comments/{commentId}`
+### 4.24 `DELETE /api/v1/projects/{projectId}/comments/{commentId}`
 
 Назначение: удалить собственный комментарий.
 
@@ -1141,7 +1316,7 @@ Path params:
 
 Ошибки: `401`, `403`, `404`.
 
-### 4.24 `GET /api/v1/projects/{projectId}/drafts`
+### 4.25 `GET /api/v1/projects/{projectId}/drafts`
 
 Назначение: получить черновики текущего пользователя в проекте.
 
@@ -1180,7 +1355,7 @@ Query params:
 
 Ошибки: `401`, `403`, `404`.
 
-### 4.25 `PUT /api/v1/projects/{projectId}/drafts/suggestion/{draftId}`
+### 4.26 `PUT /api/v1/projects/{projectId}/drafts/suggestion/{draftId}`
 
 Назначение: создать или обновить черновик предложения.
 
@@ -1215,7 +1390,7 @@ Path params:
 
 Ошибки: `400`, `401`, `403`, `404`.
 
-### 4.26 `PUT /api/v1/projects/{projectId}/drafts/comment/{draftId}`
+### 4.27 `PUT /api/v1/projects/{projectId}/drafts/comment/{draftId}`
 
 Назначение: создать или обновить черновик комментария.
 
@@ -1254,7 +1429,7 @@ Path params:
 
 Ошибки: `400`, `401`, `403`, `404`.
 
-### 4.27 `DELETE /api/v1/projects/{projectId}/drafts/{draftId}`
+### 4.28 `DELETE /api/v1/projects/{projectId}/drafts/{draftId}`
 
 Назначение: удалить черновик текущего пользователя.
 
@@ -1276,4 +1451,5 @@ Path params:
 - Черновики моделируются как отдельная сущность с `type` и `payload`.
 - В MVP `drafts.payload` хранится как JSON для ускорения реализации.
 - Refresh token должен быть связан с серверной auth-session.
-- Настройка количества голосов, расписание встреч и внешние интеграции вынесены в future scope.
+- Настройка количества голосов реализована через `voteSettings` проекта.
+- Расписание встреч и внешние интеграции вынесены в future scope.
