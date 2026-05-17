@@ -198,6 +198,16 @@ namespace CollaborationSystem.Infrastructure.Persistence.Migrations
                     b.Property<DateTime>("UpdatedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<int>("VoteResetPeriodDays")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(14);
+
+                    b.Property<int>("VotesPerUser")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(3);
+
                     b.HasKey("Id");
 
                     b.HasIndex("CreatedByUserId");
@@ -217,6 +227,9 @@ namespace CollaborationSystem.Infrastructure.Persistence.Migrations
                     b.Property<DateTime>("JoinedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<DateTime>("NextVoteResetAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<Guid>("ProjectId")
                         .HasColumnType("uuid");
 
@@ -229,6 +242,12 @@ namespace CollaborationSystem.Infrastructure.Persistence.Migrations
 
                     b.Property<Guid>("UserId")
                         .HasColumnType("uuid");
+
+                    b.Property<DateTime>("VotePeriodStartedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("VotesRemaining")
+                        .HasColumnType("integer");
 
                     b.HasKey("Id");
 
@@ -318,6 +337,9 @@ namespace CollaborationSystem.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("BudgetPeriodStartedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<Guid>("SuggestionId")
