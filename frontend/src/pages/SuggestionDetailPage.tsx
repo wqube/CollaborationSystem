@@ -7,6 +7,7 @@ import { CommentsSection } from '../components/SuggestionDetailPage/CommentsSect
 import { Breadcrumbs } from '../components/Breadcrumbs/Breadcrumbs';
 import {
   getSuggestionDetails,
+  updateSuggestionText,
   updateSuggestionStatus,
   voteSuggestion,
   deleteVote,
@@ -26,6 +27,7 @@ import type {
   VoteType,
   ProjectRole,
 } from '../types/api';
+import { userAppSelector } from '../shared/store/hooks';
 import styles from '../assets/SuggestionDetailPage.module.css';
 
 const buildCommentTree = (comments: CommentDto[]): CommentNode[] => {
@@ -61,6 +63,7 @@ export function SuggestionDetailPage() {
     suggestionId: string;
   }>();
   const location = useLocation();
+  const currentUserId = userAppSelector((state) => state.auth.user?.id ?? null);
 
   const [detail, setDetail] = useState<SuggestionDetails | null>(null);
   const [commentTree, setCommentTree] = useState<CommentNode[]>([]);
@@ -201,6 +204,34 @@ export function SuggestionDetailPage() {
     }
   };
 
+  const handleTextChange = async (text: string) => {
+    if (!projectId || !suggestionId) return;
+
+    try {
+      const updated = await updateSuggestionText(projectId, suggestionId, {
+        text,
+      });
+
+      setDetail((prev) =>
+        prev
+          ? {
+              ...prev,
+              text: updated.text,
+              updatedAt: updated.updatedAt,
+            }
+          : prev,
+      );
+    } catch (err: unknown) {
+      const status = (err as { response?: { status?: number } })?.response
+        ?.status;
+      throw new Error(
+        status === 403
+          ? 'Редактировать предложение может только автор'
+          : 'Ошибка при обновлении предложения',
+      );
+    }
+  };
+
   const handleVote = async (voteType: VoteType | null) => {
     if (!projectId || !suggestionId) return;
     try {
@@ -232,13 +263,15 @@ export function SuggestionDetailPage() {
   return (
     <div className={styles.page}>
       {loading && <div className={styles.overlayLoader}>Загрузка...</div>}
-      <Breadcrumbs />
+      <Breadcrumbs currentSuggestionTitle={detail.text} />
 
       <div className={styles.twoColumns}>
         <div className={styles.main}>
           <SuggestionHeader
             detail={detail}
             userRole={userRole}
+            canEditText={detail.author.id === currentUserId}
+            onTextChange={handleTextChange}
             onStatusChange={handleStatusChange}
           />
 
