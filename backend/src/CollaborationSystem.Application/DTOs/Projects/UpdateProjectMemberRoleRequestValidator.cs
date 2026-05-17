@@ -1,3 +1,4 @@
+using CollaborationSystem.Domain.Enums;
 using FluentValidation;
 
 namespace CollaborationSystem.Application.DTOs.Projects;
@@ -7,6 +8,7 @@ public sealed class UpdateProjectMemberRoleRequestValidator : AbstractValidator<
     public UpdateProjectMemberRoleRequestValidator()
     {
         RuleFor(x => x.Role)
-            .IsInEnum();
+            .IsInEnum()
+            .Must(role => role is ProjectRole.Member or ProjectRole.Admin);
     }
 }

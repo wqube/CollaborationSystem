@@ -25,7 +25,7 @@ public static class DependencyInjection
 
         services.AddHttpContextAccessor();
         services.AddScoped<ICurrentUserService, CurrentUserService>();
-        services.AddSingleton<IDevUserStore, DevUserStore>();
+        services.AddScoped<IDevUserStore, DevUserStore>();
         services.AddSingleton<IJwtTokenService, JwtTokenService>();
         services.AddScoped<IRefreshSessionStore, DbRefreshSessionStore>();
         services.AddScoped<IProjectMemberService, ProjectMemberService>();

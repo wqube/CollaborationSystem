@@ -10,6 +10,7 @@ public class Project : BaseEntity
     public string Name { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
     public Guid CreatedByUserId { get; set; }
+    public DateTime? DeletedAtUtc { get; set; }
     public int VotesPerUser { get; set; } = DefaultVotesPerUser;
     public int VoteResetPeriodDays { get; set; } = DefaultVoteResetPeriodDays;
 

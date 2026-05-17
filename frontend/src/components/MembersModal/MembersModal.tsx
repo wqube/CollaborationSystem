@@ -32,7 +32,6 @@ export function MembersModal({
   const [searchUser, setSearchUser] = useState('');
   const [newRole, setNewRole] = useState<ProjectRole>('Member');
 
-  // Загрузка участников при открытии
   useEffect(() => {
     if (!open || !projectId) return;
 

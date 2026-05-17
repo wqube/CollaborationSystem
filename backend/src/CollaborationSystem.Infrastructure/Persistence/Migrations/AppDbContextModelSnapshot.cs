@@ -190,6 +190,9 @@ namespace CollaborationSystem.Infrastructure.Persistence.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<DateTime?>("DeletedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(200)
@@ -290,7 +293,10 @@ namespace CollaborationSystem.Infrastructure.Persistence.Migrations
                     b.HasIndex("RefreshTokenHash")
                         .IsUnique();
 
-                    b.HasIndex("UserId");
+                    b.HasIndex("UserId")
+                        .IsUnique()
+                        .HasDatabaseName("IX_AuthSessions_UserId_Active")
+                        .HasFilter("\"RevokedAtUtc\" IS NULL");
 
                     b.ToTable("AuthSessions", "public");
                 });

@@ -28,9 +28,9 @@ interface DraftDto {
 type ActiveTab = 'all' | 'Suggestion' | 'Comment';
 
 function isCommentPayload(
-  payload: SuggestionPayload | CommentPayload,
+  _payload: SuggestionPayload | CommentPayload,
   type: DraftType,
-): payload is CommentPayload {
+): _payload is CommentPayload {
   return type === 'Comment';
 }
 

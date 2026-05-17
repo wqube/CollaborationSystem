@@ -22,7 +22,7 @@ public sealed class ProjectService(
         var projectMembershipsQuery = dbContext.ProjectMembers
             .AsNoTracking()
             .Where(x => x.UserId == currentUserId)
-            .Where(x => x.Project != null);
+            .Where(x => x.Project != null && x.Project.DeletedAtUtc == null);
 
         var total = await projectMembershipsQuery.CountAsync(cancellationToken);
         var items = await projectMembershipsQuery
@@ -67,13 +67,18 @@ public sealed class ProjectService(
         {
             var projectExists = await dbContext.Projects
                 .AsNoTracking()
-                .AnyAsync(x => x.Id == projectId, cancellationToken);
+                .AnyAsync(x => x.Id == projectId && x.DeletedAtUtc == null, cancellationToken);
 
             return ProjectOperationResult<ProjectDetailsResponse>.Failure(
                 projectExists ? ProjectOperationStatus.Forbidden : ProjectOperationStatus.ProjectNotFound);
         }
 
         var project = member.Project!;
+        if (project.DeletedAtUtc is not null)
+        {
+            return ProjectOperationResult<ProjectDetailsResponse>.Failure(ProjectOperationStatus.ProjectNotFound);
+        }
+
         var utcNow = DateTime.UtcNow;
 
         if (voteQuotaService.ApplyLazyReset(project, member, utcNow))
@@ -113,13 +118,18 @@ public sealed class ProjectService(
         {
             var projectExists = await dbContext.Projects
                 .AsNoTracking()
-                .AnyAsync(x => x.Id == projectId, cancellationToken);
+                .AnyAsync(x => x.Id == projectId && x.DeletedAtUtc == null, cancellationToken);
 
             return ProjectOperationResult<ProjectDashboardResponse>.Failure(
                 projectExists ? ProjectOperationStatus.Forbidden : ProjectOperationStatus.ProjectNotFound);
         }
 
         var project = member.Project!;
+        if (project.DeletedAtUtc is not null)
+        {
+            return ProjectOperationResult<ProjectDashboardResponse>.Failure(ProjectOperationStatus.ProjectNotFound);
+        }
+
         var utcNow = DateTime.UtcNow;
 
         if (voteQuotaService.ApplyLazyReset(project, member, utcNow))
@@ -249,6 +259,39 @@ public sealed class ProjectService(
         };
     }
 
+    public async Task<ProjectOperationResult<bool>> DeleteProjectAsync(
+        Guid projectId,
+        CancellationToken cancellationToken = default)
+    {
+        var project = await dbContext.Projects
+            .FirstOrDefaultAsync(x => x.Id == projectId && x.DeletedAtUtc == null, cancellationToken);
+
+        if (project is null)
+        {
+            return ProjectOperationResult<bool>.Failure(ProjectOperationStatus.ProjectNotFound);
+        }
+
+        var currentUserId = currentUserService.GetRequiredUserId();
+        var currentMember = await dbContext.ProjectMembers
+            .AsNoTracking()
+            .FirstOrDefaultAsync(
+                x => x.ProjectId == projectId && x.UserId == currentUserId,
+                cancellationToken);
+
+        if (currentMember is null || currentMember.Role != ProjectRole.Admin)
+        {
+            return ProjectOperationResult<bool>.Failure(ProjectOperationStatus.Forbidden);
+        }
+
+        var utcNow = DateTime.UtcNow;
+        project.DeletedAtUtc = utcNow;
+        project.UpdatedAtUtc = utcNow;
+
+        await dbContext.SaveChangesAsync(cancellationToken);
+
+        return ProjectOperationResult<bool>.Success(true);
+    }
+
     public async Task<ProjectOperationResult<ProjectVoteSettingsResponse>> UpdateProjectSettingsAsync(
         Guid projectId,
         UpdateProjectSettingsRequest request,
@@ -265,10 +308,15 @@ public sealed class ProjectService(
         {
             var projectExists = await dbContext.Projects
                 .AsNoTracking()
-                .AnyAsync(x => x.Id == projectId, cancellationToken);
+                .AnyAsync(x => x.Id == projectId && x.DeletedAtUtc == null, cancellationToken);
 
             return ProjectOperationResult<ProjectVoteSettingsResponse>.Failure(
                 projectExists ? ProjectOperationStatus.Forbidden : ProjectOperationStatus.ProjectNotFound);
+        }
+
+        if (member.Project is null || member.Project.DeletedAtUtc is not null)
+        {
+            return ProjectOperationResult<ProjectVoteSettingsResponse>.Failure(ProjectOperationStatus.ProjectNotFound);
         }
 
         if (member.Role != ProjectRole.Admin)

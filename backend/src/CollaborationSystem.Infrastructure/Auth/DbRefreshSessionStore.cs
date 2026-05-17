@@ -37,6 +37,11 @@ public sealed class DbRefreshSessionStore(
             session.UpdatedAtUtc = utcNow;
         }
 
+        if (activeSessions.Count > 0)
+        {
+            await dbContext.SaveChangesAsync(cancellationToken);
+        }
+
         dbContext.RefreshSessions.Add(new RefreshSessionEntity
         {
             UserId = userId,

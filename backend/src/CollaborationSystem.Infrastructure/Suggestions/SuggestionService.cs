@@ -663,7 +663,7 @@ public sealed class SuggestionService(
     private async Task<bool> ProjectExistsAsync(Guid projectId, CancellationToken cancellationToken) =>
         await dbContext.Projects
             .AsNoTracking()
-            .AnyAsync(x => x.Id == projectId, cancellationToken);
+            .AnyAsync(x => x.Id == projectId && x.DeletedAtUtc == null, cancellationToken);
 
     private async Task<bool> IsCurrentUserProjectMemberAsync(
         Guid projectId,

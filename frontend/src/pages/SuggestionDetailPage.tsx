@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { useParams, useLocation } from 'react-router-dom';
 import { Button } from '../components/ui/Button/Button';
 import { SuggestionHeader } from '../components/SuggestionDetailPage/SuggestionHeader';
 import { VotePanel } from '../components/SuggestionDetailPage/VotePanel';
@@ -60,7 +60,6 @@ export function SuggestionDetailPage() {
     projectId: string;
     suggestionId: string;
   }>();
-  const navigate = useNavigate();
   const location = useLocation();
 
   const [detail, setDetail] = useState<SuggestionDetails | null>(null);

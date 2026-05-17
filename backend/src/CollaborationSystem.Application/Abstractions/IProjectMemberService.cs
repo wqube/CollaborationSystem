@@ -19,4 +19,8 @@ public interface IProjectMemberService
         Guid projectId,
         Guid userId,
         CancellationToken cancellationToken = default);
+
+    Task<ProjectMemberOperationResult> RemoveCurrentMemberAsync(
+        Guid projectId,
+        CancellationToken cancellationToken = default);
 }

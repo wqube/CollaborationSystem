@@ -65,12 +65,33 @@ public class ProjectMembersController(IProjectMemberService projectMemberService
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
     public async Task<IActionResult> RemoveMember(
         Guid projectId,
         Guid userId,
         CancellationToken cancellationToken)
     {
         var result = await projectMemberService.RemoveMemberAsync(projectId, userId, cancellationToken);
+
+        return result.Status == ProjectMemberOperationStatus.Success
+            ? NoContent()
+            : ToErrorActionResult(result.Status);
+    }
+
+    /// <summary>
+    /// Removes the current user from project members.
+    /// </summary>
+    [HttpDelete("me")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> LeaveProject(
+        Guid projectId,
+        CancellationToken cancellationToken)
+    {
+        var result = await projectMemberService.RemoveCurrentMemberAsync(projectId, cancellationToken);
 
         return result.Status == ProjectMemberOperationStatus.Success
             ? NoContent()
