@@ -166,6 +166,25 @@ Cookie устанавливается сервером через Set-Cookie:
 }
 ```
 
+#### `ProjectVoteSettings`
+
+```json
+{
+  "votesPerUser": 3,
+  "voteResetPeriodDays": 14
+}
+```
+
+#### `CurrentUserVoteQuota`
+
+```json
+{
+  "votesLimit": 3,
+  "votesRemaining": 2,
+  "nextResetAt": "2026-04-23T18:30:00Z"
+}
+```
+
 #### `ProjectMemberDto`
 
 ```json
@@ -186,7 +205,17 @@ Cookie устанавливается сервером через Set-Cookie:
   "name": "Core Platform",
   "description": "Проект команды Core Platform",
   "createdByUserId": "3f11a6dc-79a6-43f7-ac88-bb78dd70d712",
-  "createdAt": "2026-04-01T10:00:00Z",
+  "createdAtUtc": "2026-04-01T10:00:00Z",
+  "updatedAtUtc": "2026-04-09T18:30:00Z",
+  "voteSettings": {
+    "votesPerUser": 3,
+    "voteResetPeriodDays": 14
+  },
+  "currentUserVoteQuota": {
+    "votesLimit": 3,
+    "votesRemaining": 2,
+    "nextResetAt": "2026-04-23T18:30:00Z"
+  },
   "members": []
 }
 ```
@@ -305,6 +334,15 @@ Only `Member` or `Admin` can be sent here.
 
 Only `Member` or `Admin` can be sent here.
 
+#### `UpdateProjectSettingsRequest`
+
+```json
+{
+  "votesPerUser": 3,
+  "voteResetPeriodDays": 14
+}
+```
+
 #### `CreateSuggestionRequest`
 
 ```json
@@ -334,6 +372,21 @@ Only `Member` or `Admin` can be sent here.
 ```json
 {
   "voteType": "Up"
+}
+```
+
+#### `VoteResponse`
+
+```json
+{
+  "suggestionId": "d68650b5-dfc5-45be-b525-8b0c64c4e54a",
+  "currentUserVote": "Up",
+  "score": 6,
+  "voteQuota": {
+    "votesLimit": 3,
+    "votesRemaining": 1,
+    "nextResetAt": "2026-04-23T18:30:00Z"
+  }
 }
 ```
 
@@ -593,7 +646,17 @@ Path params:
   "name": "Core Platform",
   "description": "Проект команды Core Platform",
   "createdByUserId": "3f11a6dc-79a6-43f7-ac88-bb78dd70d712",
-  "createdAt": "2026-04-01T10:00:00Z",
+  "createdAtUtc": "2026-04-01T10:00:00Z",
+  "updatedAtUtc": "2026-04-09T18:30:00Z",
+  "voteSettings": {
+    "votesPerUser": 3,
+    "voteResetPeriodDays": 14
+  },
+  "currentUserVoteQuota": {
+    "votesLimit": 3,
+    "votesRemaining": 2,
+    "nextResetAt": "2026-04-23T18:30:00Z"
+  },
   "members": [
     {
       "userId": "3f11a6dc-79a6-43f7-ac88-bb78dd70d712",
@@ -607,6 +670,44 @@ Path params:
 ```
 
 Ошибки: `401`, `403`, `404`.
+
+### 4.8.1 `PATCH /api/v1/projects/{projectId}/settings`
+
+Назначение: изменить настройки голосования проекта.
+
+Доступ: только администратор проекта.
+
+Path params:
+
+- `projectId` — идентификатор проекта
+
+Тело запроса: `UpdateProjectSettingsRequest`.
+
+Пример запроса:
+
+```json
+{
+  "votesPerUser": 5,
+  "voteResetPeriodDays": 14
+}
+```
+
+Пример ответа:
+
+```json
+{
+  "votesPerUser": 5,
+  "voteResetPeriodDays": 14
+}
+```
+
+Правила:
+
+- `votesPerUser` должен быть больше или равен `1`;
+- `voteResetPeriodDays` должен быть больше или равен `1`;
+- после изменения настроек сервер пересчитывает квоты участников проекта.
+
+Ошибки: `400`, `401`, `403`, `404`.
 
 ### 4.9 `POST /api/v1/projects/{projectId}/members`
 
@@ -799,6 +900,15 @@ Query params:
     "description": "Проект команды Core Platform",
     "role": "Admin",
     "lastAccessedAt": "2026-04-09T18:30:00Z"
+  },
+  "voteSettings": {
+    "votesPerUser": 3,
+    "voteResetPeriodDays": 14
+  },
+  "currentUserVoteQuota": {
+    "votesLimit": 3,
+    "votesRemaining": 2,
+    "nextResetAt": "2026-04-23T18:30:00Z"
   },
   "membersPreview": [
     {
@@ -1020,11 +1130,32 @@ Path params:
 {
   "suggestionId": "d68650b5-dfc5-45be-b525-8b0c64c4e54a",
   "currentUserVote": "Down",
-  "score": 3
+  "score": 3,
+  "voteQuota": {
+    "votesLimit": 3,
+    "votesRemaining": 1,
+    "nextResetAt": "2026-04-23T18:30:00Z"
+  }
 }
 ```
 
-Ошибки: `400`, `401`, `403`, `404`.
+Если лимит голосов исчерпан, сервер возвращает `409 Conflict`:
+
+```json
+{
+  "title": "Vote limit exceeded.",
+  "status": 409,
+  "code": "VoteLimitExceeded",
+  "nextResetAt": "2026-04-23T18:30:00Z",
+  "voteQuota": {
+    "votesLimit": 3,
+    "votesRemaining": 0,
+    "nextResetAt": "2026-04-23T18:30:00Z"
+  }
+}
+```
+
+Ошибки: `400`, `401`, `403`, `404`, `409`.
 
 ### 4.19 `DELETE /api/v1/projects/{projectId}/suggestions/{suggestionId}/vote`
 
@@ -1041,7 +1172,12 @@ Path params:
 {
   "suggestionId": "d68650b5-dfc5-45be-b525-8b0c64c4e54a",
   "currentUserVote": null,
-  "score": 4
+  "score": 4,
+  "voteQuota": {
+    "votesLimit": 3,
+    "votesRemaining": 2,
+    "nextResetAt": "2026-04-23T18:30:00Z"
+  }
 }
 ```
 

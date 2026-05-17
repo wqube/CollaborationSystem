@@ -1,3 +1,10 @@
+.wrapper {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
 .voteGroup {
   display: inline-flex;
   align-items: center;
@@ -16,4 +23,12 @@
 
 .lg .score {
   font-size: 1.5rem;
+}
+
+.error {
+  max-width: 120px;
+  color: #c62828;
+  font-size: 11px;
+  line-height: 1.2;
+  text-align: center;
 }

@@ -65,6 +65,20 @@ export interface ProjectSummary {
   description: string;
   role: ProjectRole;
   lastAccessedAt: string;
+  createdByUserId?: string;
+  createdAtUtc?: string;
+  updatedAtUtc?: string;
+}
+
+export interface ProjectVoteSettings {
+  votesPerUser: number;
+  voteResetPeriodDays: number;
+}
+
+export interface CurrentUserVoteQuota {
+  votesLimit: number;
+  votesRemaining: number;
+  nextResetAt: string;
 }
 
 export interface ProjectDetails {
@@ -72,7 +86,11 @@ export interface ProjectDetails {
   name: string;
   description: string;
   createdByUserId: string;
-  createdAt: string;
+  createdAt?: string;
+  createdAtUtc?: string;
+  updatedAtUtc?: string;
+  voteSettings: ProjectVoteSettings;
+  currentUserVoteQuota: CurrentUserVoteQuota;
   members: ProjectMemberDto[];
 }
 
@@ -91,7 +109,7 @@ export interface CommentNode extends CommentDto {
 }
 
 export interface SuggestionSummary {
-  currentUserVote: null;
+  currentUserVote: VoteType | null;
   id: string;
   projectId: string;
   text: string;
@@ -135,6 +153,11 @@ export interface AddProjectMemberRequest {
 
 export interface UpdateProjectMemberRoleRequest {
   role: ProjectRole;
+}
+
+export interface UpdateProjectSettingsRequest {
+  votesPerUser: number;
+  voteResetPeriodDays: number;
 }
 
 export interface CreateSuggestionRequest {
