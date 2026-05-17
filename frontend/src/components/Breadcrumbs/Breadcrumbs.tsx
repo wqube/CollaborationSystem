@@ -10,7 +10,11 @@ interface Crumb {
   path: string;
 }
 
-export function Breadcrumbs() {
+interface BreadcrumbsProps {
+  currentSuggestionTitle?: string;
+}
+
+export function Breadcrumbs({ currentSuggestionTitle }: BreadcrumbsProps) {
   const location = useLocation();
   const { projectId, suggestionId } = useParams<{
     projectId?: string;
@@ -26,6 +30,11 @@ export function Breadcrumbs() {
 
   // Загружаем название предложения для страницы детализации
   useEffect(() => {
+    if (currentSuggestionTitle) {
+      setSuggestionTitle(currentSuggestionTitle);
+      return;
+    }
+
     if (
       pathParts.length >= 4 &&
       pathParts[0] === 'projects' &&
@@ -43,7 +52,7 @@ export function Breadcrumbs() {
     }
 
     setSuggestionTitle('');
-  }, [location.pathname, projectId, suggestionId]);
+  }, [currentSuggestionTitle, location.pathname, projectId, suggestionId]);
 
   // Загружаем название предложения для страницы профиля
   useEffect(() => {

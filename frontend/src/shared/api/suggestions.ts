@@ -7,6 +7,7 @@ import type {
   OrderSort,
   VoteType,
   CreateSuggestionRequest,
+  UpdateSuggestionRequest,
 } from '../../types/api';
 
 export interface GetSuggestionsParams {
@@ -79,6 +80,18 @@ export const updateSuggestionStatus = async (
 ): Promise<SuggestionDetails> => {
   const res = await apiClient.patch<SuggestionDetails>(
     `/projects/${projectId}/suggestions/${suggestionId}/status`,
+    data,
+  );
+  return res.data;
+};
+
+export const updateSuggestionText = async (
+  projectId: string,
+  suggestionId: string,
+  data: UpdateSuggestionRequest,
+): Promise<SuggestionSummary> => {
+  const res = await apiClient.patch<SuggestionSummary>(
+    `/projects/${projectId}/suggestions/${suggestionId}`,
     data,
   );
   return res.data;
