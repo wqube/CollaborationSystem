@@ -14,5 +14,9 @@ public sealed class ProjectDetailsResponse
 
     public DateTime UpdatedAtUtc { get; set; }
 
+    public ProjectVoteSettingsResponse VoteSettings { get; set; } = new();
+
+    public CurrentUserVoteQuotaResponse CurrentUserVoteQuota { get; set; } = new();
+
     public IReadOnlyList<ProjectMemberResponse> Members { get; set; } = [];
 }

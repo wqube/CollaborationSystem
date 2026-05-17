@@ -6,6 +6,10 @@ public sealed class ProjectDashboardResponse
 {
     public ProjectDashboardProjectResponse Project { get; set; } = new();
 
+    public ProjectVoteSettingsResponse VoteSettings { get; set; } = new();
+
+    public CurrentUserVoteQuotaResponse CurrentUserVoteQuota { get; set; } = new();
+
     public IReadOnlyList<ProjectMemberPreviewResponse> MembersPreview { get; set; } = [];
 
     public PagedResponse<SuggestionSummaryResponse> Suggestions { get; set; } = new();
