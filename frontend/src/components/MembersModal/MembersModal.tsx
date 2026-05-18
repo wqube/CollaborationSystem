@@ -1,12 +1,14 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Modal } from '../ui/Modal/Modal';
 import { Button } from '../ui/Button/Button';
 import { Badge } from '../ui/Badge/Badge';
 import apiClient from '../../shared/api/client';
+import { getUsers } from '../../shared/api/users';
 import type {
   ProjectDetails,
   ProjectMemberDto,
   ProjectRole,
+  UserListItem,
 } from '../../types/api';
 import { getProjectRoleBadgeVariant } from '../../shared/utils/projectRole';
 import styles from '../MembersModal/MembersModal.module.css';
@@ -28,39 +30,125 @@ export function MembersModal({
 }: MembersModalProps) {
   const [members, setMembers] = useState<ProjectMemberDto[]>([]);
   const [loading, setLoading] = useState(false);
+  const [adding, setAdding] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [searchUser, setSearchUser] = useState('');
+  const [userSearch, setUserSearch] = useState('');
+  const [users, setUsers] = useState<UserListItem[]>([]);
+  const [usersLoading, setUsersLoading] = useState(false);
+  const [selectedUserId, setSelectedUserId] = useState('');
   const [newRole, setNewRole] = useState<ProjectRole>('Member');
+
+  const loadMembers = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const res = await apiClient.get<ProjectDetails>(`/projects/${projectId}`);
+      setMembers(res.data.members || []);
+    } catch {
+      setError('Не удалось загрузить участников');
+    } finally {
+      setLoading(false);
+    }
+  }, [projectId]);
 
   useEffect(() => {
     if (!open || !projectId) return;
 
-    setLoading(true);
-    setError(null);
+    loadMembers();
+  }, [open, projectId, loadMembers]);
 
-    apiClient
-      .get<ProjectDetails>(`/projects/${projectId}`)
-      .then((res) => {
-        setMembers(res.data.members || []);
-      })
-      .catch(() => setError('Не удалось загрузить участников'))
-      .finally(() => setLoading(false));
-  }, [open, projectId]);
+  useEffect(() => {
+    if (open) return;
+
+    setUserSearch('');
+    setUsers([]);
+    setSelectedUserId('');
+    setError(null);
+  }, [open]);
+
+  useEffect(() => {
+    if (!open || !canManageMembers) return;
+
+    let ignore = false;
+    const timeoutId = window.setTimeout(async () => {
+      try {
+        setUsersLoading(true);
+        const search = userSearch.trim();
+        const response = await getUsers({
+          search: search || undefined,
+          page: 1,
+          pageSize: 20,
+        });
+
+        if (!ignore) {
+          setUsers(response.items);
+        }
+      } catch {
+        if (!ignore) {
+          setError('Не удалось загрузить пользователей');
+        }
+      } finally {
+        if (!ignore) {
+          setUsersLoading(false);
+        }
+      }
+    }, 300);
+
+    return () => {
+      ignore = true;
+      window.clearTimeout(timeoutId);
+    };
+  }, [open, canManageMembers, userSearch]);
+
+  const memberIds = useMemo(
+    () => new Set(members.map((member) => member.userId)),
+    [members],
+  );
+
+  const availableUsers = useMemo(
+    () => users.filter((user) => !memberIds.has(user.id)),
+    [users, memberIds],
+  );
+
+  useEffect(() => {
+    if (
+      selectedUserId &&
+      !availableUsers.some((user) => user.id === selectedUserId)
+    ) {
+      setSelectedUserId('');
+    }
+  }, [availableUsers, selectedUserId]);
 
   const handleAddMember = async () => {
-    if (!canManageMembers || !searchUser.trim()) return;
+    if (!canManageMembers) return;
+
+    if (!selectedUserId) {
+      setError('Выберите пользователя из списка');
+      return;
+    }
 
     try {
+      setAdding(true);
       setError(null);
       await apiClient.post(`/projects/${projectId}/members`, {
-        userId: searchUser,
+        userId: selectedUserId,
         role: newRole,
       });
-      const res = await apiClient.get(`/projects/${projectId}`);
-      setMembers(res.data.members || []);
-      setSearchUser('');
-    } catch {
-      setError('Не удалось добавить участника');
+      await loadMembers();
+      setUserSearch('');
+      setSelectedUserId('');
+      setUsers([]);
+    } catch (err: unknown) {
+      const status = (err as { response?: { status?: number } })?.response
+        ?.status;
+      setError(
+        status === 409
+          ? 'Этот пользователь уже добавлен в проект'
+          : 'Не удалось добавить участника',
+      );
+    } finally {
+      setAdding(false);
     }
   };
 
@@ -104,13 +192,43 @@ export function MembersModal({
           <div className={styles.addSection}>
             <h4>Добавить участника</h4>
             <div className={styles.addForm}>
-              <input
-                type="text"
-                placeholder="Поиск по имени или email..."
-                value={searchUser}
-                onChange={(e) => setSearchUser(e.target.value)}
-                className={styles.searchInput}
-              />
+              <div className={styles.userPicker}>
+                <input
+                  type="text"
+                  placeholder="Поиск по имени или email..."
+                  value={userSearch}
+                  onChange={(e) => {
+                    setUserSearch(e.target.value);
+                    setError(null);
+                  }}
+                  className={styles.searchInput}
+                />
+                <select
+                  className={styles.userSelect}
+                  value={selectedUserId}
+                  onChange={(e) => {
+                    setSelectedUserId(e.target.value);
+                    setError(null);
+                  }}
+                  disabled={usersLoading || availableUsers.length === 0}
+                >
+                  <option value="">
+                    {usersLoading ? 'Поиск...' : 'Выберите пользователя'}
+                  </option>
+                  {availableUsers.map((user) => (
+                    <option key={user.id} value={user.id}>
+                      {user.displayName} · {user.email}
+                    </option>
+                  ))}
+                </select>
+                {!usersLoading &&
+                  users.length > 0 &&
+                  availableUsers.length === 0 && (
+                    <span className={styles.helperText}>
+                      Все найденные пользователи уже в проекте
+                    </span>
+                  )}
+              </div>
               <select
                 className={styles.roleSelect}
                 value={newRole}
@@ -119,8 +237,12 @@ export function MembersModal({
                 <option value="Member">Member</option>
                 <option value="Admin">Admin</option>
               </select>
-              <Button variant="primary" onClick={handleAddMember}>
-                Добавить
+              <Button
+                variant="primary"
+                onClick={handleAddMember}
+                disabled={adding || !selectedUserId}
+              >
+                {adding ? 'Добавление...' : 'Добавить'}
               </Button>
             </div>
           </div>
