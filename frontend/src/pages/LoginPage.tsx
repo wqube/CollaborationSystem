@@ -6,6 +6,21 @@ import { login } from '../shared/api/auth';
 import { useState } from 'react';
 import styles from '../assets/LoginPage.module.css';
 
+const getLoginErrorMessage = (error: unknown) => {
+  const status = (error as { response?: { status?: number } })?.response
+    ?.status;
+
+  if (status === 401) {
+    return 'Неверный email или пароль';
+  }
+
+  if (!status) {
+    return 'Не удалось подключиться к серверу. Проверьте, что backend запущен';
+  }
+
+  return 'Не удалось войти. Попробуйте ещё раз';
+};
+
 export function LoginPage() {
   const dispatch = useAppDispatcher();
   const navigate = useNavigate();
@@ -13,19 +28,21 @@ export function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
 
     try {
       setLoading(true);
+      setErrorMessage('');
 
       const responce = await login({ email, password });
 
       dispatch(setAuth({ token: responce.accessToken, user: responce.user }));
       navigate('/projects', { replace: true });
     } catch (error) {
-      console.error('Ошибка авторизации', error);
+      setErrorMessage(getLoginErrorMessage(error));
     } finally {
       setLoading(false);
     }
@@ -47,7 +64,12 @@ export function LoginPage() {
               <input
                 type="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  setErrorMessage('');
+                }}
+                disabled={loading}
+                autoComplete="email"
               />
             </div>
 
@@ -56,9 +78,20 @@ export function LoginPage() {
               <input
                 type="password"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  setErrorMessage('');
+                }}
+                disabled={loading}
+                autoComplete="current-password"
               />
             </div>
+
+            {errorMessage && (
+              <p className={styles.login_error} role="alert">
+                {errorMessage}
+              </p>
+            )}
 
             <Button type="submit" disabled={loading} fullWidth>
               {loading ? 'Вход...' : 'Войти'}
