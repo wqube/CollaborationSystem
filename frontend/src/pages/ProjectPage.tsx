@@ -17,7 +17,6 @@ import {
   canManageProjectRoles,
   canManageProjectSettings,
 } from '../shared/utils/projectRole';
-import apiClient from '../shared/api/client';
 import type {
   CurrentUserVoteQuota,
   OrderSort,
@@ -146,21 +145,19 @@ export function ProjectPage() {
     setSuggestionModalOpen(true);
   };
 
-  const handleSuggestionSuccess = async (deletedDraftId?: string) => {
+  const handleSuggestionModalClose = () => {
     setSuggestionModalOpen(false);
     setSuggestionDraftId(undefined);
+  };
 
-    if (isDraftsTab && deletedDraftId) {
-      try {
-        await apiClient.delete(
-          `/projects/${projectId}/drafts/${deletedDraftId}`,
-        );
-      } catch (err) {
-        console.error('Не удалось удалить черновик:', err);
-      }
-      // Принудительно обновляем список черновиков
+  const handleSuggestionSuccess = (publishedDraftId?: string) => {
+    handleSuggestionModalClose();
+
+    if (publishedDraftId) {
       setDraftsRefreshKey((prev) => prev + 1);
-    } else {
+    }
+
+    if (!isDraftsTab) {
       fetchSuggestions();
     }
   };
@@ -442,7 +439,7 @@ export function ProjectPage() {
 
       <CreateSuggestionModal
         open={suggestionModalOpen}
-        onClose={() => setSuggestionModalOpen(false)}
+        onClose={handleSuggestionModalClose}
         onSuccess={handleSuggestionSuccess}
         projectId={projectId!}
         draftId={suggestionDraftId}

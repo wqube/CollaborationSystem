@@ -16,7 +16,7 @@ import styles from '../CreateSuggestionModal/CreateSuggestionModal.module.css';
 interface CreateSuggestionModalProps {
   open: boolean;
   onClose: () => void;
-  onSuccess: (draftId?: string) => void; // теперь передаём draftId наружу
+  onSuccess: (draftId?: string) => void;
   projectId: string;
   draftId?: string;
 }
@@ -48,20 +48,43 @@ export function CreateSuggestionModal({
 
   // Загрузка черновика при открытии
   useEffect(() => {
-    if (!open || !initialDraftId) return;
-    apiClient
-      .get(`/projects/${projectId}/drafts`)
-      .then((res) => {
-        const draft = res.data.items?.find(
-          (d: { id: string }) => d.id === initialDraftId,
-        );
-        if (draft?.payload?.text) {
+    if (!open) return;
+
+    draftIdRef.current = initialDraftId ?? null;
+
+    if (!initialDraftId) {
+      setText('');
+      setSaveStatus('idle');
+      return;
+    }
+
+    let cancelled = false;
+
+    const loadDraft = async () => {
+      try {
+        const drafts = await getProjectDrafts(projectId, {
+          type: 'Suggestion',
+        });
+        const draft = findDraftById(drafts.items, initialDraftId);
+
+        if (!cancelled && draft?.type === 'Suggestion') {
           setText(draft.payload.text);
+          setSaveStatus('saved');
         }
-      })
-      .catch(() => {
+      } catch {
         // черновик не найден — начинаем с пустого поля
-      });
+        if (!cancelled) {
+          setText('');
+          setSaveStatus('idle');
+        }
+      }
+    };
+
+    loadDraft();
+
+    return () => {
+      cancelled = true;
+    };
   }, [open, initialDraftId, projectId]);
 
   // Сброс при закрытии
@@ -70,27 +93,29 @@ export function CreateSuggestionModal({
       setText('');
       setToastOpen(false);
       setSaveStatus('idle');
-      draftIdRef.current = initialDraftId ?? null;
+      draftIdRef.current = null;
       if (autosaveTimerRef.current) {
         clearTimeout(autosaveTimerRef.current);
+        autosaveTimerRef.current = null;
       }
     }
-  }, [open, initialDraftId]);
+  }, [open]);
 
   const saveDraft = useCallback(
     async (value: string) => {
-      if (!value.trim()) return;
+      if (!value.trim()) return null;
+
       setSaveStatus('saving');
       const draftId = draftIdRef.current ?? crypto.randomUUID();
       draftIdRef.current = draftId;
+
       try {
-        await apiClient.put(
-          `/projects/${projectId}/drafts/suggestion/${draftId}`,
-          { text: value },
-        );
+        await saveSuggestionDraft(projectId, draftId, { text: value });
         setSaveStatus('saved');
+        return draftId;
       } catch {
         setSaveStatus('error');
+        return null;
       }
     },
     [projectId],
@@ -110,8 +135,15 @@ export function CreateSuggestionModal({
   const handleSaveDraftAndClose = async () => {
     if (autosaveTimerRef.current) {
       clearTimeout(autosaveTimerRef.current);
+      autosaveTimerRef.current = null;
     }
-    await saveDraft(text);
+    const savedDraftId = await saveDraft(text);
+
+    if (!savedDraftId) {
+      showError('Не удалось сохранить черновик');
+      return;
+    }
+
     onClose();
   };
 
@@ -126,19 +158,28 @@ export function CreateSuggestionModal({
       setLoading(true);
       setToastOpen(false);
 
-      // 1. Создаём предложение
-      await apiClient.post(`/projects/${projectId}/suggestions`, {
+      if (autosaveTimerRef.current) {
+        clearTimeout(autosaveTimerRef.current);
+        autosaveTimerRef.current = null;
+      }
+
+      const publishedDraftId = draftIdRef.current ?? undefined;
+
+      await createSuggestion(projectId, {
         text: text.trim(),
       });
 
       // Удаляем черновик после успешной публикации
-      if (draftIdRef.current) {
-        await deleteDraft(projectId, draftIdRef.current).catch(() => {
+      if (publishedDraftId) {
+        await deleteDraft(projectId, publishedDraftId).catch(() => {
           // Не критично, если не удалился
         });
       }
 
-      onSuccess();
+      draftIdRef.current = null;
+      setText('');
+      setSaveStatus('idle');
+      onSuccess(publishedDraftId);
     } catch (err: unknown) {
       showError(getSuggestionCreateErrorMessage(err));
     } finally {
