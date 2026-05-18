@@ -1,4 +1,3 @@
-// src/pages/ProjectPage.tsx
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/Button/Button';
@@ -29,7 +28,7 @@ import type {
 import { SuggestionVoteCell } from '../components/SuggestionVoteCell/SuggestionVoteCell';
 import { Breadcrumbs } from '../components/Breadcrumbs/Breadcrumbs';
 import { DraftsTab } from '../components/DraftsTab/DraftsTab';
-import { STATUS_LABELS } from '../shared/utils/statusLabels';
+import { STATUS_LABELS, DRAFTS_TAB_LABEL } from '../shared/utils/statusLabels';
 
 const PAGE_SIZE = 5;
 
@@ -41,7 +40,7 @@ const TABS: TabItem[] = [
   { id: 'InProgress', label: STATUS_LABELS.InProgress },
   { id: 'Accepted', label: STATUS_LABELS.Accepted },
   { id: 'Rejected', label: STATUS_LABELS.Rejected },
-  { id: 'drafts', label: 'Черновики' },
+  { id: 'drafts', label: DRAFTS_TAB_LABEL },
 ];
 
 export function ProjectPage() {
@@ -220,7 +219,6 @@ export function ProjectPage() {
               >
                 Участники
               </Button>
-
               {canManageSettings && (
                 <Button
                   variant="outline"
@@ -229,7 +227,6 @@ export function ProjectPage() {
                   Настройки
                 </Button>
               )}
-
               <Button variant="primary" onClick={openNewSuggestion}>
                 Предложить идею
               </Button>
@@ -238,12 +235,9 @@ export function ProjectPage() {
         </div>
       </div>
 
-      {(projectLoading || (!isDraftsTab && suggestionsLoading)) && (
-        <p className={styles.state}>Загрузка...</p>
-      )}
       {error && <p className={styles.error}>{error}</p>}
 
-      {!isDraftsTab && !projectLoading && !error && (
+      {!isDraftsTab && !error && (
         <>
           {voteQuota && (
             <div className={styles.quotaBar}>
@@ -267,7 +261,6 @@ export function ProjectPage() {
                 }}
               />
             </div>
-
             <div className={styles.filterGroup}>
               <label>Статус</label>
               <select
@@ -284,7 +277,6 @@ export function ProjectPage() {
                 <option value="Rejected">{STATUS_LABELS.Rejected}</option>
               </select>
             </div>
-
             <div className={styles.filterGroup}>
               <label>Сортировка</label>
               <select
@@ -299,7 +291,6 @@ export function ProjectPage() {
                 <option value="updatedAt">По обновлению</option>
               </select>
             </div>
-
             <div className={styles.filterGroup}>
               <label>Порядок</label>
               <select
@@ -315,86 +306,103 @@ export function ProjectPage() {
             </div>
           </div>
 
-          <div className={styles.table}>
-            <table>
-              <thead>
-                <tr>
-                  <th>Предложение</th>
-                  <th>Автор</th>
-                  <th>Голоса</th>
-                  <th>Дата</th>
-                  <th>Статус</th>
-                </tr>
-              </thead>
-              <tbody>
-                {suggestions.length === 0 && (
+          <div className={styles.tableWrapper}>
+            {(projectLoading || suggestionsLoading) && (
+              <div className={styles.loadingOverlay}>
+                <p className={styles.state}>Загрузка...</p>
+              </div>
+            )}
+            <div className={styles.table}>
+              <table>
+                <thead>
                   <tr>
-                    <td colSpan={5} className={styles.empty}>
-                      Предложений нет
-                    </td>
+                    <th>Предложение</th>
+                    <th>Автор</th>
+                    <th>Голоса</th>
+                    <th>Дата</th>
+                    <th>Статус</th>
                   </tr>
-                )}
-                {suggestions.map((s) => (
-                  <tr
-                    key={s.id}
-                    onClick={() =>
-                      navigate(`/projects/${projectId}/suggestions/${s.id}`, {
-                        state: { userRole: project?.role },
-                      })
-                    }
-                    className={styles.row}
-                  >
-                    <td>
-                      <strong className={styles.suggestionText}>
-                        {s.text}
-                      </strong>
-                      <br />
-                      <span className={styles.idText}>
-                        id: {s.id.slice(0, 8)}...
-                      </span>
-                    </td>
-                    <td>{s.author.displayName}</td>
-                    <td onClick={(e) => e.stopPropagation()}>
-                      <SuggestionVoteCell
-                        projectId={projectId!}
-                        suggestion={s}
-                        voteQuota={voteQuota}
-                        onVoteQuotaChange={setVoteQuota}
-                        onVoteSuccess={(
-                          id,
-                          newScore,
-                          currentUserVote,
-                          nextVoteQuota,
-                        ) => {
-                          setVoteQuota(nextVoteQuota);
-                          setSuggestions((prev) =>
-                            prev.map((item) =>
-                              item.id === id
-                                ? { ...item, score: newScore, currentUserVote }
-                                : item,
-                            ),
-                          );
-                        }}
-                      />
-                    </td>
-                    <td>{formatDate(s.createdAt)}</td>
-                    <td>
-                      <Badge
-                        variant={
-                          s.status === 'New'
-                            ? 'new'
-                            : s.status === 'InProgress'
-                              ? 'progress'
-                              : s.status === 'Accepted'
-                                ? 'accepted'
-                                : 'rejected'
+                </thead>
+                <tbody>
+                  {suggestions.length === 0 &&
+                  !suggestionsLoading &&
+                  !projectLoading ? (
+                    <tr>
+                      <td colSpan={5} className={styles.empty}>
+                        Предложений нет
+                      </td>
+                    </tr>
+                  ) : (
+                    suggestions.map((s) => (
+                      <tr
+                        key={s.id}
+                        onClick={() =>
+                          navigate(
+                            `/projects/${projectId}/suggestions/${s.id}`,
+                            {
+                              state: { userRole: project?.role },
+                            },
+                          )
                         }
-                      />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                        className={styles.row}
+                      >
+                        <td>
+                          <strong className={styles.suggestionText}>
+                            {s.text}
+                          </strong>
+                          <br />
+                          <span className={styles.idText}>
+                            id: {s.id.slice(0, 8)}...
+                          </span>
+                        </td>
+                        <td>{s.author.displayName}</td>
+                        <td onClick={(e) => e.stopPropagation()}>
+                          <SuggestionVoteCell
+                            projectId={projectId!}
+                            suggestion={s}
+                            voteQuota={voteQuota}
+                            onVoteQuotaChange={setVoteQuota}
+                            onVoteSuccess={(
+                              id,
+                              newScore,
+                              currentUserVote,
+                              nextVoteQuota,
+                            ) => {
+                              setVoteQuota(nextVoteQuota);
+                              setSuggestions((prev) =>
+                                prev.map((item) =>
+                                  item.id === id
+                                    ? {
+                                        ...item,
+                                        score: newScore,
+                                        currentUserVote,
+                                      }
+                                    : item,
+                                ),
+                              );
+                            }}
+                          />
+                        </td>
+                        <td>{formatDateTime(s.createdAt)}</td>
+                        <td>
+                          <Badge
+                            variant={
+                              s.status === 'New'
+                                ? 'new'
+                                : s.status === 'InProgress'
+                                  ? 'progress'
+                                  : s.status === 'Accepted'
+                                    ? 'accepted'
+                                    : 'rejected'
+                            }
+                          />
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
 
           {totalPages > 1 && (

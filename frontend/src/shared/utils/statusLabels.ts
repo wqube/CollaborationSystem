@@ -11,3 +11,5 @@ export const ROLE_LABELS: Record<ProjectRole, string> = {
   Admin: 'Администратор',
   Member: 'Участник',
 };
+
+export const DRAFTS_TAB_LABEL = 'Черновики';
