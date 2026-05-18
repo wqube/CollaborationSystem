@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Modal } from '../ui/Modal/Modal';
 import { Button } from '../ui/Button/Button';
+import { Toast } from '../ui/Toast/Toast';
 import {
   saveSuggestionDraft,
   getProjectDrafts,
@@ -8,6 +9,7 @@ import {
   findDraftById,
 } from '../../shared/api/drafts';
 import { createSuggestion } from '../../shared/api/suggestions';
+import { getSuggestionCreateErrorMessage } from '../../shared/api/errors';
 import styles from '../CreateSuggestionModal/CreateSuggestionModal.module.css';
 
 interface CreateSuggestionModalProps {
@@ -30,11 +32,17 @@ export function CreateSuggestionModal({
 }: CreateSuggestionModalProps) {
   const [text, setText] = useState('');
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
+  const [toastMessage, setToastMessage] = useState('');
+  const [toastOpen, setToastOpen] = useState(false);
 
   const draftIdRef = useRef<string | null>(initialDraftId ?? null);
   const autosaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const showError = (message: string) => {
+    setToastMessage(message);
+    setToastOpen(true);
+  };
 
   // Загрузка черновика при открытии
   useEffect(() => {
@@ -58,7 +66,7 @@ export function CreateSuggestionModal({
   useEffect(() => {
     if (!open) {
       setText('');
-      setError('');
+      setToastOpen(false);
       setSaveStatus('idle');
       draftIdRef.current = initialDraftId ?? null;
       if (autosaveTimerRef.current) {
@@ -116,13 +124,13 @@ export function CreateSuggestionModal({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!text.trim()) {
-      setError('Введите текст предложения');
+      showError('Введите текст предложения');
       return;
     }
 
     try {
       setLoading(true);
-      setError('');
+      setToastOpen(false);
 
       // Создание предложения
       await createSuggestion(projectId, { text: text.trim() });
@@ -135,8 +143,8 @@ export function CreateSuggestionModal({
       }
 
       onSuccess();
-    } catch {
-      setError('Ошибка при создании предложения');
+    } catch (err: unknown) {
+      showError(getSuggestionCreateErrorMessage(err));
     } finally {
       setLoading(false);
     }
@@ -157,7 +165,9 @@ export function CreateSuggestionModal({
           <textarea
             rows={6}
             value={text}
-            onChange={(e) => handleTextChange(e.target.value)}
+            onChange={(e) => {
+              handleTextChange(e.target.value);
+            }}
             placeholder="Опишите ваше предложение по улучшению процесса..."
             required
           />
@@ -168,8 +178,6 @@ export function CreateSuggestionModal({
         >
           {saveStatusLabel[saveStatus]}
         </div>
-
-        {error && <div className={styles.error}>{error}</div>}
 
         <div className={styles.actions}>
           <Button
@@ -193,6 +201,12 @@ export function CreateSuggestionModal({
           </Button>
         </div>
       </form>
+      <Toast
+        open={toastOpen}
+        message={toastMessage}
+        variant="error"
+        onClose={() => setToastOpen(false)}
+      />
     </Modal>
   );
 }
