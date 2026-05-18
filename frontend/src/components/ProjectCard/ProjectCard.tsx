@@ -1,3 +1,4 @@
+// ProjectCard.tsx (с русскими ролями)
 import type { ProjectSummary } from '../../types/api';
 import { getProjectRoleBadgeVariant } from '../../shared/utils/projectRole';
 import { Badge } from '../ui/Badge/Badge';
@@ -30,12 +31,14 @@ export function ProjectCard({ project, onClick }: ProjectCardProps) {
         >
           {firstLetter}
         </div>
-        <Badge variant={roleVariant}>{project.role}</Badge>
+        <Badge variant={roleVariant} />
       </div>
       <h3 className={styles.name}>{project.name}</h3>
       <p className={styles.description}>{project.description}</p>
       <div className={styles.footer}>
-        <span className={styles.date}>lastAccess: {formattedDate}</span>
+        <span className={styles.date}>
+          Последнее посещение: {formattedDate}
+        </span>
       </div>
     </div>
   );

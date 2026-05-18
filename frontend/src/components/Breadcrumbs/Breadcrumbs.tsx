@@ -95,17 +95,6 @@ export function Breadcrumbs({ currentSuggestionTitle }: BreadcrumbsProps) {
         });
       }
 
-      if (
-        prevParts.length === 3 &&
-        prevParts[0] === 'projects' &&
-        prevParts[2] === 'drafts'
-      ) {
-        crumbs.push({
-          label: 'Черновики',
-          path: `/${prevParts.join('/')}`,
-        });
-      }
-
       const isSuggestionDetail =
         prevParts.length >= 4 &&
         prevParts[0] === 'projects' &&
@@ -124,25 +113,12 @@ export function Breadcrumbs({ currentSuggestionTitle }: BreadcrumbsProps) {
 
     crumbs.push({ label: 'Профиль', path: '/profile' });
   } else {
-    // ← ЭТОГО БЛОКА НЕ БЫЛО
     // Обычные страницы (не профиль)
     if (pathParts.length >= 2 && pathParts[0] === 'projects' && projectId) {
       const project = projects.find((p) => p.id === projectId);
       crumbs.push({
         label: project?.name || 'Проект',
         path: `/projects/${projectId}`,
-      });
-    }
-
-    // Черновики
-    if (
-      pathParts.length === 3 &&
-      pathParts[0] === 'projects' &&
-      pathParts[2] === 'drafts'
-    ) {
-      crumbs.push({
-        label: 'Черновики',
-        path: `/${pathParts.join('/')}`,
       });
     }
 

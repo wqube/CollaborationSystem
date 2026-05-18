@@ -1,3 +1,4 @@
+// src/pages/ProjectPage.tsx
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/Button/Button';
@@ -5,6 +6,7 @@ import { Badge } from '../components/ui/Badge/Badge';
 import { Tabs, type TabItem } from '../components/ui/Tabs/Tabs';
 import { SettingsModal } from '../components/SettingsModal/SettingsModal';
 import { MembersModal } from '../components/MembersModal/MembersModal';
+import { CreateSuggestionModal } from '../components/CreateSuggestionModal/CreateSuggestionModal';
 import styles from '../assets/ProjectPage.module.css';
 import { getDashboard } from '../shared/api/dashboard';
 import { getSuggestions } from '../shared/api/suggestions';
@@ -15,6 +17,7 @@ import {
   canManageProjectRoles,
   canManageProjectSettings,
 } from '../shared/utils/projectRole';
+import apiClient from '../shared/api/client';
 import type {
   CurrentUserVoteQuota,
   OrderSort,
@@ -24,26 +27,27 @@ import type {
   SuggestionStatus,
   SuggestionSummary,
 } from '../types/api';
-import { CreateSuggestionButton } from '../components/CreateSuggestionButton/CreateSuggestionButton';
 import { SuggestionVoteCell } from '../components/SuggestionVoteCell/SuggestionVoteCell';
 import { Breadcrumbs } from '../components/Breadcrumbs/Breadcrumbs';
+import { DraftsTab } from '../components/DraftsTab/DraftsTab';
+import { STATUS_LABELS } from '../shared/utils/statusLabels';
 
 const PAGE_SIZE = 5;
 
-type StatusFilter = SuggestionStatus | '';
+type StatusFilter = SuggestionStatus | 'drafts' | '';
 
 const TABS: TabItem[] = [
   { id: '', label: 'Все' },
-  { id: 'New', label: 'New' },
-  { id: 'InProgress', label: 'InProgress' },
-  { id: 'Accepted', label: 'Accepted' },
-  { id: 'Rejected', label: 'Rejected' },
+  { id: 'New', label: STATUS_LABELS.New },
+  { id: 'InProgress', label: STATUS_LABELS.InProgress },
+  { id: 'Accepted', label: STATUS_LABELS.Accepted },
+  { id: 'Rejected', label: STATUS_LABELS.Rejected },
+  { id: 'drafts', label: 'Черновики' },
 ];
 
 export function ProjectPage() {
   const { projectId } = useParams<{ projectId: string }>();
   const navigate = useNavigate();
-
   const dispatch = useAppDispatcher();
   const { list: projects } = userAppSelector((state) => state.projects);
 
@@ -65,13 +69,18 @@ export function ProjectPage() {
 
   const [settingsModalOpen, setSettingsModalOpen] = useState(false);
   const [membersModalOpen, setMembersModalOpen] = useState(false);
+  const [suggestionModalOpen, setSuggestionModalOpen] = useState(false);
+  const [suggestionDraftId, setSuggestionDraftId] = useState<
+    string | undefined
+  >(undefined);
+  const [draftsRefreshKey, setDraftsRefreshKey] = useState(0);
+
+  const isDraftsTab = statusFilter === 'drafts';
 
   const fetchProject = useCallback(async () => {
     if (!projectId) return;
-
     setProjectLoading(true);
     setError(null);
-
     try {
       const data = await getDashboard(projectId, { pageSize: 1 });
       setProject(data.project);
@@ -85,11 +94,9 @@ export function ProjectPage() {
   }, [projectId]);
 
   const fetchSuggestions = useCallback(async () => {
-    if (!projectId) return;
-
+    if (!projectId || isDraftsTab) return;
     setSuggestionsLoading(true);
     setError(null);
-
     try {
       const data = await getSuggestions(projectId, {
         status: statusFilter || undefined,
@@ -99,7 +106,6 @@ export function ProjectPage() {
         page,
         pageSize: PAGE_SIZE,
       });
-
       setSuggestions(data.items);
       setTotal(data.total);
     } catch {
@@ -107,12 +113,10 @@ export function ProjectPage() {
     } finally {
       setSuggestionsLoading(false);
     }
-  }, [projectId, statusFilter, search, sort, order, page]);
+  }, [projectId, statusFilter, search, sort, order, page, isDraftsTab]);
 
   useEffect(() => {
-    if (projects.length === 0) {
-      dispatch(fetchProjects());
-    }
+    if (projects.length === 0) dispatch(fetchProjects());
   }, [dispatch, projects.length]);
 
   useEffect(() => {
@@ -124,8 +128,41 @@ export function ProjectPage() {
   }, [fetchSuggestions]);
 
   const handleTabChange = (tab: string) => {
-    setStatusFilter(tab as StatusFilter);
-    setPage(1);
+    if (tab === 'drafts') {
+      setStatusFilter('drafts');
+    } else {
+      setStatusFilter(tab as StatusFilter);
+      setPage(1);
+    }
+  };
+
+  const openNewSuggestion = () => {
+    setSuggestionDraftId(undefined);
+    setSuggestionModalOpen(true);
+  };
+
+  const handleContinueDraft = (draftId: string) => {
+    setSuggestionDraftId(draftId);
+    setSuggestionModalOpen(true);
+  };
+
+  const handleSuggestionSuccess = async (deletedDraftId?: string) => {
+    setSuggestionModalOpen(false);
+    setSuggestionDraftId(undefined);
+
+    if (isDraftsTab && deletedDraftId) {
+      try {
+        await apiClient.delete(
+          `/projects/${projectId}/drafts/${deletedDraftId}`,
+        );
+      } catch (err) {
+        console.error('Не удалось удалить черновик:', err);
+      }
+      // Принудительно обновляем список черновиков
+      setDraftsRefreshKey((prev) => prev + 1);
+    } else {
+      fetchSuggestions();
+    }
   };
 
   const handleProjectSaved = useCallback(
@@ -170,7 +207,7 @@ export function ProjectPage() {
   const canManageSettings = canManageProjectSettings(project?.role);
   const canManageMembers = canManageProjectMembers(project?.role);
   const canManageRoles = canManageProjectRoles(project?.role);
-  const totalPages = Math.ceil(total / PAGE_SIZE);
+  const totalPages = isDraftsTab ? 1 : Math.ceil(total / PAGE_SIZE);
 
   return (
     <div className={styles.page}>
@@ -178,41 +215,38 @@ export function ProjectPage() {
       <div className={styles.header}>
         <Tabs tabs={TABS} activeTab={statusFilter} onChange={handleTabChange} />
         <div className={styles.actions}>
-          <Button
-            variant="outline"
-            onClick={() => navigate(`/projects/${projectId}/drafts`)}
-          >
-            Черновики
-          </Button>
+          {!isDraftsTab && (
+            <>
+              <Button
+                variant="outline"
+                onClick={() => setMembersModalOpen(true)}
+              >
+                Участники
+              </Button>
 
-          <Button variant="outline" onClick={() => setMembersModalOpen(true)}>
-            Участники
-          </Button>
+              {canManageSettings && (
+                <Button
+                  variant="outline"
+                  onClick={() => setSettingsModalOpen(true)}
+                >
+                  Настройки
+                </Button>
+              )}
 
-          {canManageSettings && (
-            <Button
-              variant="outline"
-              onClick={() => setSettingsModalOpen(true)}
-            >
-              Настройки
-            </Button>
+              <Button variant="primary" onClick={openNewSuggestion}>
+                Предложить идею
+              </Button>
+            </>
           )}
-
-          <CreateSuggestionButton
-            projectId={projectId!}
-            onRefresh={fetchSuggestions}
-            variant="primary"
-            buttonText="Предложить идею"
-          />
         </div>
       </div>
 
-      {(projectLoading || suggestionsLoading) && (
+      {(projectLoading || (!isDraftsTab && suggestionsLoading)) && (
         <p className={styles.state}>Загрузка...</p>
       )}
       {error && <p className={styles.error}>{error}</p>}
 
-      {!projectLoading && !error && (
+      {!isDraftsTab && !projectLoading && !error && (
         <>
           {voteQuota && (
             <div className={styles.quotaBar}>
@@ -240,17 +274,17 @@ export function ProjectPage() {
             <div className={styles.filterGroup}>
               <label>Статус</label>
               <select
-                value={statusFilter}
+                value={isDraftsTab ? '' : statusFilter}
                 onChange={(e) => {
                   setStatusFilter(e.target.value as StatusFilter);
                   setPage(1);
                 }}
               >
                 <option value="">Все статусы</option>
-                <option value="New">New</option>
-                <option value="InProgress">InProgress</option>
-                <option value="Accepted">Accepted</option>
-                <option value="Rejected">Rejected</option>
+                <option value="New">{STATUS_LABELS.New}</option>
+                <option value="InProgress">{STATUS_LABELS.InProgress}</option>
+                <option value="Accepted">{STATUS_LABELS.Accepted}</option>
+                <option value="Rejected">{STATUS_LABELS.Rejected}</option>
               </select>
             </div>
 
@@ -339,11 +373,7 @@ export function ProjectPage() {
                           setSuggestions((prev) =>
                             prev.map((item) =>
                               item.id === id
-                                ? {
-                                    ...item,
-                                    score: newScore,
-                                    currentUserVote,
-                                  }
+                                ? { ...item, score: newScore, currentUserVote }
                                 : item,
                             ),
                           );
@@ -401,6 +431,22 @@ export function ProjectPage() {
           )}
         </>
       )}
+
+      {isDraftsTab && (
+        <DraftsTab
+          projectId={projectId!}
+          onContinue={handleContinueDraft}
+          refreshTrigger={draftsRefreshKey}
+        />
+      )}
+
+      <CreateSuggestionModal
+        open={suggestionModalOpen}
+        onClose={() => setSuggestionModalOpen(false)}
+        onSuccess={handleSuggestionSuccess}
+        projectId={projectId!}
+        draftId={suggestionDraftId}
+      />
 
       {canManageSettings && (
         <SettingsModal
