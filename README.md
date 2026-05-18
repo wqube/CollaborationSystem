@@ -15,8 +15,10 @@
 
 ```
 CollaborationSystem/
-├── frontend/        # React + TypeScript приложение
-├── backend/         # .NET 10 API, PostgreSQL
+├── frontend/              # React + TypeScript приложение
+├── backend/               # .NET 10 API, PostgreSQL, EF Core миграции
+├── docker-compose.dev.yml # локальный dev-стенд: frontend + backend + PostgreSQL
+├── dotnet-tools.json      # локальные .NET tools, включая dotnet-ef
 └── README.md
 ```
 
@@ -130,33 +132,41 @@ git push origin feature/fe-название-задачи
 
 ---
 
-## Dev stand (Docker, one command)
+## Локальный dev-стенд
 
-From repository root:
+Из корня репозитория:
 
-```powershell
+```bash
 docker compose -f docker-compose.dev.yml up --build
 ```
 
-Services:
+Сервисы:
 - Frontend: `http://localhost:5173`
 - Backend API: `http://localhost:5227`
 - Swagger: `http://localhost:5227/swagger`
 - PostgreSQL: `localhost:5432`
 
-What is automated now:
-- API applies EF Core migrations on startup (`Database.Migrate()`).
-- Backend waits for healthy PostgreSQL via Docker healthcheck.
-- Refresh-token cookie works in local HTTP dev mode (`Auth__RefreshTokenCookieSecure=false`).
+Что происходит при запуске:
+- API применяет EF Core migrations на старте (`Database.Migrate()`).
+- Backend ждёт готовности PostgreSQL через Docker healthcheck.
+- Refresh-token cookie работает в локальном HTTP-режиме.
 
-Test credentials:
-- `test@test.local / password`
-- `admin@test.local / password`
+Переменные окружения backend, локальный запуск API и ручное применение миграций
+описаны в `backend/README.md`.
 
-If authorization still fails:
-1. Open browser DevTools -> Application -> Cookies and check `refreshToken` for `http://localhost:5227`.
-2. Verify API is up: `GET http://localhost:5227/health` must return `{"status":"ok"}`.
-3. Check frontend requests go to `http://localhost:5227/api/v1`.
-4. Recreate containers after changes:
-   `docker compose -f docker-compose.dev.yml down -v`
-   `docker compose -f docker-compose.dev.yml up --build`
+Тестовые пользователи для локального dev-стенда:
+
+| Роль | Email | Пароль |
+|---|---|---|
+| Пользователь | `test@test.local` | `password` |
+| Администратор | `admin@test.local` | `password` |
+
+Если авторизация не проходит:
+1. Открыть DevTools -> Application -> Cookies и проверить `refreshToken` для `http://localhost:5227`.
+2. Проверить API: `GET http://localhost:5227/health` должен вернуть `{"status":"ok"}`.
+3. Проверить, что frontend отправляет запросы на `http://localhost:5227/api/v1`.
+4. Пересоздать контейнеры после изменений:
+   ```bash
+   docker compose -f docker-compose.dev.yml down -v
+   docker compose -f docker-compose.dev.yml up --build
+   ```
