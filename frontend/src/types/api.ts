@@ -18,6 +18,12 @@ export interface UserDto {
   email: string;
 }
 
+export interface UserListItem {
+  id: string;
+  displayName: string;
+  email: string;
+}
+
 export interface CurrentUserResponse extends UserDto {
   authMode: string;
 }
