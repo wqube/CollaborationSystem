@@ -8,6 +8,7 @@ import type {
 } from '../../types/api';
 import { canManageProjectSettings } from '../../shared/utils/projectRole';
 import styles from '../../assets/SuggestionDetailPage.module.css';
+import { STATUS_LABELS } from '../../shared/utils/statusLabels';
 
 interface SuggestionHeaderProps {
   detail: SuggestionDetails;
@@ -115,10 +116,10 @@ export function SuggestionHeader({
                 : 'Изменить статус'
             }
           >
-            <option value="New">New</option>
-            <option value="InProgress">InProgress</option>
-            <option value="Accepted">Accepted</option>
-            <option value="Rejected">Rejected</option>
+            <option value="New">{STATUS_LABELS.New}</option>
+            <option value="InProgress">{STATUS_LABELS.InProgress}</option>
+            <option value="Accepted">{STATUS_LABELS.Accepted}</option>
+            <option value="Rejected">{STATUS_LABELS.Rejected}</option>
           </select>
         </div>
       </div>

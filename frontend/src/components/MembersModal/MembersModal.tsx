@@ -11,6 +11,7 @@ import type {
   UserListItem,
 } from '../../types/api';
 import { getProjectRoleBadgeVariant } from '../../shared/utils/projectRole';
+import { ROLE_LABELS } from '../../shared/utils/statusLabels';
 import styles from '../MembersModal/MembersModal.module.css';
 
 interface MembersModalProps {
@@ -41,7 +42,6 @@ export function MembersModal({
   const loadMembers = useCallback(async () => {
     setLoading(true);
     setError(null);
-
     try {
       const res = await apiClient.get<ProjectDetails>(`/projects/${projectId}`);
       setMembers(res.data.members || []);
@@ -54,13 +54,11 @@ export function MembersModal({
 
   useEffect(() => {
     if (!open || !projectId) return;
-
     loadMembers();
   }, [open, projectId, loadMembers]);
 
   useEffect(() => {
     if (open) return;
-
     setUserSearch('');
     setUsers([]);
     setSelectedUserId('');
@@ -69,7 +67,6 @@ export function MembersModal({
 
   useEffect(() => {
     if (!open || !canManageMembers) return;
-
     let ignore = false;
     const timeoutId = window.setTimeout(async () => {
       try {
@@ -80,7 +77,6 @@ export function MembersModal({
           page: 1,
           pageSize: 20,
         });
-
         if (!ignore) {
           setUsers(response.items);
         }
@@ -94,7 +90,6 @@ export function MembersModal({
         }
       }
     }, 300);
-
     return () => {
       ignore = true;
       window.clearTimeout(timeoutId);
@@ -122,12 +117,10 @@ export function MembersModal({
 
   const handleAddMember = async () => {
     if (!canManageMembers) return;
-
     if (!selectedUserId) {
       setError('Выберите пользователя из списка');
       return;
     }
-
     try {
       setAdding(true);
       setError(null);
@@ -154,7 +147,6 @@ export function MembersModal({
 
   const handleChangeRole = async (userId: string, role: ProjectRole) => {
     if (!canManageRoles) return;
-
     try {
       await apiClient.patch(`/projects/${projectId}/members/${userId}`, {
         role,
@@ -169,7 +161,6 @@ export function MembersModal({
 
   const handleRemoveMember = async (userId: string) => {
     if (!canManageMembers) return;
-
     try {
       await apiClient.delete(`/projects/${projectId}/members/${userId}`);
       setMembers((prev) => prev.filter((m) => m.userId !== userId));
@@ -234,8 +225,8 @@ export function MembersModal({
                 value={newRole}
                 onChange={(e) => setNewRole(e.target.value as ProjectRole)}
               >
-                <option value="Member">Member</option>
-                <option value="Admin">Admin</option>
+                <option value="Member">{ROLE_LABELS.Member}</option>
+                <option value="Admin">{ROLE_LABELS.Admin}</option>
               </select>
               <Button
                 variant="primary"
@@ -286,8 +277,8 @@ export function MembersModal({
                       }
                       className={styles.roleSelectSm}
                     >
-                      <option value="Admin">Admin</option>
-                      <option value="Member">Member</option>
+                      <option value="Admin">{ROLE_LABELS.Admin}</option>
+                      <option value="Member">{ROLE_LABELS.Member}</option>
                     </select>
                     <button
                       className={styles.removeBtn}

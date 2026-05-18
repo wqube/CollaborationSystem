@@ -3,7 +3,6 @@ import { LoginPage } from '../pages/LoginPage';
 import { ProjectListPage } from '../pages/ProjectListPage';
 import { SuggestionDetailPage } from '../pages/SuggestionDetailPage';
 import { ProjectPage } from '../pages/ProjectPage';
-import { DraftsPage } from '../pages/DraftsPage';
 import { Layout } from '../components/layout/Layout';
 import { ProfilePage } from '../pages/ProfilePage';
 import { ProtectedRoute } from '../components/ProtectedRoute/ProtectedRoute';
@@ -28,8 +27,6 @@ export function AppRouter() {
             path="/projects/:projectId/suggestions/:suggestionId"
             element={<SuggestionDetailPage />}
           />
-
-          <Route path="/projects/:projectId/drafts" element={<DraftsPage />} />
 
           <Route path="/profile" element={<ProfilePage />} />
         </Route>
