@@ -4,7 +4,7 @@ services:
     container_name: collaborationsystem-postgres_dev
     restart: unless-stopped
     environment:
-      POSTGRES_DB: collaboration_system_dev
+      POSTGRES_DB: collaboration_system
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
     ports:
