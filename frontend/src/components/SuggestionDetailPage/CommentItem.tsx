@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Button } from '../ui/Button/Button';
-import { useCommentDraft } from '../../hooks/useCommentDraft';
+import { CommentReplyForm } from './CommentReplyForm';
 import type { CommentNode } from '../../types/api';
 import styles from '../../assets/SuggestionDetailPage.module.css';
 
@@ -8,13 +8,13 @@ interface CommentItemProps {
   comment: CommentNode;
   projectId: string;
   suggestionId: string;
+  currentUserId: string | null;
   replyingToId: string | null;
   editingId: string | null;
   submitting?: boolean;
   onStartReply: (id: string) => void;
   onCancelReply: () => void;
   onSubmitReply: (parentId: string, text: string) => Promise<void>;
-  onClearReplyDraft: () => void;
   onStartEdit: (id: string) => void;
   onCancelEdit: () => void;
   onSaveEdit: (id: string, text: string) => Promise<void>;
@@ -25,13 +25,13 @@ export function CommentItem({
   comment,
   projectId,
   suggestionId,
+  currentUserId,
   replyingToId,
   editingId,
   submitting = false,
   onStartReply,
   onCancelReply,
   onSubmitReply,
-  onClearReplyDraft,
   onStartEdit,
   onCancelEdit,
   onSaveEdit,
@@ -40,17 +40,13 @@ export function CommentItem({
   const [editText, setEditText] = useState(comment.text);
   const isReplying = replyingToId === comment.id;
   const isEditing = editingId === comment.id;
+  const canManageComment = currentUserId === comment.author.id;
 
-  const { draftText, saveStatus, statusLabel, handleTextChange, clearDraft } =
-    useCommentDraft(projectId, suggestionId, isReplying ? comment.id : null);
-
-  const handleReplySubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!draftText.trim()) return;
-    await onSubmitReply(comment.id, draftText.trim());
-    await clearDraft();
-    onClearReplyDraft();
-  };
+  useEffect(() => {
+    if (!isEditing) {
+      setEditText(comment.text);
+    }
+  }, [comment.text, isEditing]);
 
   const handleEditSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -104,56 +100,36 @@ export function CommentItem({
           <button type="button" onClick={() => onStartReply(comment.id)}>
             Ответить
           </button>
-          <button type="button" onClick={() => onStartEdit(comment.id)}>
-            Редактировать
-          </button>
-          <button
-            type="button"
-            className={styles.deleteBtn}
-            onClick={() => {
-              if (window.confirm('Удалить комментарий?')) onDelete(comment.id);
-            }}
-          >
-            Удалить
-          </button>
+          {canManageComment && (
+            <>
+              <button type="button" onClick={() => onStartEdit(comment.id)}>
+                Редактировать
+              </button>
+              <button
+                type="button"
+                className={styles.deleteBtn}
+                onClick={() => {
+                  if (window.confirm('Удалить комментарий?')) {
+                    onDelete(comment.id);
+                  }
+                }}
+              >
+                Удалить
+              </button>
+            </>
+          )}
         </div>
       )}
 
       {isReplying && (
-        <form onSubmit={handleReplySubmit} className={styles.replyForm}>
-          <textarea
-            value={draftText}
-            onChange={(e) => handleTextChange(e.target.value)}
-            placeholder="Ваш ответ..."
-            rows={2}
-            autoFocus
-            className={styles.commentInput}
-            disabled={saveStatus === 'saving'}
-          />
-          <div className={styles.replyActions}>
-            {statusLabel && (
-              <span className={styles.draftStatus}>{statusLabel}</span>
-            )}
-            <Button
-              type="submit"
-              variant="primary"
-              size="sm"
-              disabled={
-                submitting || saveStatus === 'saving' || !draftText.trim()
-              }
-            >
-              {submitting ? 'Отправка...' : 'Ответить'}
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={onCancelReply}
-            >
-              Отмена
-            </Button>
-          </div>
-        </form>
+        <CommentReplyForm
+          projectId={projectId}
+          suggestionId={suggestionId}
+          parentCommentId={comment.id}
+          submitting={submitting}
+          onSubmit={onSubmitReply}
+          onCancel={onCancelReply}
+        />
       )}
 
       {comment.children.length > 0 && (
@@ -164,13 +140,13 @@ export function CommentItem({
               comment={reply}
               projectId={projectId}
               suggestionId={suggestionId}
+              currentUserId={currentUserId}
               replyingToId={replyingToId}
               editingId={editingId}
               submitting={submitting}
               onStartReply={onStartReply}
               onCancelReply={onCancelReply}
               onSubmitReply={onSubmitReply}
-              onClearReplyDraft={onClearReplyDraft}
               onStartEdit={onStartEdit}
               onCancelEdit={onCancelEdit}
               onSaveEdit={onSaveEdit}

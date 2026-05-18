@@ -4,6 +4,29 @@
   padding: 0 20px;
 }
 
+.state,
+.empty {
+  color: #8a8a8a;
+}
+
+.error {
+  color: #c62828;
+  font-size: 14px;
+}
+
+.overlayLoader {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 20;
+  padding: 10px 14px;
+  background: #1a1a1a;
+  color: white;
+  border-radius: 8px;
+  font-size: 14px;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.16);
+}
+
 .topBar {
   display: flex;
   align-items: center;
@@ -128,6 +151,11 @@
   color: #8a8a8a;
 }
 
+.draftStatus {
+  font-size: 13px;
+  color: #8a8a8a;
+}
+
 .comments {
   margin-top: 20px;
 }
@@ -186,6 +214,28 @@
 
 .commentBtns button:hover {
   color: #1a1a1a;
+}
+
+.commentBtns .deleteBtn:hover {
+  color: #c62828;
+}
+
+.editForm,
+.replyForm {
+  margin-left: 42px;
+}
+
+.editActions,
+.replyActions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.replyActions {
+  justify-content: space-between;
 }
 
 .nested {

@@ -50,7 +50,7 @@ const buildCommentTree = (comments: CommentDto[]): CommentNode[] => {
   });
 
   const byDate = (a: CommentNode, b: CommentNode) =>
-    new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
   roots.sort(byDate);
   const sortChildren = (node: CommentNode) => {
     node.children.sort(byDate);
@@ -71,6 +71,7 @@ export function SuggestionDetailPage() {
   const [detail, setDetail] = useState<SuggestionDetails | null>(null);
   const [commentTree, setCommentTree] = useState<CommentNode[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [commentsError, setCommentsError] = useState<string | null>(null);
   const [voteError, setVoteError] = useState<string | null>(null);
   const [voteQuota, setVoteQuota] = useState<CurrentUserVoteQuota | null>(null);
   const [loading, setLoading] = useState(true);
@@ -91,15 +92,21 @@ export function SuggestionDetailPage() {
       if (!projectId || !suggestionId) return;
       if (!silent) setLoading(true);
       setError(null);
+
       try {
-        const [detailsRes, commentsRes] = await Promise.all([
-          getSuggestionDetails(projectId, suggestionId),
-          getComments(projectId, suggestionId),
-        ]);
+        const detailsRes = await getSuggestionDetails(projectId, suggestionId);
         setDetail(detailsRes);
-        setCommentTree(buildCommentTree(commentsRes));
+
+        try {
+          const commentsRes = await getComments(projectId, suggestionId);
+          setCommentTree(buildCommentTree(commentsRes));
+          setCommentsError(null);
+        } catch {
+          setCommentTree([]);
+          setCommentsError('Не удалось загрузить комментарии');
+        }
       } catch {
-        setError('Ошибка загрузки данных');
+        setError('Ошибка загрузки предложения');
       } finally {
         setLoading(false);
       }
@@ -142,9 +149,11 @@ export function SuggestionDetailPage() {
         text: text.trim(),
         parentCommentId: null,
       });
+      setCommentsError(null);
       await fetchData(true);
     } catch {
-      setError('Не удалось отправить комментарий');
+      setCommentsError('Не удалось отправить комментарий');
+      throw new Error('Не удалось отправить комментарий');
     } finally {
       setIsSubmittingComment(false);
     }
@@ -155,13 +164,15 @@ export function SuggestionDetailPage() {
     setIsSubmittingComment(true);
     try {
       await createComment(projectId, suggestionId, {
-        text,
+        text: text.trim(),
         parentCommentId: parentId,
       });
       setReplyingToId(null);
+      setCommentsError(null);
       await fetchData(true);
     } catch {
-      setError('Не удалось отправить ответ');
+      setCommentsError('Не удалось отправить ответ');
+      throw new Error('Не удалось отправить ответ');
     } finally {
       setIsSubmittingComment(false);
     }
@@ -172,9 +183,10 @@ export function SuggestionDetailPage() {
     try {
       await updateComment(projectId, id, { text });
       setEditingId(null);
+      setCommentsError(null);
       await fetchData(true);
     } catch {
-      alert('Ошибка при обновлении комментария');
+      setCommentsError('Ошибка при обновлении комментария');
     }
   };
 
@@ -183,9 +195,10 @@ export function SuggestionDetailPage() {
     setIsSubmittingComment(true);
     try {
       await deleteComment(projectId, id);
+      setCommentsError(null);
       await fetchData(true);
     } catch {
-      alert('Ошибка при удалении комментария');
+      setCommentsError('Ошибка при удалении комментария');
     } finally {
       setIsSubmittingComment(false);
     }
@@ -272,8 +285,17 @@ export function SuggestionDetailPage() {
     navigator.clipboard.writeText(window.location.href).catch(() => {});
   };
 
-  if (error || !detail)
-    return <p className={styles.error}>{error || 'Не найдено'}</p>;
+  if (loading && !detail) {
+    return <p className={styles.state}>Загрузка...</p>;
+  }
+
+  if (error) {
+    return <p className={styles.error}>{error}</p>;
+  }
+
+  if (!detail) {
+    return <p className={styles.error}>Предложение не найдено</p>;
+  }
 
   return (
     <div className={styles.page}>
@@ -294,15 +316,15 @@ export function SuggestionDetailPage() {
             projectId={projectId!}
             suggestionId={suggestionId!}
             comments={commentTree}
+            commentsError={commentsError}
+            currentUserId={currentUserId}
             replyingToId={replyingToId}
             editingId={editingId}
             submitting={isSubmittingComment}
             onSendMain={handleSendMain}
-            onClearMainDraft={() => {}}
             onStartReply={(id) => setReplyingToId(id)}
             onCancelReply={() => setReplyingToId(null)}
             onSubmitReply={handleSubmitReply}
-            onClearReplyDraft={() => {}}
             onStartEdit={(id) => setEditingId(id)}
             onCancelEdit={() => setEditingId(null)}
             onSaveEdit={handleSaveEdit}
