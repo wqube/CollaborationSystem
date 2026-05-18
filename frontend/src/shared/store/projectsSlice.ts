@@ -34,7 +34,13 @@ export const createProject = createAsyncThunk<
 const projectsSlice = createSlice({
   name: 'projects',
   initialState,
-  reducers: {},
+  reducers: {
+    clearProjects: (state) => {
+      state.list = [];
+      state.loading = false;
+      state.error = null;
+    },
+  },
 
   extraReducers: (builder) => {
     builder
@@ -60,4 +66,5 @@ const projectsSlice = createSlice({
   },
 });
 
+export const { clearProjects } = projectsSlice.actions;
 export const projectsReducer = projectsSlice.reducer;
