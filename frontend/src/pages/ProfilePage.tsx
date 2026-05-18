@@ -1,9 +1,11 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/Button/Button';
 import { Badge } from '../components/ui/Badge/Badge';
 import { useAppDispatcher, userAppSelector } from '../shared/store/hooks';
-import { fetchProjects } from '../shared/store/projectsSlice';
+import { clearProjects, fetchProjects } from '../shared/store/projectsSlice';
+import { clearAuth } from '../shared/store/authSlice';
+import { logout } from '../shared/api/auth';
 import { getProjectRoleBadgeVariant } from '../shared/utils/projectRole';
 import styles from '../assets/ProfilePage.module.css';
 import { Breadcrumbs } from '../components/Breadcrumbs/Breadcrumbs';
@@ -13,12 +15,27 @@ export function ProfilePage() {
   const dispatch = useAppDispatcher();
   const user = userAppSelector((s) => s.auth.user);
   const { list: projects, loading } = userAppSelector((s) => s.projects);
+  const [logoutLoading, setLogoutLoading] = useState(false);
 
   useEffect(() => {
     if (projects.length === 0) {
       dispatch(fetchProjects());
     }
   }, [dispatch, projects.length]);
+
+  const handleLogout = async () => {
+    setLogoutLoading(true);
+
+    try {
+      await logout();
+    } catch (error) {
+      console.error('Ошибка выхода из системы', error);
+    } finally {
+      dispatch(clearAuth());
+      dispatch(clearProjects());
+      navigate('/auth/login', { replace: true });
+    }
+  };
 
   return (
     <div className={styles.page}>
@@ -75,12 +92,12 @@ export function ProfilePage() {
       <div className={styles.logout}>
         <Button
           variant="danger"
+          disabled={logoutLoading}
           onClick={() => {
-            localStorage.clear();
-            window.location.href = '/auth/login';
+            void handleLogout();
           }}
         >
-          Выйти
+          {logoutLoading ? 'Выход...' : 'Выйти'}
         </Button>
       </div>
     </div>

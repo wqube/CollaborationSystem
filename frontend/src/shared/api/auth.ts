@@ -27,3 +27,7 @@ export const refresh = async (): Promise<RefreshResponse> => {
   const response = await apiClient.post<RefreshResponse>('auth/refresh');
   return response.data;
 };
+
+export const logout = async (): Promise<void> => {
+  await apiClient.post('auth/logout');
+};

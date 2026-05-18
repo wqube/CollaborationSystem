@@ -32,27 +32,15 @@ apiClient.interceptors.response.use(
       typeof originalRequest?.url === 'string' &&
       originalRequest.url.includes('auth/');
 
-    // const isSessionRestore =
-    //   typeof originalRequest?.url === 'string' &&
-    //   originalRequest.url.includes('users/me');
-
     if (
       error.response?.status === 401 &&
       !originalRequest?._retry &&
       !isAuthEndpoint
-      // !isSessionRestore
     ) {
       originalRequest._retry = true;
 
       try {
-        console.log('Attempting refresh...');
         const refreshResponse = await apiClient.post('auth/refresh');
-        console.log('Refresh success, user:', refreshResponse.data.user);
-        console.log(
-          'Refresh success, token:',
-          refreshResponse.data.accessToken,
-        );
-
         const newToken = refreshResponse.data.accessToken;
 
         store.dispatch(
@@ -61,19 +49,13 @@ apiClient.interceptors.response.use(
             user: refreshResponse.data.user,
           }),
         );
-        console.log('Redux state after setAuth:', store.getState().auth);
 
         originalRequest.headers = originalRequest.headers ?? {};
         originalRequest.headers.Authorization = `Bearer ${newToken}`;
 
-        // delete originalRequest.headers?.['Authorization'];
-        originalRequest._retry = true;
-
         return apiClient(originalRequest);
-      } catch (e) {
+      } catch {
         store.dispatch(clearAuth());
-        // window.location.href = '/auth/login';
-        console.log('Refresh failed:', e);
       }
     }
 
