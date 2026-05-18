@@ -161,6 +161,32 @@ export function ProjectPage() {
     }
   };
 
+  const handleSuggestionVoteSuccess = useCallback(
+    (
+      id: string,
+      newScore: number,
+      currentUserVote: SuggestionSummary['currentUserVote'],
+      nextVoteQuota: CurrentUserVoteQuota,
+    ) => {
+      setVoteQuota(nextVoteQuota);
+
+      setSuggestions((prev) =>
+        prev.map((item) =>
+          item.id === id
+            ? {
+                ...item,
+                score: newScore,
+                currentUserVote,
+              }
+            : item,
+        ),
+      );
+
+      void fetchSuggestions();
+    },
+    [fetchSuggestions],
+  );
+
   const handleProjectSaved = useCallback(
     async (updateProject: ProjectSummary) => {
       setProject(updateProject);
@@ -355,25 +381,7 @@ export function ProjectPage() {
                             suggestion={s}
                             voteQuota={voteQuota}
                             onVoteQuotaChange={setVoteQuota}
-                            onVoteSuccess={(
-                              id,
-                              newScore,
-                              currentUserVote,
-                              nextVoteQuota,
-                            ) => {
-                              setVoteQuota(nextVoteQuota);
-                              setSuggestions((prev) =>
-                                prev.map((item) =>
-                                  item.id === id
-                                    ? {
-                                        ...item,
-                                        score: newScore,
-                                        currentUserVote,
-                                      }
-                                    : item,
-                                ),
-                              );
-                            }}
+                            onVoteSuccess={handleSuggestionVoteSuccess}
                           />
                         </td>
                         <td>{formatDateTime(s.createdAt)}</td>
