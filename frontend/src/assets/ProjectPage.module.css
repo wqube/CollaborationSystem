@@ -1,7 +1,8 @@
 .page {
   max-width: 1200px;
-  margin: 30px auto;
-  padding: 0 20px;
+  margin: clamp(16px, 4vw, 30px) auto;
+  padding: 0 clamp(12px, 4vw, 20px);
+  min-width: 0;
 }
 
 .header {
@@ -14,6 +15,8 @@
 .actions {
   display: flex;
   gap: 16px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .quotaBar {
@@ -71,6 +74,7 @@
 .table table {
   width: 100%;
   border-collapse: collapse;
+  table-layout: fixed;
 }
 
 .table th {
@@ -168,9 +172,10 @@
 }
 
 .suggestionText {
+  display: inline-block;
   word-break: break-word;
   overflow-wrap: break-word;
-  max-width: 400px;
+  max-width: min(400px, 100%);
 }
 
 @media (max-width: 900px) {
@@ -181,7 +186,8 @@
   }
 
   .actions {
-    flex-wrap: wrap;
+    width: 100%;
+    justify-content: flex-start;
   }
 
   .quotaBar {
@@ -191,6 +197,91 @@
 
   .filters {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 680px) {
+  .header {
+    margin-bottom: 18px;
+  }
+
+  .actions {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .quotaBar,
+  .filters {
+    padding: 14px;
+    border-radius: 10px;
+  }
+
+  .table {
+    border: none;
+    background: transparent;
+    overflow: visible;
+  }
+
+  .table table,
+  .table tbody,
+  .table tr,
+  .table td {
+    display: block;
+    width: 100%;
+  }
+
+  .table thead {
+    display: none;
+  }
+
+  .table tr {
+    margin-bottom: 12px;
+    border: 1px solid #e0e0e0;
+    border-radius: 12px;
+    background: white;
+    overflow: hidden;
+  }
+
+  .table td {
+    display: grid;
+    grid-template-columns: minmax(96px, 34%) 1fr;
+    gap: 12px;
+    align-items: center;
+    padding: 12px 14px;
+  }
+
+  .table td::before {
+    content: attr(data-label);
+    color: #8a8a8a;
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  .table .empty {
+    display: block;
+    padding: 28px 16px;
+  }
+
+  .table .empty::before {
+    content: none;
+  }
+
+  .pagination {
+    flex-wrap: wrap;
+  }
+
+  .pagination span {
+    width: 100%;
+    margin: 8px 0 0;
+    text-align: center;
+  }
+}
+
+@media (max-width: 420px) {
+  .table td {
+    grid-template-columns: 1fr;
+    gap: 4px;
   }
 }
 

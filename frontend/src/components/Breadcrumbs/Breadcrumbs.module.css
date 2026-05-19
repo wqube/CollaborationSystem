@@ -42,3 +42,17 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+@media (max-width: 560px) {
+  .breadcrumbs {
+    font-size: 13px;
+  }
+
+  .link {
+    max-width: 38vw;
+  }
+
+  .current {
+    max-width: 58vw;
+  }
+}

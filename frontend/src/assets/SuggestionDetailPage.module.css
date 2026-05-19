@@ -1,7 +1,8 @@
 .page {
   max-width: 1200px;
-  margin: 30px auto;
-  padding: 0 20px;
+  margin: clamp(16px, 4vw, 30px) auto;
+  padding: 0 clamp(12px, 4vw, 20px);
+  min-width: 0;
 }
 
 .state,
@@ -30,6 +31,7 @@
 .topBar {
   display: flex;
   align-items: center;
+  min-width: 0;
   margin-bottom: 24px;
 }
 
@@ -37,13 +39,19 @@
   margin: 0;
   font-size: 28px;
   margin-left: 10px;
+  overflow-wrap: anywhere;
 }
 
 .twoColumns {
   display: grid;
-  grid-template-columns: 2fr 1fr;
+  grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
   gap: 24px;
   margin-top: 20px;
+}
+
+.main,
+.sidebar {
+  min-width: 0;
 }
 
 .card {
@@ -53,6 +61,7 @@
   border: 1px solid #e0e0e0;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
   margin-bottom: 20px;
+  min-width: 0;
 }
 
 .top {
@@ -77,6 +86,7 @@
 
 .meta {
   display: flex;
+  flex-wrap: wrap;
   gap: 16px;
   color: #8a8a8a;
   font-size: 14px;
@@ -121,6 +131,7 @@
 .suggestionEditActions {
   display: flex;
   justify-content: flex-end;
+  flex-wrap: wrap;
   gap: 10px;
   margin-top: 12px;
 }
@@ -143,6 +154,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 12px;
   margin: 10px 0 20px;
 }
 
@@ -165,6 +177,7 @@
   background: #f5f5f5;
   border-radius: 12px;
   margin-bottom: 12px;
+  min-width: 0;
 }
 
 .commentHeader {
@@ -195,12 +208,14 @@
 
 .comment p {
   margin-left: 42px;
+  overflow-wrap: anywhere;
 }
 
 .commentBtns {
   margin-left: 42px;
   margin-top: 8px;
   display: flex;
+  flex-wrap: wrap;
   gap: 16px;
 }
 
@@ -230,6 +245,7 @@
   display: flex;
   justify-content: flex-end;
   align-items: center;
+  flex-wrap: wrap;
   gap: 10px;
   margin-top: 8px;
 }
@@ -246,6 +262,7 @@
 
 .votePanel {
   display: flex;
+  flex-wrap: wrap;
   gap: 20px;
   justify-content: center;
   align-items: center;
@@ -293,6 +310,7 @@
   padding: 4px 10px;
   border-radius: 20px;
   font-size: 13px;
+  overflow-wrap: anywhere;
 }
 
 .suggestionTitle {
@@ -313,7 +331,14 @@
   min-width: 150px;
 }
 
+@media (max-width: 960px) {
+  .twoColumns {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 720px) {
+
   .top {
     flex-direction: column;
   }
@@ -326,5 +351,51 @@
 
   .statusSelect {
     flex: 1;
+  }
+}
+
+@media (max-width: 560px) {
+  .card {
+    padding: 16px;
+    border-radius: 10px;
+  }
+
+  .topBar h1,
+  .suggestionTitle {
+    font-size: 22px;
+  }
+
+  .commentActions,
+  .replyActions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .comment p,
+  .commentBtns,
+  .editForm,
+  .replyForm {
+    margin-left: 0;
+  }
+
+  .nested {
+    margin-left: 12px;
+    padding-left: 12px;
+  }
+
+  .headerActions,
+  .suggestionEditActions,
+  .editActions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .statusSelect {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .votePanel {
+    gap: 12px;
   }
 }

@@ -86,7 +86,7 @@ export function ProjectSuggestionsTable({
                   onClick={() => onOpenSuggestion(suggestion.id, projectRole)}
                   className={styles.row}
                 >
-                  <td>
+                  <td data-label="Предложение">
                     <strong className={styles.suggestionText}>
                       {suggestion.text}
                     </strong>
@@ -95,8 +95,8 @@ export function ProjectSuggestionsTable({
                       id: {suggestion.id.slice(0, 8)}...
                     </span>
                   </td>
-                  <td>{suggestion.author.displayName}</td>
-                  <td onClick={(e) => e.stopPropagation()}>
+                  <td data-label="Автор">{suggestion.author.displayName}</td>
+                  <td data-label="Голоса" onClick={(e) => e.stopPropagation()}>
                     <SuggestionVoteCell
                       projectId={projectId}
                       suggestion={suggestion}
@@ -105,8 +105,10 @@ export function ProjectSuggestionsTable({
                       onVoteSuccess={onVoteSuccess}
                     />
                   </td>
-                  <td>{formatDateTime(suggestion.createdAt)}</td>
-                  <td>
+                  <td data-label="Дата">
+                    {formatDateTime(suggestion.createdAt)}
+                  </td>
+                  <td data-label="Статус">
                     <Badge variant={getStatusBadgeVariant(suggestion.status)} />
                   </td>
                 </tr>

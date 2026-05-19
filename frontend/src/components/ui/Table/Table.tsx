@@ -19,7 +19,7 @@ interface TableProps<T> {
   emptyText?: string;
 }
 
-export const Table = <T extends Record<string, any>>({
+export const Table = <T extends Record<string, unknown>>({
   columns,
   data,
   onRowClick,
@@ -62,7 +62,7 @@ export const Table = <T extends Record<string, any>>({
         <tbody>
           {data.map((item) => (
             <tr
-              key={item[rowKey]}
+              key={String(item[rowKey])}
               onClick={() => onRowClick?.(item)}
               className={onRowClick ? styles.clickableRow : ''}
             >
@@ -71,7 +71,9 @@ export const Table = <T extends Record<string, any>>({
                   key={String(col.key)}
                   style={{ textAlign: col.align || 'left' }}
                 >
-                  {col.render ? col.render(item) : item[col.key]}
+                  {col.render
+                    ? col.render(item)
+                    : (item[col.key] as React.ReactNode)}
                 </td>
               ))}
             </tr>

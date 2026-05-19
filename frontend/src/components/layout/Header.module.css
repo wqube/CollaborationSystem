@@ -1,10 +1,11 @@
 .app_header {
   background: white;
   border-bottom: 1px solid var(--t-border);
-  padding: 16px 24px;
+  padding: 16px clamp(12px, 4vw, 24px);
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 16px;
   box-shadow: var(--shadow);
 }
 
@@ -16,11 +17,12 @@
   font-size: 20px;
   cursor: pointer;
   white-space: nowrap;
-  flex-shrink: 0;
+  min-width: 0;
 }
 
 .logo span {
-  white-space: nowrap;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 .logo_icon {
@@ -62,6 +64,7 @@
   display: flex;
   align-items: center;
   gap: 20px;
+  min-width: 0;
 }
 
 .separator {
@@ -98,4 +101,51 @@
   outline: none;
   border-color: var(--t-yellow);
   box-shadow: 0 0 0 3px rgba(255, 221, 45, 0.2);
+}
+
+@media (max-width: 900px) {
+  .app_header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .left {
+    width: 100%;
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .projectSelector {
+    width: 100%;
+    max-width: none;
+    min-width: 0;
+  }
+
+  .user {
+    width: 100%;
+    justify-content: flex-end;
+  }
+}
+
+@media (max-width: 560px) {
+  .app_header {
+    padding: 12px;
+  }
+
+  .logo {
+    font-size: 16px;
+  }
+
+  .logo img {
+    width: 32px;
+    height: 32px;
+  }
+
+  .text_small {
+    max-width: calc(100vw - 84px);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
 }
