@@ -8,6 +8,11 @@
   transition: all 0.2s ease;
   cursor: pointer;
   border: 1px solid transparent;
+  min-height: 36px;
+  text-align: center;
+  line-height: 1.2;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 .btn:disabled {

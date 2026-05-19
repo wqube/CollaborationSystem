@@ -86,15 +86,15 @@ export function DraftsTab({
           )}
           {drafts.map((draft) => (
             <tr key={draft.id}>
-              <td>
+              <td data-label="Текст черновика">
                 <strong className={styles.suggestionText}>
                   {draft.payload.text && typeof draft.payload.text === 'string'
                     ? draft.payload.text
-                    : '—'}
+                    : '-'}
                 </strong>
               </td>
-              <td>{formatDate(draft.updatedAt)}</td>
-              <td>
+              <td data-label="Дата изменения">{formatDate(draft.updatedAt)}</td>
+              <td data-label="Действия">
                 <div className={styles.actions}>
                   <Button
                     variant="primary"
