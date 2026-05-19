@@ -1,64 +1,14 @@
-import { useState, useEffect, useCallback } from 'react';
-import { useParams, useLocation } from 'react-router-dom';
-import { Button } from '../components/ui/Button/Button';
-import { SuggestionHeader } from '../components/SuggestionDetailPage/SuggestionHeader';
-import { VotePanel } from '../components/SuggestionDetailPage/VotePanel';
-import { CommentsSection } from '../components/SuggestionDetailPage/CommentsSection';
+import { useCallback } from 'react';
+import { useLocation, useParams } from 'react-router-dom';
 import { Breadcrumbs } from '../components/Breadcrumbs/Breadcrumbs';
-import {
-  getVoteQuotaFromError,
-  getSuggestionDetails,
-  isVoteLimitExceededError,
-  updateSuggestionText,
-  updateSuggestionStatus,
-  voteSuggestion,
-  deleteVote,
-} from '../shared/api/suggestions';
-import { getDashboard } from '../shared/api/dashboard';
-import {
-  createComment,
-  deleteComment,
-  getComments,
-  updateComment,
-} from '../shared/api/comments';
-import type {
-  SuggestionDetails,
-  CommentDto,
-  CommentNode,
-  SuggestionStatus,
-  VoteType,
-  ProjectRole,
-  CurrentUserVoteQuota,
-} from '../types/api';
-import { userAppSelector } from '../shared/store/hooks';
+import { CommentsSection } from '../components/SuggestionDetailPage/CommentsSection';
+import { SuggestionDetailSidebar } from '../components/SuggestionDetailPage/SuggestionDetailSidebar';
+import { SuggestionHeader } from '../components/SuggestionDetailPage/SuggestionHeader';
 import styles from '../assets/SuggestionDetailPage.module.css';
-
-const buildCommentTree = (comments: CommentDto[]): CommentNode[] => {
-  const map: Record<string, CommentNode> = {};
-  const roots: CommentNode[] = [];
-
-  comments.forEach((c) => {
-    map[c.id] = { ...c, children: [] };
-  });
-
-  comments.forEach((c) => {
-    if (c.parentCommentId && map[c.parentCommentId]) {
-      map[c.parentCommentId].children.push(map[c.id]);
-    } else {
-      roots.push(map[c.id]);
-    }
-  });
-
-  const byDate = (a: CommentNode, b: CommentNode) =>
-    new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-  roots.sort(byDate);
-  const sortChildren = (node: CommentNode) => {
-    node.children.sort(byDate);
-    node.children.forEach(sortChildren);
-  };
-  roots.forEach(sortChildren);
-  return roots;
-};
+import { useSuggestionComments } from '../hooks/useSuggestionComments';
+import { useSuggestionDetailData } from '../hooks/useSuggestionDetailData';
+import { userAppSelector } from '../shared/store/hooks';
+import type { ProjectRole } from '../types/api';
 
 export function SuggestionDetailPage() {
   const { projectId, suggestionId } = useParams<{
@@ -67,223 +17,34 @@ export function SuggestionDetailPage() {
   }>();
   const location = useLocation();
   const currentUserId = userAppSelector((state) => state.auth.user?.id ?? null);
-
-  const [detail, setDetail] = useState<SuggestionDetails | null>(null);
-  const [commentTree, setCommentTree] = useState<CommentNode[]>([]);
-  const [error, setError] = useState<string | null>(null);
-  const [commentsError, setCommentsError] = useState<string | null>(null);
-  const [voteError, setVoteError] = useState<string | null>(null);
-  const [voteQuota, setVoteQuota] = useState<CurrentUserVoteQuota | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [isSubmittingComment, setIsSubmittingComment] = useState(false);
-
-  const userRoleFromState = (
+  const initialUserRole = (
     location.state as { userRole?: ProjectRole } | undefined
   )?.userRole;
-  const [userRole, setUserRole] = useState<ProjectRole>(
-    userRoleFromState ?? 'Member',
-  );
 
-  const [replyingToId, setReplyingToId] = useState<string | null>(null);
-  const [editingId, setEditingId] = useState<string | null>(null);
+  const {
+    detail,
+    userRole,
+    voteQuota,
+    error,
+    voteError,
+    loading,
+    handleStatusChange,
+    handleTextChange,
+    handleVote,
+  } = useSuggestionDetailData({
+    projectId,
+    suggestionId,
+    initialUserRole,
+  });
 
-  const fetchData = useCallback(
-    async (silent = false) => {
-      if (!projectId || !suggestionId) return;
-      if (!silent) setLoading(true);
-      setError(null);
+  const commentsState = useSuggestionComments({
+    projectId,
+    suggestionId,
+  });
 
-      try {
-        const detailsRes = await getSuggestionDetails(projectId, suggestionId);
-        setDetail(detailsRes);
-
-        try {
-          const commentsRes = await getComments(projectId, suggestionId);
-          setCommentTree(buildCommentTree(commentsRes));
-          setCommentsError(null);
-        } catch {
-          setCommentTree([]);
-          setCommentsError('Не удалось загрузить комментарии');
-        }
-      } catch {
-        setError('Ошибка загрузки предложения');
-      } finally {
-        setLoading(false);
-      }
-    },
-    [projectId, suggestionId],
-  );
-
-  useEffect(() => {
-    fetchData(false);
-  }, [fetchData]);
-
-  useEffect(() => {
-    if (userRoleFromState) {
-      setUserRole(userRoleFromState);
-    }
-
-    if (!projectId) return;
-
-    let ignore = false;
-
-    getDashboard(projectId, { pageSize: 1 })
-      .then((data) => {
-        if (!ignore) {
-          setUserRole(userRoleFromState ?? data.project.role);
-          setVoteQuota(data.currentUserVoteQuota);
-        }
-      })
-      .catch(() => {});
-
-    return () => {
-      ignore = true;
-    };
-  }, [projectId, userRoleFromState]);
-
-  const handleSendMain = async (text: string): Promise<void> => {
-    if (!projectId || !suggestionId || !text.trim()) return;
-    setIsSubmittingComment(true);
-    try {
-      await createComment(projectId, suggestionId, {
-        text: text.trim(),
-        parentCommentId: null,
-      });
-      setCommentsError(null);
-      await fetchData(true);
-    } catch {
-      setCommentsError('Не удалось отправить комментарий');
-      throw new Error('Не удалось отправить комментарий');
-    } finally {
-      setIsSubmittingComment(false);
-    }
-  };
-
-  const handleSubmitReply = async (parentId: string, text: string) => {
-    if (!projectId || !suggestionId) return;
-    setIsSubmittingComment(true);
-    try {
-      await createComment(projectId, suggestionId, {
-        text: text.trim(),
-        parentCommentId: parentId,
-      });
-      setReplyingToId(null);
-      setCommentsError(null);
-      await fetchData(true);
-    } catch {
-      setCommentsError('Не удалось отправить ответ');
-      throw new Error('Не удалось отправить ответ');
-    } finally {
-      setIsSubmittingComment(false);
-    }
-  };
-
-  const handleSaveEdit = async (id: string, text: string) => {
-    if (!projectId) return;
-    try {
-      await updateComment(projectId, id, { text });
-      setEditingId(null);
-      setCommentsError(null);
-      await fetchData(true);
-    } catch {
-      setCommentsError('Ошибка при обновлении комментария');
-    }
-  };
-
-  const handleDeleteComment = async (id: string) => {
-    if (!projectId) return;
-    setIsSubmittingComment(true);
-    try {
-      await deleteComment(projectId, id);
-      setCommentsError(null);
-      await fetchData(true);
-    } catch {
-      setCommentsError('Ошибка при удалении комментария');
-    } finally {
-      setIsSubmittingComment(false);
-    }
-  };
-
-  const handleStatusChange = async (newStatus: SuggestionStatus) => {
-    if (!projectId || !suggestionId) return;
-    try {
-      await updateSuggestionStatus(projectId, suggestionId, {
-        status: newStatus,
-      });
-      await fetchData(true);
-    } catch (err: unknown) {
-      const status = (err as { response?: { status?: number } })?.response
-        ?.status;
-      setError(
-        status === 403
-          ? 'Недостаточно прав для изменения статуса'
-          : 'Ошибка при обновлении статуса',
-      );
-    }
-  };
-
-  const handleTextChange = async (text: string) => {
-    if (!projectId || !suggestionId) return;
-
-    try {
-      const updated = await updateSuggestionText(projectId, suggestionId, {
-        text,
-      });
-
-      setDetail((prev) =>
-        prev
-          ? {
-              ...prev,
-              text: updated.text,
-              updatedAt: updated.updatedAt,
-            }
-          : prev,
-      );
-    } catch (err: unknown) {
-      const status = (err as { response?: { status?: number } })?.response
-        ?.status;
-      throw new Error(
-        status === 403
-          ? 'Редактировать предложение может только автор'
-          : 'Ошибка при обновлении предложения',
-      );
-    }
-  };
-
-  const handleVote = async (voteType: VoteType | null) => {
-    if (!projectId || !suggestionId) return;
-    try {
-      setVoteError(null);
-      const result =
-        voteType === null
-          ? await deleteVote(projectId, suggestionId)
-          : await voteSuggestion(projectId, suggestionId, { voteType });
-      setVoteQuota(result.voteQuota);
-      setDetail((prev) =>
-        prev
-          ? {
-              ...prev,
-              score: result.score,
-              currentUserVote: result.currentUserVote,
-            }
-          : prev,
-      );
-    } catch (err: unknown) {
-      const updatedQuota = getVoteQuotaFromError(err);
-      if (updatedQuota) {
-        setVoteQuota(updatedQuota);
-      }
-      setVoteError(
-        isVoteLimitExceededError(err)
-          ? 'Лимит голосов исчерпан'
-          : 'Ошибка голосования',
-      );
-    }
-  };
-
-  const handleCopyLink = () => {
+  const handleCopyLink = useCallback(() => {
     navigator.clipboard.writeText(window.location.href).catch(() => {});
-  };
+  }, []);
 
   if (loading && !detail) {
     return <p className={styles.state}>Загрузка...</p>;
@@ -293,7 +54,7 @@ export function SuggestionDetailPage() {
     return <p className={styles.error}>{error}</p>;
   }
 
-  if (!detail) {
+  if (!detail || !projectId || !suggestionId) {
     return <p className={styles.error}>Предложение не найдено</p>;
   }
 
@@ -313,40 +74,33 @@ export function SuggestionDetailPage() {
           />
 
           <CommentsSection
-            projectId={projectId!}
-            suggestionId={suggestionId!}
-            comments={commentTree}
-            commentsError={commentsError}
+            projectId={projectId}
+            suggestionId={suggestionId}
+            comments={commentsState.comments}
+            commentsError={commentsState.commentsError}
             currentUserId={currentUserId}
-            replyingToId={replyingToId}
-            editingId={editingId}
-            submitting={isSubmittingComment}
-            onSendMain={handleSendMain}
-            onStartReply={(id) => setReplyingToId(id)}
-            onCancelReply={() => setReplyingToId(null)}
-            onSubmitReply={handleSubmitReply}
-            onStartEdit={(id) => setEditingId(id)}
-            onCancelEdit={() => setEditingId(null)}
-            onSaveEdit={handleSaveEdit}
-            onDelete={handleDeleteComment}
+            replyingToId={commentsState.replyingToId}
+            editingId={commentsState.editingId}
+            submitting={commentsState.submitting}
+            onSendMain={commentsState.sendMainComment}
+            onStartReply={commentsState.startReply}
+            onCancelReply={commentsState.cancelReply}
+            onSubmitReply={commentsState.submitReply}
+            onStartEdit={commentsState.startEdit}
+            onCancelEdit={commentsState.cancelEdit}
+            onSaveEdit={commentsState.saveEdit}
+            onDelete={commentsState.deleteComment}
           />
         </div>
 
-        <div className={styles.sidebar}>
-          <VotePanel
-            detail={detail}
-            loading={loading}
-            voteQuota={voteQuota}
-            error={voteError}
-            onVote={handleVote}
-          />
-          <div className={styles.card}>
-            <h4>Действия</h4>
-            <Button variant="outline" fullWidth onClick={handleCopyLink}>
-              Копировать ссылку
-            </Button>
-          </div>
-        </div>
+        <SuggestionDetailSidebar
+          detail={detail}
+          loading={loading}
+          voteQuota={voteQuota}
+          voteError={voteError}
+          onVote={handleVote}
+          onCopyLink={handleCopyLink}
+        />
       </div>
     </div>
   );
