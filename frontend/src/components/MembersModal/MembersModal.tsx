@@ -38,6 +38,11 @@ export function MembersModal({
   const [usersLoading, setUsersLoading] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState('');
   const [newRole, setNewRole] = useState<ProjectRole>('Member');
+  const [roleChangeConfirmation, setRoleChangeConfirmation] = useState<{
+    userId: string;
+    displayName: string;
+    role: ProjectRole;
+  } | null>(null);
 
   const loadMembers = useCallback(async () => {
     setLoading(true);
@@ -62,6 +67,7 @@ export function MembersModal({
     setUserSearch('');
     setUsers([]);
     setSelectedUserId('');
+    setRoleChangeConfirmation(null);
     setError(null);
   }, [open]);
 
@@ -147,6 +153,15 @@ export function MembersModal({
 
   const handleChangeRole = async (userId: string, role: ProjectRole) => {
     if (!canManageRoles) return;
+    const member = members.find((item) => item.userId === userId);
+    if (member?.role === role) return;
+
+    window.alert(
+      `Вы меняете роль участника${
+        member ? ` ${member.displayName}` : ''
+      }. Новые права начнут действовать сразу после сохранения.`,
+    );
+
     try {
       await apiClient.patch(`/projects/${projectId}/members/${userId}`, {
         role,
@@ -264,8 +279,7 @@ export function MembersModal({
                 </div>
               </div>
               <div className={styles.memberActions}>
-                <Badge variant={getProjectRoleBadgeVariant(member.role)} />
-                {canManageRoles && (
+                {(canManageRoles && (
                   <>
                     <select
                       value={member.role}
@@ -287,6 +301,8 @@ export function MembersModal({
                       X
                     </button>
                   </>
+                )) || (
+                  <Badge variant={getProjectRoleBadgeVariant(member.role)} />
                 )}
                 {!canManageRoles && canManageMembers && (
                   <button
