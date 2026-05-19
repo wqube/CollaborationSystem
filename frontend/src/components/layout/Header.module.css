@@ -73,16 +73,17 @@
 }
 
 .projectSelector {
-  padding: 8px 36px 8px 14px;
+  padding: 7px 32px 7px 12px;
   background: white;
   border: 1px solid var(--t-border);
   border-radius: 10px;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   color: var(--t-black);
   cursor: pointer;
-  min-width: 220px;
-  max-width: 300px;
+  width: 210px;
+  min-width: 0;
+  max-width: 240px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -105,32 +106,40 @@
 
 @media (max-width: 900px) {
   .app_header {
-    align-items: flex-start;
-    flex-direction: column;
-  }
-
-  .left {
-    width: 100%;
-    align-items: flex-start;
-    flex-direction: column;
-    gap: 12px;
-  }
-
-  .projectSelector {
-    width: 100%;
-    max-width: none;
-    min-width: 0;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
   }
 
   .user {
-    width: 100%;
+    grid-column: 2;
+    grid-row: 1;
+    width: auto;
     justify-content: flex-end;
+  }
+
+  .left {
+    display: contents;
+  }
+
+  .logo {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .projectSelector {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    width: min(100%, 220px);
+    max-width: 100%;
+    min-width: 0;
   }
 }
 
 @media (max-width: 560px) {
   .app_header {
     padding: 12px;
+    gap: 10px;
   }
 
   .logo {
@@ -147,5 +156,11 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+
+  .projectSelector {
+    padding: 6px 30px 6px 10px;
+    border-radius: 9px;
+    font-size: 12px;
   }
 }
