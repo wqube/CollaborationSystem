@@ -44,6 +44,11 @@ export function MembersModal({
     role: ProjectRole;
   } | null>(null);
   const [roleChanging, setRoleChanging] = useState(false);
+  const [removeMemberConfirmation, setRemoveMemberConfirmation] = useState<{
+    userId: string;
+    displayName: string;
+  } | null>(null);
+  const [memberRemoving, setMemberRemoving] = useState(false);
 
   const loadMembers = useCallback(async () => {
     setLoading(true);
@@ -69,6 +74,7 @@ export function MembersModal({
     setUsers([]);
     setSelectedUserId('');
     setRoleChangeConfirmation(null);
+    setRemoveMemberConfirmation(null);
     setError(null);
   }, [open]);
 
@@ -192,23 +198,52 @@ export function MembersModal({
     setRoleChangeConfirmation(null);
   };
 
+  const handleRemoveMemberRequest = (userId: string) => {
+    if (!canManageMembers) return;
+    const member = members.find((item) => item.userId === userId);
+
+    setError(null);
+    setRemoveMemberConfirmation({
+      userId,
+      displayName: member?.displayName ?? 'пользователя',
+    });
+  };
+
+  const handleConfirmRemoveMember = async () => {
+    if (!removeMemberConfirmation) return;
+
+    try {
+      setMemberRemoving(true);
+      setError(null);
+      const { userId } = removeMemberConfirmation;
+      await apiClient.delete(`/projects/${projectId}/members/${userId}`);
+      setMembers((prev) => prev.filter((m) => m.userId !== userId));
+      setRemoveMemberConfirmation(null);
+    } catch {
+      setRemoveMemberConfirmation(null);
+      setError('Не удалось удалить участника');
+    } finally {
+      setMemberRemoving(false);
+    }
+  };
+
+  const handleCancelRemoveMember = () => {
+    if (memberRemoving) return;
+    setRemoveMemberConfirmation(null);
+  };
+
   const handleMembersModalClose = () => {
     if (roleChangeConfirmation) {
       handleCancelRoleChange();
       return;
     }
 
-    onClose();
-  };
-
-  const handleRemoveMember = async (userId: string) => {
-    if (!canManageMembers) return;
-    try {
-      await apiClient.delete(`/projects/${projectId}/members/${userId}`);
-      setMembers((prev) => prev.filter((m) => m.userId !== userId));
-    } catch {
-      setError('Не удалось удалить участника');
+    if (removeMemberConfirmation) {
+      handleCancelRemoveMember();
+      return;
     }
+
+    onClose();
   };
 
   const formatDate = (iso: string) =>
@@ -330,7 +365,8 @@ export function MembersModal({
                       </select>
                       <button
                         className={styles.removeBtn}
-                        onClick={() => handleRemoveMember(member.userId)}
+                        onClick={() => handleRemoveMemberRequest(member.userId)}
+                        disabled={memberRemoving}
                       >
                         X
                       </button>
@@ -341,7 +377,8 @@ export function MembersModal({
                   {!canManageRoles && canManageMembers && (
                     <button
                       className={styles.removeBtn}
-                      onClick={() => handleRemoveMember(member.userId)}
+                      onClick={() => handleRemoveMemberRequest(member.userId)}
+                      disabled={memberRemoving}
                     >
                       X
                     </button>
@@ -384,6 +421,40 @@ export function MembersModal({
                 disabled={roleChanging}
               >
                 {roleChanging ? 'Сохранение...' : 'Да'}
+              </Button>
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      <Modal
+        isOpen={Boolean(removeMemberConfirmation)}
+        onClose={handleCancelRemoveMember}
+        title="Подтверждение удаления"
+        size="sm"
+        closeOnOverlayClick={!memberRemoving}
+      >
+        {removeMemberConfirmation && (
+          <div className={styles.confirmationContent}>
+            <p className={styles.confirmationText}>
+              Вы точно хотите удалить пользователя{' '}
+              <strong>{removeMemberConfirmation.displayName}</strong> из
+              проекта?
+            </p>
+            <div className={styles.confirmationActions}>
+              <Button
+                variant="outline"
+                onClick={handleCancelRemoveMember}
+                disabled={memberRemoving}
+              >
+                Нет
+              </Button>
+              <Button
+                variant="danger"
+                onClick={handleConfirmRemoveMember}
+                disabled={memberRemoving}
+              >
+                {memberRemoving ? 'Удаление...' : 'Да'}
               </Button>
             </div>
           </div>
