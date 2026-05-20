@@ -2,6 +2,21 @@
 import React, { useEffect } from 'react';
 import styles from './Modal.module.css';
 
+let openModalCount = 0;
+
+const lockBodyScroll = () => {
+  openModalCount += 1;
+  document.body.style.overflow = 'hidden';
+};
+
+const unlockBodyScroll = () => {
+  openModalCount = Math.max(0, openModalCount - 1);
+
+  if (openModalCount === 0) {
+    document.body.style.overflow = 'unset';
+  }
+};
+
 interface ModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -20,15 +35,10 @@ export const Modal: React.FC<ModalProps> = ({
   closeOnOverlayClick = true,
 }) => {
   useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = 'unset';
-    }
+    if (!isOpen) return undefined;
 
-    return () => {
-      document.body.style.overflow = 'unset';
-    };
+    lockBodyScroll();
+    return unlockBodyScroll;
   }, [isOpen]);
 
   useEffect(() => {

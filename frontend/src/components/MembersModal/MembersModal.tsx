@@ -43,6 +43,7 @@ export function MembersModal({
     displayName: string;
     role: ProjectRole;
   } | null>(null);
+  const [roleChanging, setRoleChanging] = useState(false);
 
   const loadMembers = useCallback(async () => {
     setLoading(true);
@@ -151,27 +152,53 @@ export function MembersModal({
     }
   };
 
-  const handleChangeRole = async (userId: string, role: ProjectRole) => {
+  const handleChangeRoleRequest = (userId: string, role: ProjectRole) => {
     if (!canManageRoles) return;
     const member = members.find((item) => item.userId === userId);
     if (member?.role === role) return;
 
-    window.alert(
-      `Вы меняете роль участника${
-        member ? ` ${member.displayName}` : ''
-      }. Новые права начнут действовать сразу после сохранения.`,
-    );
+    setError(null);
+    setRoleChangeConfirmation({
+      userId,
+      displayName: member?.displayName ?? 'пользователя',
+      role,
+    });
+  };
+
+  const handleConfirmRoleChange = async () => {
+    if (!roleChangeConfirmation) return;
 
     try {
+      setRoleChanging(true);
+      setError(null);
+      const { userId, role } = roleChangeConfirmation;
       await apiClient.patch(`/projects/${projectId}/members/${userId}`, {
         role,
       });
       setMembers((prev) =>
         prev.map((m) => (m.userId === userId ? { ...m, role } : m)),
       );
+      setRoleChangeConfirmation(null);
     } catch {
+      setRoleChangeConfirmation(null);
       setError('Не удалось изменить роль');
+    } finally {
+      setRoleChanging(false);
     }
+  };
+
+  const handleCancelRoleChange = () => {
+    if (roleChanging) return;
+    setRoleChangeConfirmation(null);
+  };
+
+  const handleMembersModalClose = () => {
+    if (roleChangeConfirmation) {
+      handleCancelRoleChange();
+      return;
+    }
+
+    onClose();
   };
 
   const handleRemoveMember = async (userId: string) => {
@@ -192,134 +219,176 @@ export function MembersModal({
     });
 
   return (
-    <Modal isOpen={open} onClose={onClose} title="Участники проекта" size="lg">
-      <div className={styles.content}>
-        {canManageMembers && (
-          <div className={styles.addSection}>
-            <h4>Добавить участника</h4>
-            <div className={styles.addForm}>
-              <div className={styles.userPicker}>
-                <input
-                  type="text"
-                  placeholder="Поиск по имени или email..."
-                  value={userSearch}
-                  onChange={(e) => {
-                    setUserSearch(e.target.value);
-                    setError(null);
-                  }}
-                  className={styles.searchInput}
-                />
-                <select
-                  className={styles.userSelect}
-                  value={selectedUserId}
-                  onChange={(e) => {
-                    setSelectedUserId(e.target.value);
-                    setError(null);
-                  }}
-                  disabled={usersLoading || availableUsers.length === 0}
-                >
-                  <option value="">
-                    {usersLoading ? 'Поиск...' : 'Выберите пользователя'}
-                  </option>
-                  {availableUsers.map((user) => (
-                    <option key={user.id} value={user.id}>
-                      {user.displayName} · {user.email}
+    <>
+      <Modal
+        isOpen={open}
+        onClose={handleMembersModalClose}
+        title="Участники проекта"
+        size="lg"
+      >
+        <div className={styles.content}>
+          {canManageMembers && (
+            <div className={styles.addSection}>
+              <h4>Добавить участника</h4>
+              <div className={styles.addForm}>
+                <div className={styles.userPicker}>
+                  <input
+                    type="text"
+                    placeholder="Поиск по имени или email..."
+                    value={userSearch}
+                    onChange={(e) => {
+                      setUserSearch(e.target.value);
+                      setError(null);
+                    }}
+                    className={styles.searchInput}
+                  />
+                  <select
+                    className={styles.userSelect}
+                    value={selectedUserId}
+                    onChange={(e) => {
+                      setSelectedUserId(e.target.value);
+                      setError(null);
+                    }}
+                    disabled={usersLoading || availableUsers.length === 0}
+                  >
+                    <option value="">
+                      {usersLoading ? 'Поиск...' : 'Выберите пользователя'}
                     </option>
-                  ))}
+                    {availableUsers.map((user) => (
+                      <option key={user.id} value={user.id}>
+                        {user.displayName} · {user.email}
+                      </option>
+                    ))}
+                  </select>
+                  {!usersLoading &&
+                    users.length > 0 &&
+                    availableUsers.length === 0 && (
+                      <span className={styles.helperText}>
+                        Все найденные пользователи уже в проекте
+                      </span>
+                    )}
+                </div>
+                <select
+                  className={styles.roleSelect}
+                  value={newRole}
+                  onChange={(e) => setNewRole(e.target.value as ProjectRole)}
+                >
+                  <option value="Member">{ROLE_LABELS.Member}</option>
+                  <option value="Admin">{ROLE_LABELS.Admin}</option>
                 </select>
-                {!usersLoading &&
-                  users.length > 0 &&
-                  availableUsers.length === 0 && (
-                    <span className={styles.helperText}>
-                      Все найденные пользователи уже в проекте
-                    </span>
-                  )}
+                <Button
+                  variant="primary"
+                  onClick={handleAddMember}
+                  disabled={adding || !selectedUserId}
+                >
+                  {adding ? 'Добавление...' : 'Добавить'}
+                </Button>
               </div>
-              <select
-                className={styles.roleSelect}
-                value={newRole}
-                onChange={(e) => setNewRole(e.target.value as ProjectRole)}
-              >
-                <option value="Member">{ROLE_LABELS.Member}</option>
-                <option value="Admin">{ROLE_LABELS.Admin}</option>
-              </select>
-              <Button
-                variant="primary"
-                onClick={handleAddMember}
-                disabled={adding || !selectedUserId}
-              >
-                {adding ? 'Добавление...' : 'Добавить'}
-              </Button>
             </div>
-          </div>
-        )}
+          )}
 
-        {error && <p className={styles.errorText}>{error}</p>}
-        {loading && <p>Загрузка...</p>}
+          {error && <p className={styles.errorText}>{error}</p>}
+          {loading && <p>Загрузка...</p>}
 
-        <hr />
+          <hr />
 
-        <h4>Текущие участники ({members.length})</h4>
-        <div className={styles.membersList}>
-          {members.map((member) => (
-            <div key={member.userId} className={styles.memberItem}>
-              <div className={styles.memberInfo}>
-                <div className={styles.avatar}>
-                  {member.displayName
-                    .split(' ')
-                    .map((w) => w[0])
-                    .join('')}
+          <h4>Текущие участники ({members.length})</h4>
+          <div className={styles.membersList}>
+            {members.map((member) => (
+              <div key={member.userId} className={styles.memberItem}>
+                <div className={styles.memberInfo}>
+                  <div className={styles.avatar}>
+                    {member.displayName
+                      .split(' ')
+                      .map((w) => w[0])
+                      .join('')}
+                  </div>
+                  <div>
+                    <strong>{member.displayName}</strong>
+                    <span className={styles.email}>{member.email}</span>
+                    <span className={styles.joined}>
+                      Присоединился: {formatDate(member.joinedAt)}
+                    </span>
+                  </div>
                 </div>
-                <div>
-                  <strong>{member.displayName}</strong>
-                  <span className={styles.email}>{member.email}</span>
-                  <span className={styles.joined}>
-                    Присоединился: {formatDate(member.joinedAt)}
-                  </span>
-                </div>
-              </div>
-              <div className={styles.memberActions}>
-                {(canManageRoles && (
-                  <>
-                    <select
-                      value={member.role}
-                      onChange={(e) =>
-                        handleChangeRole(
-                          member.userId,
-                          e.target.value as ProjectRole,
-                        )
-                      }
-                      className={styles.roleSelectSm}
-                    >
-                      <option value="Admin">{ROLE_LABELS.Admin}</option>
-                      <option value="Member">{ROLE_LABELS.Member}</option>
-                    </select>
+                <div className={styles.memberActions}>
+                  {(canManageRoles && (
+                    <>
+                      <select
+                        value={member.role}
+                        onChange={(e) =>
+                          handleChangeRoleRequest(
+                            member.userId,
+                            e.target.value as ProjectRole,
+                          )
+                        }
+                        className={styles.roleSelectSm}
+                        disabled={roleChanging}
+                      >
+                        <option value="Admin">{ROLE_LABELS.Admin}</option>
+                        <option value="Member">{ROLE_LABELS.Member}</option>
+                      </select>
+                      <button
+                        className={styles.removeBtn}
+                        onClick={() => handleRemoveMember(member.userId)}
+                      >
+                        X
+                      </button>
+                    </>
+                  )) || (
+                    <Badge variant={getProjectRoleBadgeVariant(member.role)} />
+                  )}
+                  {!canManageRoles && canManageMembers && (
                     <button
                       className={styles.removeBtn}
                       onClick={() => handleRemoveMember(member.userId)}
                     >
                       X
                     </button>
-                  </>
-                )) || (
-                  <Badge variant={getProjectRoleBadgeVariant(member.role)} />
-                )}
-                {!canManageRoles && canManageMembers && (
-                  <button
-                    className={styles.removeBtn}
-                    onClick={() => handleRemoveMember(member.userId)}
-                  >
-                    X
-                  </button>
-                )}
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
-          {!loading && members.length === 0 && (
-            <p className={styles.emptyText}>Нет участников</p>
-          )}
+            ))}
+            {!loading && members.length === 0 && (
+              <p className={styles.emptyText}>Нет участников</p>
+            )}
+          </div>
         </div>
-      </div>
-    </Modal>
+      </Modal>
+
+      <Modal
+        isOpen={Boolean(roleChangeConfirmation)}
+        onClose={handleCancelRoleChange}
+        title="Подтверждение смены роли"
+        size="sm"
+        closeOnOverlayClick={!roleChanging}
+      >
+        {roleChangeConfirmation && (
+          <div className={styles.confirmationContent}>
+            <p className={styles.confirmationText}>
+              Вы точно хотите сменить роль пользователя{' '}
+              <strong>{roleChangeConfirmation.displayName}</strong> на{' '}
+              <strong>{ROLE_LABELS[roleChangeConfirmation.role]}</strong>?
+            </p>
+            <div className={styles.confirmationActions}>
+              <Button
+                variant="outline"
+                onClick={handleCancelRoleChange}
+                disabled={roleChanging}
+              >
+                Нет
+              </Button>
+              <Button
+                variant="primary"
+                onClick={handleConfirmRoleChange}
+                disabled={roleChanging}
+              >
+                {roleChanging ? 'Сохранение...' : 'Да'}
+              </Button>
+            </div>
+          </div>
+        )}
+      </Modal>
+    </>
   );
 }
