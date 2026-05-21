@@ -77,3 +77,5 @@ public sealed class HealthResponse
     /// </summary>
     public string Status { get; init; } = string.Empty;
 }
+
+public partial class Program;
