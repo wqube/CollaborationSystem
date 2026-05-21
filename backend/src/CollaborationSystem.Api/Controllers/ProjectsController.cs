@@ -45,9 +45,12 @@ public class ProjectsController(IProjectService projectService) : ControllerBase
     {
         var result = await projectService.CreateProjectAsync(request, cancellationToken);
 
-        return result.Status == ProjectOperationStatus.Success && result.Value is not null
-            ? CreatedAtAction(nameof(GetProjectById), new { projectId = result.Value.Id }, result.Value)
-            : ToProjectErrorActionResult(result.Status);
+        if (result.Status != ProjectOperationStatus.Success || result.Value is null)
+        {
+            return ToProjectErrorActionResult(result.Status);
+        }
+
+        return CreatedAtAction(nameof(GetProjectById), new { projectId = result.Value.Id }, result.Value);
     }
 
     /// <summary>
@@ -63,6 +66,26 @@ public class ProjectsController(IProjectService projectService) : ControllerBase
         CancellationToken cancellationToken)
     {
         var result = await projectService.GetProjectByIdAsync(projectId, cancellationToken);
+
+        return ToProjectActionResult(result);
+    }
+
+    /// <summary>
+    /// Updates project name and description.
+    /// </summary>
+    [HttpPatch("{projectId:guid}")]
+    [ProducesResponseType(typeof(ProjectSummaryResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
+    public async Task<ActionResult<ProjectSummaryResponse>> UpdateProject(
+        Guid projectId,
+        [FromBody] UpdateProjectRequest request,
+        CancellationToken cancellationToken)
+    {
+        var result = await projectService.UpdateProjectAsync(projectId, request, cancellationToken);
 
         return ToProjectActionResult(result);
     }
@@ -141,7 +164,7 @@ public class ProjectsController(IProjectService projectService) : ControllerBase
             ProjectOperationStatus.ProjectNotFound => Problem(
                 statusCode: StatusCodes.Status404NotFound,
                 title: "Project not found."),
-            ProjectOperationStatus.Conflict => Problem(
+            ProjectOperationStatus.ProjectNameAlreadyExists => Problem(
                 statusCode: StatusCodes.Status409Conflict,
                 title: "Project with this name already exists."),
             _ => Problem(

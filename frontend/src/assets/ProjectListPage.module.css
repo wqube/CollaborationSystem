@@ -1,19 +1,21 @@
 .page {
   max-width: 1200px;
-  margin: 40px auto;
-  padding: 0 20px;
+  margin: clamp(16px, 5vw, 40px) auto;
+  padding: 0 clamp(12px, 4vw, 20px);
 }
 
 .header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 16px;
   margin-bottom: 24px;
 }
 
 .title {
   font-size: 28px;
   font-weight: 700;
+  overflow-wrap: anywhere;
 }
 
 .createBtn {
@@ -33,7 +35,7 @@
 
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr));
   gap: 20px;
 }
 
@@ -55,4 +57,25 @@
   border: none;
   border-top: 2px solid var(--t-border, #e0e0e0);
   margin: 0 0 24px 0;
+}
+
+@media (max-width: 560px) {
+  .header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .title {
+    font-size: 24px;
+  }
+
+  .createBtn {
+    width: 100%;
+  }
+
+  .loading,
+  .empty,
+  .error {
+    padding: 28px 16px;
+  }
 }

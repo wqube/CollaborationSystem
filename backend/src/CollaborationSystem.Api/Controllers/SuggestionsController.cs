@@ -87,6 +87,7 @@ public class SuggestionsController(ISuggestionService suggestionService) : Contr
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
     public async Task<ActionResult<SuggestionSummaryResponse>> UpdateSuggestionText(
         Guid projectId,
         Guid suggestionId,
@@ -198,6 +199,9 @@ public class SuggestionsController(ISuggestionService suggestionService) : Contr
             SuggestionOperationStatus.Conflict => Problem(
                 statusCode: StatusCodes.Status409Conflict,
                 title: "Suggestion operation conflicts with the current state."),
+            SuggestionOperationStatus.SuggestionAlreadyExists => Problem(
+                statusCode: StatusCodes.Status409Conflict,
+                title: "Suggestion with this text already exists in this project."),
             SuggestionOperationStatus.VoteLimitExceeded => VoteLimitExceeded(result.ErrorDetails),
             SuggestionOperationStatus.InvalidRequest => Problem(
                 statusCode: StatusCodes.Status400BadRequest,

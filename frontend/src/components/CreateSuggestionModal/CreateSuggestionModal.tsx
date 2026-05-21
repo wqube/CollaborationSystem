@@ -1,6 +1,8 @@
+// components/CreateSuggestionModal/CreateSuggestionModal.tsx
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Modal } from '../ui/Modal/Modal';
 import { Button } from '../ui/Button/Button';
+import { Toast } from '../ui/Toast/Toast';
 import {
   saveSuggestionDraft,
   getProjectDrafts,
@@ -8,17 +10,19 @@ import {
   findDraftById,
 } from '../../shared/api/drafts';
 import { createSuggestion } from '../../shared/api/suggestions';
+import { getSuggestionCreateErrorMessage } from '../../shared/api/errors';
 import styles from '../CreateSuggestionModal/CreateSuggestionModal.module.css';
 
 interface CreateSuggestionModalProps {
   open: boolean;
   onClose: () => void;
-  onSuccess: () => void;
+  onSuccess: (draftId?: string) => void;
   projectId: string;
   draftId?: string;
 }
 
 type SaveStatus = 'idle' | 'saving' | 'saved' | 'error';
+
 const AUTOSAVE_DELAY_MS = 1500;
 
 export function CreateSuggestionModal({
@@ -30,113 +34,154 @@ export function CreateSuggestionModal({
 }: CreateSuggestionModalProps) {
   const [text, setText] = useState('');
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
+  const [toastMessage, setToastMessage] = useState('');
+  const [toastOpen, setToastOpen] = useState(false);
 
   const draftIdRef = useRef<string | null>(initialDraftId ?? null);
   const autosaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const showError = (message: string) => {
+    setToastMessage(message);
+    setToastOpen(true);
+  };
+
   // Загрузка черновика при открытии
   useEffect(() => {
-    if (!open || !initialDraftId) return;
+    if (!open) return;
+
+    draftIdRef.current = initialDraftId ?? null;
+
+    if (!initialDraftId) {
+      setText('');
+      setSaveStatus('idle');
+      return;
+    }
+
+    let cancelled = false;
 
     const loadDraft = async () => {
       try {
-        const response = await getProjectDrafts(projectId);
-        const draft = findDraftById(response.items, initialDraftId);
-        if (draft?.type === 'Suggestion' && draft.payload.text) {
+        const drafts = await getProjectDrafts(projectId, {
+          type: 'Suggestion',
+        });
+        const draft = findDraftById(drafts.items, initialDraftId);
+
+        if (!cancelled && draft?.type === 'Suggestion') {
           setText(draft.payload.text);
+          setSaveStatus('saved');
         }
       } catch {
-        // Черновик не найден, чистое поле
+        // черновик не найден — начинаем с пустого поля
+        if (!cancelled) {
+          setText('');
+          setSaveStatus('idle');
+        }
       }
     };
+
     loadDraft();
+
+    return () => {
+      cancelled = true;
+    };
   }, [open, initialDraftId, projectId]);
 
-  // Сброс состояние при закрытии
+  // Сброс при закрытии
   useEffect(() => {
     if (!open) {
       setText('');
-      setError('');
+      setToastOpen(false);
       setSaveStatus('idle');
-      draftIdRef.current = initialDraftId ?? null;
+      draftIdRef.current = null;
       if (autosaveTimerRef.current) {
         clearTimeout(autosaveTimerRef.current);
+        autosaveTimerRef.current = null;
       }
     }
-  }, [open, initialDraftId]);
+  }, [open]);
 
-  // Сохранение черновика
   const saveDraft = useCallback(
     async (value: string) => {
-      if (!value.trim()) return;
+      if (!value.trim()) return null;
 
       setSaveStatus('saving');
-
-      // Если черновика ещё нет — генерируем новый draftId
       const draftId = draftIdRef.current ?? crypto.randomUUID();
       draftIdRef.current = draftId;
 
       try {
         await saveSuggestionDraft(projectId, draftId, { text: value });
         setSaveStatus('saved');
+        return draftId;
       } catch {
         setSaveStatus('error');
+        return null;
       }
     },
     [projectId],
   );
 
-  // Автосохранение с debounce
   const handleTextChange = (value: string) => {
     setText(value);
     setSaveStatus('idle');
-
     if (autosaveTimerRef.current) {
       clearTimeout(autosaveTimerRef.current);
     }
-
     autosaveTimerRef.current = setTimeout(() => {
       saveDraft(value);
     }, AUTOSAVE_DELAY_MS);
   };
 
-  // Сохранение и закрытие
   const handleSaveDraftAndClose = async () => {
-    // Отменяем pending автосохранение и сохраняем сразу
     if (autosaveTimerRef.current) {
       clearTimeout(autosaveTimerRef.current);
+      autosaveTimerRef.current = null;
     }
-    await saveDraft(text);
+    const savedDraftId = await saveDraft(text);
+
+    if (!savedDraftId) {
+      showError('Не удалось сохранить черновик');
+      return;
+    }
+
     onClose();
   };
 
-  // Публикация предложения
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!text.trim()) {
-      setError('Введите текст предложения');
+      showError('Введите текст предложения');
       return;
     }
 
     try {
       setLoading(true);
-      setError('');
+      setToastOpen(false);
 
-      // Создание предложения
-      await createSuggestion(projectId, { text: text.trim() });
+      if (autosaveTimerRef.current) {
+        clearTimeout(autosaveTimerRef.current);
+        autosaveTimerRef.current = null;
+      }
+
+      const publishedDraftId = draftIdRef.current ?? undefined;
+
+      await createSuggestion(projectId, {
+        text: text.trim(),
+      });
 
       // Удаляем черновик после успешной публикации
-      if (draftIdRef.current) {
-        await deleteDraft(projectId, draftIdRef.current).catch(() => {
+      if (publishedDraftId) {
+        await deleteDraft(projectId, publishedDraftId).catch(() => {
           // Не критично, если не удалился
         });
       }
 
-      onSuccess();
-    } catch {
-      setError('Ошибка при создании предложения');
+      draftIdRef.current = null;
+      setText('');
+      setSaveStatus('idle');
+      onSuccess(publishedDraftId);
+    } catch (err: unknown) {
+      showError(getSuggestionCreateErrorMessage(err));
     } finally {
       setLoading(false);
     }
@@ -146,7 +191,7 @@ export function CreateSuggestionModal({
     idle: 'Черновик сохраняется автоматически',
     saving: 'Сохранение...',
     saved: 'Черновик сохранён',
-    error: '! Не удалось сохранить черновик !',
+    error: 'Не удалось сохранить черновик',
   };
 
   return (
@@ -157,7 +202,9 @@ export function CreateSuggestionModal({
           <textarea
             rows={6}
             value={text}
-            onChange={(e) => handleTextChange(e.target.value)}
+            onChange={(e) => {
+              handleTextChange(e.target.value);
+            }}
             placeholder="Опишите ваше предложение по улучшению процесса..."
             required
           />
@@ -168,8 +215,6 @@ export function CreateSuggestionModal({
         >
           {saveStatusLabel[saveStatus]}
         </div>
-
-        {error && <div className={styles.error}>{error}</div>}
 
         <div className={styles.actions}>
           <Button
@@ -193,6 +238,12 @@ export function CreateSuggestionModal({
           </Button>
         </div>
       </form>
+      <Toast
+        open={toastOpen}
+        message={toastMessage}
+        variant="error"
+        onClose={() => setToastOpen(false)}
+      />
     </Modal>
   );
 }

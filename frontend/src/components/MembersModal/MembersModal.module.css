@@ -11,14 +11,37 @@
 .addForm {
   display: flex;
   gap: 12px;
+  align-items: flex-start;
+  min-width: 0;
+}
+
+.userPicker {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .searchInput {
-  flex: 1;
   padding: 10px 14px;
   border: 1px solid #e0e0e0;
   border-radius: 12px;
   font-size: 14px;
+}
+
+.userSelect {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid #e0e0e0;
+  border-radius: 12px;
+  font-size: 14px;
+  background: #ffffff;
+}
+
+.helperText {
+  font-size: 12px;
+  color: #8a8a8a;
 }
 
 .roleSelect {
@@ -43,6 +66,7 @@ hr {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 12px;
   padding: 16px;
   background: #f5f5f5;
   border-radius: 12px;
@@ -52,6 +76,7 @@ hr {
   display: flex;
   align-items: center;
   gap: 12px;
+  min-width: 0;
 }
 
 .avatar {
@@ -71,6 +96,7 @@ hr {
   display: block;
   font-size: 13px;
   color: #8a8a8a;
+  overflow-wrap: anywhere;
 }
 
 .joined {
@@ -83,6 +109,8 @@ hr {
   display: flex;
   align-items: center;
   gap: 12px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .roleSelectSm {
@@ -104,4 +132,69 @@ hr {
 
 .removeBtn:hover {
   background: #ffebee;
+}
+
+.errorText {
+  margin: 0;
+  color: #e31c3d;
+  font-size: 14px;
+}
+
+.emptyText {
+  margin: 0;
+  color: #8a8a8a;
+}
+
+.confirmationContent {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.confirmationText {
+  margin: 0;
+  color: var(--t-black);
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.confirmationActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+@media (max-width: 640px) {
+  .addForm,
+  .memberItem {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .roleSelect,
+  .roleSelectSm {
+    width: 100%;
+  }
+
+  .memberActions {
+    display: grid;
+    grid-template-columns: 1fr;
+    justify-content: stretch;
+  }
+
+  .confirmationActions {
+    flex-direction: column-reverse;
+  }
+}
+
+@media (max-width: 420px) {
+  .memberInfo {
+    align-items: flex-start;
+  }
+
+  .avatar {
+    width: 34px;
+    height: 34px;
+    font-size: 12px;
+  }
 }

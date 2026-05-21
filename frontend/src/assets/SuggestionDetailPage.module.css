@@ -1,12 +1,37 @@
 .page {
   max-width: 1200px;
-  margin: 30px auto;
-  padding: 0 20px;
+  margin: clamp(16px, 4vw, 30px) auto;
+  padding: 0 clamp(12px, 4vw, 20px);
+  min-width: 0;
+}
+
+.state,
+.empty {
+  color: #8a8a8a;
+}
+
+.error {
+  color: #c62828;
+  font-size: 14px;
+}
+
+.overlayLoader {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 20;
+  padding: 10px 14px;
+  background: #1a1a1a;
+  color: white;
+  border-radius: 8px;
+  font-size: 14px;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.16);
 }
 
 .topBar {
   display: flex;
   align-items: center;
+  min-width: 0;
   margin-bottom: 24px;
 }
 
@@ -14,13 +39,19 @@
   margin: 0;
   font-size: 28px;
   margin-left: 10px;
+  overflow-wrap: anywhere;
 }
 
 .twoColumns {
   display: grid;
-  grid-template-columns: 2fr 1fr;
+  grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
   gap: 24px;
   margin-top: 20px;
+}
+
+.main,
+.sidebar {
+  min-width: 0;
 }
 
 .card {
@@ -30,6 +61,7 @@
   border: 1px solid #e0e0e0;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
   margin-bottom: 20px;
+  min-width: 0;
 }
 
 .top {
@@ -40,6 +72,13 @@
   margin-bottom: 24px;
 }
 
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
 .top h1 {
   font-size: 24px;
   margin-bottom: 8px;
@@ -47,6 +86,7 @@
 
 .meta {
   display: flex;
+  flex-wrap: wrap;
   gap: 16px;
   color: #8a8a8a;
   font-size: 14px;
@@ -64,6 +104,42 @@
   background: #f5f5f5;
   border-radius: 12px;
   margin: 24px 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.suggestionEditForm {
+  margin: 24px 0;
+}
+
+.suggestionEditInput {
+  width: 100%;
+  min-height: 120px;
+  padding: 14px;
+  border: 1px solid #d8d8d8;
+  border-radius: 12px;
+  resize: vertical;
+  font: inherit;
+  line-height: 1.5;
+}
+
+.suggestionEditInput:focus {
+  outline: none;
+  border-color: #1a1a1a;
+}
+
+.suggestionEditActions {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.inlineError {
+  margin: 10px 0 0;
+  color: #c62828;
+  font-size: 14px;
 }
 
 .commentInput {
@@ -78,10 +154,16 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 12px;
   margin: 10px 0 20px;
 }
 
 .draft {
+  font-size: 13px;
+  color: #8a8a8a;
+}
+
+.draftStatus {
   font-size: 13px;
   color: #8a8a8a;
 }
@@ -95,6 +177,7 @@
   background: #f5f5f5;
   border-radius: 12px;
   margin-bottom: 12px;
+  min-width: 0;
 }
 
 .commentHeader {
@@ -125,12 +208,14 @@
 
 .comment p {
   margin-left: 42px;
+  overflow-wrap: anywhere;
 }
 
 .commentBtns {
   margin-left: 42px;
   margin-top: 8px;
   display: flex;
+  flex-wrap: wrap;
   gap: 16px;
 }
 
@@ -146,6 +231,29 @@
   color: #1a1a1a;
 }
 
+.commentBtns .deleteBtn:hover {
+  color: #c62828;
+}
+
+.editForm,
+.replyForm {
+  margin-left: 42px;
+}
+
+.editActions,
+.replyActions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.replyActions {
+  justify-content: space-between;
+}
+
 .nested {
   margin-left: 42px;
   padding-left: 20px;
@@ -154,10 +262,24 @@
 
 .votePanel {
   display: flex;
+  flex-wrap: wrap;
   gap: 20px;
   justify-content: center;
   align-items: center;
   margin: 20px 0;
+}
+
+.voteQuota {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 14px;
+  border: 1px solid #d8e6df;
+  border-radius: 10px;
+  background: #f4fbf7;
+  color: #1f5c3d;
+  font-size: 14px;
+  font-weight: 600;
 }
 
 .bigScore {
@@ -188,6 +310,7 @@
   padding: 4px 10px;
   border-radius: 20px;
   font-size: 13px;
+  overflow-wrap: anywhere;
 }
 
 .suggestionTitle {
@@ -206,4 +329,73 @@
   flex-shrink: 0;
   width: auto;
   min-width: 150px;
+}
+
+@media (max-width: 960px) {
+  .twoColumns {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+
+  .top {
+    flex-direction: column;
+  }
+
+  .headerActions {
+    width: 100%;
+    justify-content: space-between;
+    flex-wrap: wrap;
+  }
+
+  .statusSelect {
+    flex: 1;
+  }
+}
+
+@media (max-width: 560px) {
+  .card {
+    padding: 16px;
+    border-radius: 10px;
+  }
+
+  .topBar h1,
+  .suggestionTitle {
+    font-size: 22px;
+  }
+
+  .commentActions,
+  .replyActions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .comment p,
+  .commentBtns,
+  .editForm,
+  .replyForm {
+    margin-left: 0;
+  }
+
+  .nested {
+    margin-left: 12px;
+    padding-left: 12px;
+  }
+
+  .headerActions,
+  .suggestionEditActions,
+  .editActions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .statusSelect {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .votePanel {
+    gap: 12px;
+  }
 }

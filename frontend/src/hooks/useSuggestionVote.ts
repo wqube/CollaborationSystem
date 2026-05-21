@@ -1,17 +1,21 @@
 import { useState, useCallback } from 'react';
 import {
+  getVoteQuotaFromError,
+  isVoteLimitExceededError,
   voteSuggestion,
   deleteVote,
   type VoteResponse,
 } from '../shared/api/suggestions';
-import type { VoteType } from '../types/api';
-import { getVoteFromCache, setVoteToCache } from '../shared/utils/voteCache';
+import type { CurrentUserVoteQuota, VoteType } from '../types/api';
+
 interface UseSuggestionVoteProps {
   projectId: string;
   suggestionId: string;
   initialScore: number;
   initialUserVote: VoteType | null;
-  onVoteSuccess?: (newScore: number) => void;
+  voteQuota?: CurrentUserVoteQuota | null;
+  onVoteSuccess?: (response: VoteResponse) => void;
+  onVoteQuotaChange?: (voteQuota: CurrentUserVoteQuota) => void;
 }
 
 export function useSuggestionVote({
@@ -19,21 +23,31 @@ export function useSuggestionVote({
   suggestionId,
   initialScore,
   initialUserVote,
+  voteQuota,
   onVoteSuccess,
+  onVoteQuotaChange,
 }: UseSuggestionVoteProps) {
-  const cachedVote = getVoteFromCache(suggestionId);
-  const resolvedInitialVote = initialUserVote ?? cachedVote;
-
   const [score, setScore] = useState(initialScore);
-  const [userVote, setUserVote] = useState<VoteType | null>(
-    resolvedInitialVote,
-  );
+  const [userVote, setUserVote] = useState<VoteType | null>(initialUserVote);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const handleVote = useCallback(
     async (voteType: VoteType | null) => {
       if (loading) return;
+
+      const isCreatingVote = voteType !== null && userVote === null;
+
+      if (
+        isCreatingVote &&
+        voteQuota !== null &&
+        voteQuota !== undefined &&
+        voteQuota.votesRemaining <= 0
+      ) {
+        setError('Лимит голосов исчерпан');
+        setTimeout(() => setError(null), 3000);
+        return;
+      }
 
       // Сохраняем старое состояние для возможности отката
       const prevScore = score;
@@ -82,19 +96,39 @@ export function useSuggestionVote({
         setScore(result.score);
         setUserVote(result.currentUserVote);
 
-        setVoteToCache(suggestionId, result.currentUserVote);
-        onVoteSuccess?.(result.score);
-      } catch {
+        if (result.voteQuota) {
+          onVoteQuotaChange?.(result.voteQuota);
+        }
+
+        onVoteSuccess?.(result);
+      } catch (err: unknown) {
         // Откат оптимистичного обновления при ошибке
         setScore(prevScore);
         setUserVote(prevVote);
-        setError('Не удалось отправить голос');
+        const updatedQuota = getVoteQuotaFromError(err);
+        if (updatedQuota) {
+          onVoteQuotaChange?.(updatedQuota);
+        }
+        setError(
+          isVoteLimitExceededError(err)
+            ? 'Лимит голосов исчерпан'
+            : 'Не удалось отправить голос',
+        );
         setTimeout(() => setError(null), 3000);
       } finally {
         setLoading(false);
       }
     },
-    [projectId, suggestionId, score, userVote, loading, onVoteSuccess],
+    [
+      loading,
+      onVoteQuotaChange,
+      onVoteSuccess,
+      projectId,
+      score,
+      suggestionId,
+      userVote,
+      voteQuota,
+    ],
   );
 
   return { score, userVote, loading, error, handleVote };

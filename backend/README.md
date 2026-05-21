@@ -1,80 +1,207 @@
 # Backend
 
-Базовая структура backend-части проекта "Система совместной работы".
+Backend-часть проекта "Система совместной работы": ASP.NET Core API, PostgreSQL,
+Entity Framework Core, JWT-аутентификация и Swagger.
 
-## Назначение
+## Стек
 
-Backend предназначен для API и работы с базой данных PostgreSQL.
+- .NET 10
+- ASP.NET Core Web API
+- Entity Framework Core 9
+- PostgreSQL 16
+- Docker Compose
+- Swagger / OpenAPI
 
-## Структура проекта
+## Структура
 
 ```text
 backend/
 ├── src/
-│   ├── CollaborationSystem.Api
-│   ├── CollaborationSystem.Application
-│   ├── CollaborationSystem.Domain
-│   └── CollaborationSystem.Infrastructure
-├── docker-compose.yml
+│   ├── CollaborationSystem.Api              # HTTP API, Swagger, DI, CORS, healthcheck
+│   ├── CollaborationSystem.Application      # DTO, валидаторы, контракты сервисов
+│   ├── CollaborationSystem.Domain           # доменные сущности и enum
+│   └── CollaborationSystem.Infrastructure   # EF Core, авторизация, сервисы, миграции
+├── tests/                                   # xUnit-тесты
+├── Dockerfile.dev
+├── docker-compose.yml                       # PostgreSQL для локального запуска backend
+├── API.md                                   # актуальный REST API v1
 └── CollaborationSystem.sln
 ```
 
-## PostgreSQL
+Миграции находятся в:
 
-Подключение настроено в файле `src/CollaborationSystem.Api/appsettings.json`.
-
-Строка подключения по умолчанию:
-
-```json
-"DefaultConnection": "Host=localhost;Port=5432;Database=collaboration_system;Username=postgres;Password=postgres"
+```text
+src/CollaborationSystem.Infrastructure/Persistence/Migrations
 ```
 
-Для локального запуска PostgreSQL подготовлен `docker-compose.yml`.
+## Переменные окружения
 
-## Платформа
+Значения по умолчанию лежат в
+`src/CollaborationSystem.Api/appsettings.json`. В Docker Compose они
+переопределяются через переменные окружения.
 
-Проекты настроены на `.NET 10`.
+Пароли БД и секретные ключи в README не дублируются. Локальные значения для
+разработки находятся в конфигурационных файлах проекта, а для общих окружений
+задаются через переменные окружения или хранилище секретов.
 
-## Запуск
+| Переменная                             | Назначение                               | Где задано для локального запуска                         |
+| -------------------------------------- | ---------------------------------------- | --------------------------------------------------------- |
+| `ASPNETCORE_ENVIRONMENT`               | окружение ASP.NET Core                   | root `docker-compose.dev.yml`                             |
+| `ASPNETCORE_URLS`                      | адреса, которые слушает API в контейнере | root `docker-compose.dev.yml`                             |
+| `ConnectionStrings__DefaultConnection` | строка подключения к PostgreSQL          | `appsettings.json`, root `docker-compose.dev.yml`         |
+| `Jwt__Issuer`                          | issuer для access-токена                 | `appsettings.json`                                        |
+| `Jwt__Audience`                        | audience для access-токена               | `appsettings.json`                                        |
+| `Jwt__Key`                             | ключ подписи JWT                         | `appsettings.json`, для общих окружений задаётся секретом |
+| `Jwt__AccessTokenLifetimeMinutes`      | время жизни access-токена в минутах      | `appsettings.json`                                        |
+| `Auth__RefreshTokenCookieName`         | имя cookie с refresh-токеном             | `appsettings.json`                                        |
+| `Auth__RefreshTokenCookiePath`         | path для refresh-token cookie            | `appsettings.json`                                        |
+| `Auth__RefreshTokenCookieSecure`       | требовать HTTPS для refresh-token cookie | `appsettings.json`, root `docker-compose.dev.yml`         |
+| `Auth__RefreshTokenLifetimeDays`       | время жизни refresh-токена в днях        | `appsettings.json`                                        |
+| `Cors__AllowedOrigins__0`              | разрешённый origin фронтенда             | `appsettings.json`, root `docker-compose.dev.yml`         |
 
-1. Перейти в папку `backend`.
-2. Поднять PostgreSQL:
+Переменные PostgreSQL в compose-файлах:
 
-```powershell
+| Переменная          | Назначение             | Где задано                                                  |
+| ------------------- | ---------------------- | ----------------------------------------------------------- |
+| `POSTGRES_DB`       | имя базы данных        | root `docker-compose.dev.yml`, `backend/docker-compose.yml` |
+| `POSTGRES_USER`     | пользователь БД        | root `docker-compose.dev.yml`, `backend/docker-compose.yml` |
+| `POSTGRES_PASSWORD` | пароль пользователя БД | root `docker-compose.dev.yml`, `backend/docker-compose.yml` |
+
+## Запуск через Docker Compose
+
+Рекомендуемый способ для чистого запуска всего проекта находится в корне
+репозитория. Он поднимает PostgreSQL, backend и frontend:
+
+```bash
+docker compose -f docker-compose.dev.yml up --build
+```
+
+После запуска:
+
+- Backend API: `http://localhost:5227`
+- Swagger: `http://localhost:5227/swagger`
+- Healthcheck: `http://localhost:5227/health`
+- Frontend: `http://localhost:5173`
+- PostgreSQL: `localhost:5432`
+
+Для полного пересоздания базы и контейнеров:
+
+```bash
+docker compose -f docker-compose.dev.yml down -v
+docker compose -f docker-compose.dev.yml up --build
+```
+
+## Локальный запуск backend с PostgreSQL в Docker
+
+Если нужно запустить только PostgreSQL в контейнере, а API стартовать из IDE или
+через `dotnet run`, используйте compose-файл из папки backend:
+
+```bash
+cd backend
 docker compose up -d
+dotnet run --project src/CollaborationSystem.Api
 ```
 
-3. Восстановить пакеты и собрать проект:
+В этом режиме API использует строку подключения из `appsettings.json`. Имя базы
+в `backend/docker-compose.yml` должно совпадать с базой из строки подключения.
 
-```powershell
-dotnet restore
-dotnet build
+Формат строки подключения:
+
+```text
+Host=<host>;Port=<port>;Database=<database>;Username=<user>;Password=<password>
 ```
 
-4. Запустить API:
+API по умолчанию доступен на адресах из
+`src/CollaborationSystem.Api/Properties/launchSettings.json`.
 
-```powershell
-dotnet run --project .\src\CollaborationSystem.Api
+## Миграции
+
+Миграции применяются автоматически при старте API:
+
+```csharp
+dbContext.Database.Migrate();
+```
+
+Это работает и в Docker Compose, и при локальном запуске через `dotnet run`.
+
+Для ручного применения из корня репозитория:
+
+```bash
+dotnet tool restore
+dotnet ef database update \
+  --project backend/src/CollaborationSystem.Infrastructure \
+  --startup-project backend/src/CollaborationSystem.Api
+```
+
+Если PostgreSQL поднят через `backend/docker-compose.yml`, ту же команду можно
+запустить из папки `backend`:
+
+```bash
+dotnet ef database update \
+  --project src/CollaborationSystem.Infrastructure \
+  --startup-project src/CollaborationSystem.Api
+```
+
+Создание новой миграции:
+
+```bash
+dotnet ef migrations add MigrationName \
+  --project backend/src/CollaborationSystem.Infrastructure \
+  --startup-project backend/src/CollaborationSystem.Api \
+  --output-dir Persistence/Migrations
+```
+
+## Проверка запуска
+
+```bash
+git clone <repo-url>
+cd CollaborationSystem
+docker compose -f docker-compose.dev.yml up --build
+```
+
+После запуска:
+
+1. `GET http://localhost:5227/health` возвращает `{"status":"ok"}`.
+2. `http://localhost:5227/swagger` открывает Swagger UI.
+3. `http://localhost:5173` открывает frontend.
+4. В логах backend нет ошибок применения EF Core migrations.
+
+Тестовые пользователи для локального dev-стенда:
+
+| Роль          | Email              | Пароль     |
+| ------------- | ------------------ | ---------- |
+| Пользователь  | `test@test.local`  | `password` |
+| Администратор | `admin@test.local` | `password` |
+
+## Тесты
+
+Из корня репозитория:
+
+```bash
+dotnet test backend/CollaborationSystem.sln
+```
+
+Из папки `backend`:
+
+```bash
+dotnet test CollaborationSystem.sln
+```
+
+## Полезные команды
+
+```bash
+# посмотреть логи backend
+docker compose -f docker-compose.dev.yml logs -f backend
+
+# остановить стенд без удаления базы
+docker compose -f docker-compose.dev.yml down
+
+# остановить стенд и удалить volume PostgreSQL
+docker compose -f docker-compose.dev.yml down -v
 ```
 
 ## Рекомендуемая среда
 
-- Visual Studio 2022
-- JetBrains Rider
-- VS Code + C# Dev Kit
 - Docker Desktop
-
-## Примечание
-
-Для локальной сборки нужен установленный `.NET 10 SDK`.
-
-## Team dev stand (recommended)
-
-Use root compose file to run full stack in one command:
-
-```powershell
-cd ..
-docker compose -f docker-compose.dev.yml up --build
-```
-
-Backend container automatically runs pending EF Core migrations at startup.
+- .NET 10 SDK для локального запуска без контейнера
+- Visual Studio 2022, JetBrains Rider или VS Code + C# Dev Kit

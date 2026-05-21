@@ -1,25 +1,41 @@
 import { useSuggestionVote } from '../../hooks/useSuggestionVote';
 import { VoteButtonGroup } from '../VoteButtonGroup/VoteButtonGroup';
-import type { SuggestionSummary } from '../../types/api';
+import type { CurrentUserVoteQuota, SuggestionSummary } from '../../types/api';
 
 interface SuggestionVoteCellProps {
   projectId: string;
   suggestion: SuggestionSummary;
-  onVoteSuccess?: (suggestionId: string, newScore: number) => void;
+  voteQuota?: CurrentUserVoteQuota | null;
+  onVoteSuccess?: (
+    suggestionId: string,
+    newScore: number,
+    currentUserVote: SuggestionSummary['currentUserVote'],
+    voteQuota: CurrentUserVoteQuota,
+  ) => void;
+  onVoteQuotaChange?: (voteQuota: CurrentUserVoteQuota) => void;
 }
 
 export function SuggestionVoteCell({
   projectId,
   suggestion,
+  voteQuota,
   onVoteSuccess,
+  onVoteQuotaChange,
 }: SuggestionVoteCellProps) {
-  const { score, userVote, loading, handleVote } = useSuggestionVote({
+  const { score, userVote, loading, error, handleVote } = useSuggestionVote({
     projectId,
     suggestionId: suggestion.id,
     initialScore: suggestion.score,
     initialUserVote: suggestion.currentUserVote ?? null,
-    onVoteSuccess: (newScore) => {
-      onVoteSuccess?.(suggestion.id, newScore);
+    voteQuota,
+    onVoteQuotaChange,
+    onVoteSuccess: (response) => {
+      onVoteSuccess?.(
+        suggestion.id,
+        response.score,
+        response.currentUserVote,
+        response.voteQuota,
+      );
     },
   });
 
@@ -28,7 +44,9 @@ export function SuggestionVoteCell({
       score={score}
       userVote={userVote}
       onVote={handleVote}
+      voteQuota={voteQuota}
       loading={loading}
+      error={error}
       size="sm"
     />
   );

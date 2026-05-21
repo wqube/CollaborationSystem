@@ -38,6 +38,11 @@
   color: #8a8a8a;
 }
 
+.draftError {
+  background: #ffebee;
+  color: #d32f2f;
+}
+
 .error {
   color: #d32f2f;
   background: #ffebee;
@@ -49,5 +54,13 @@
 .actions {
   display: flex;
   justify-content: flex-end;
+  flex-wrap: wrap;
   gap: 12px;
+}
+
+@media (max-width: 560px) {
+  .actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
 }

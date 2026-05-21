@@ -69,6 +69,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
 
         builder.Entity<Project>()
             .HasIndex(x => x.NormalizedName)
+            .IsUnique()
+            .HasDatabaseName("UX_Projects_NormalizedName_Active")
             .HasFilter("\"DeletedAtUtc\" IS NULL");
 
         builder.Entity<Project>()
@@ -109,10 +111,12 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
 
         builder.Entity<Suggestion>()
             .Property(x => x.NormalizedText)
-            .HasMaxLength(2000);
+            .HasMaxLength(4000);
 
         builder.Entity<Suggestion>()
-            .HasIndex(x => new { x.ProjectId, x.NormalizedText });
+            .HasIndex(x => new { x.ProjectId, x.NormalizedText })
+            .IsUnique()
+            .HasDatabaseName("UX_Suggestions_ProjectId_NormalizedText");
 
         builder.Entity<Vote>()
             .HasIndex(x => new { x.SuggestionId, x.UserId })

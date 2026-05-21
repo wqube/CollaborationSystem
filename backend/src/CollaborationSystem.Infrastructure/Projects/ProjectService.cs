@@ -5,6 +5,7 @@ using CollaborationSystem.Domain.Entities;
 using CollaborationSystem.Domain.Enums;
 using CollaborationSystem.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 using System.Text.RegularExpressions;
 
 namespace CollaborationSystem.Infrastructure.Projects;
@@ -230,17 +231,18 @@ public sealed class ProjectService(
         var currentUserId = currentUserService.GetRequiredUserId();
         var utcNow = DateTime.UtcNow;
         var name = request.Name.Trim();
-        var normalizedName = NormalizeValue(name);
+        var normalizedName = NormalizeName(name);
 
-        var projectAlreadyExists = await dbContext.Projects
+        var projectNameExists = await dbContext.Projects
             .AsNoTracking()
             .AnyAsync(
                 x => x.DeletedAtUtc == null && x.NormalizedName == normalizedName,
                 cancellationToken);
 
-        if (projectAlreadyExists)
+        if (projectNameExists)
         {
-            return ProjectOperationResult<ProjectSummaryResponse>.Failure(ProjectOperationStatus.Conflict);
+            return ProjectOperationResult<ProjectSummaryResponse>.Failure(
+                ProjectOperationStatus.ProjectNameAlreadyExists);
         }
 
         var project = new Project
@@ -268,7 +270,15 @@ public sealed class ProjectService(
         VoteQuotaService.InitializeQuota(project, member, utcNow);
         dbContext.ProjectMembers.Add(member);
 
-        await dbContext.SaveChangesAsync(cancellationToken);
+        try
+        {
+            await dbContext.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException exception) when (IsUniqueViolation(exception, "UX_Projects_NormalizedName_Active"))
+        {
+            return ProjectOperationResult<ProjectSummaryResponse>.Failure(
+                ProjectOperationStatus.ProjectNameAlreadyExists);
+        }
 
         return ProjectOperationResult<ProjectSummaryResponse>.Success(new ProjectSummaryResponse
         {
@@ -276,6 +286,84 @@ public sealed class ProjectService(
             Name = project.Name,
             Description = project.Description,
             Role = ProjectRole.Admin,
+            LastAccessedAt = member.LastAccessedAtUtc,
+            CreatedByUserId = project.CreatedByUserId,
+            CreatedAtUtc = project.CreatedAtUtc,
+            UpdatedAtUtc = project.UpdatedAtUtc
+        });
+    }
+
+    public async Task<ProjectOperationResult<ProjectSummaryResponse>> UpdateProjectAsync(
+        Guid projectId,
+        UpdateProjectRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var currentUserId = currentUserService.GetRequiredUserId();
+        var member = await dbContext.ProjectMembers
+            .Include(x => x.Project)
+            .FirstOrDefaultAsync(
+                x => x.ProjectId == projectId && x.UserId == currentUserId,
+                cancellationToken);
+
+        if (member is null)
+        {
+            var projectExists = await dbContext.Projects
+                .AsNoTracking()
+                .AnyAsync(x => x.Id == projectId && x.DeletedAtUtc == null, cancellationToken);
+
+            return ProjectOperationResult<ProjectSummaryResponse>.Failure(
+                projectExists ? ProjectOperationStatus.Forbidden : ProjectOperationStatus.ProjectNotFound);
+        }
+
+        if (member.Project is null || member.Project.DeletedAtUtc is not null)
+        {
+            return ProjectOperationResult<ProjectSummaryResponse>.Failure(ProjectOperationStatus.ProjectNotFound);
+        }
+
+        if (member.Role != ProjectRole.Admin)
+        {
+            return ProjectOperationResult<ProjectSummaryResponse>.Failure(ProjectOperationStatus.Forbidden);
+        }
+
+        var project = member.Project;
+        var name = request.Name.Trim();
+        var normalizedName = NormalizeName(name);
+
+        var projectNameExists = await dbContext.Projects
+            .AsNoTracking()
+            .AnyAsync(
+                x => x.Id != projectId &&
+                     x.DeletedAtUtc == null &&
+                     x.NormalizedName == normalizedName,
+                cancellationToken);
+
+        if (projectNameExists)
+        {
+            return ProjectOperationResult<ProjectSummaryResponse>.Failure(
+                ProjectOperationStatus.ProjectNameAlreadyExists);
+        }
+
+        var utcNow = DateTime.UtcNow;
+        project.Name = name;
+        project.NormalizedName = normalizedName;
+        project.Description = request.Description?.Trim() ?? string.Empty;
+        project.UpdatedAtUtc = utcNow;
+
+        try
+        {
+            await dbContext.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException exception) when (IsUniqueViolation(exception, "UX_Projects_NormalizedName_Active"))
+        {
+            return ProjectOperationResult<ProjectSummaryResponse>.Failure(
+                ProjectOperationStatus.ProjectNameAlreadyExists);
+        }
+        return ProjectOperationResult<ProjectSummaryResponse>.Success(new ProjectSummaryResponse
+        {
+            Id = project.Id,
+            Name = project.Name,
+            Description = project.Description,
+            Role = member.Role,
             LastAccessedAt = member.LastAccessedAtUtc,
             CreatedByUserId = project.CreatedByUserId,
             CreatedAtUtc = project.CreatedAtUtc,
@@ -387,6 +475,11 @@ public sealed class ProjectService(
             VoteResetPeriodDays = project.VoteResetPeriodDays
         };
 
-    private static string NormalizeValue(string value) =>
-        Regex.Replace(value.Trim(), @"\s+", " ").ToUpperInvariant();
+    private static string NormalizeName(string name) =>
+        Regex.Replace(name.Trim(), @"\s+", " ").ToLowerInvariant();
+
+    private static bool IsUniqueViolation(DbUpdateException exception, string constraintName) =>
+        exception.InnerException is PostgresException postgresException &&
+        postgresException.SqlState == PostgresErrorCodes.UniqueViolation &&
+        postgresException.ConstraintName == constraintName;
 }

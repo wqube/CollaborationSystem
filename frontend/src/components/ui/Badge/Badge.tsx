@@ -16,12 +16,12 @@ interface BadgeProps {
 }
 
 const variantLabels: Record<BadgeVariant, string> = {
-  new: 'New',
-  progress: 'InProgress',
-  accepted: 'Accepted',
-  rejected: 'Rejected',
-  admin: 'Admin',
-  member: 'Member',
+  new: 'Новые',
+  progress: 'В работе',
+  accepted: 'Принятые',
+  rejected: 'Отклонённые',
+  admin: 'Администратор',
+  member: 'Участник',
 };
 
 export const Badge: React.FC<BadgeProps> = ({ variant, children }) => {

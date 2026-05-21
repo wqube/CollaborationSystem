@@ -61,5 +61,19 @@ app.UseCors("Frontend");
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
-app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
+app.MapGet("/health", () => Results.Ok(new HealthResponse { Status = "ok" }))
+    .WithName("GetHealth")
+    .WithTags("Health")
+    .Produces<HealthResponse>(StatusCodes.Status200OK);
 app.Run();
+
+/// <summary>
+/// API health check response.
+/// </summary>
+public sealed class HealthResponse
+{
+    /// <summary>
+    /// Current health status.
+    /// </summary>
+    public string Status { get; init; } = string.Empty;
+}

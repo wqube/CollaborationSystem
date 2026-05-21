@@ -5,6 +5,8 @@ VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{827E0CD3-B72D-47B6-A68D-7590B98EB39B}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{B5F99B51-62F2-4C63-B7D6-7BD3DD73CE55}"
+EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CollaborationSystem.Api", "src\CollaborationSystem.Api\CollaborationSystem.Api.csproj", "{956DC3BB-98FE-47AE-8ECB-2FDCD174689B}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CollaborationSystem.Application", "src\CollaborationSystem.Application\CollaborationSystem.Application.csproj", "{1B6F36BC-57D1-4889-9889-FF6CE4D99E11}"
@@ -12,6 +14,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CollaborationSystem.Domain", "src\CollaborationSystem.Domain\CollaborationSystem.Domain.csproj", "{EF7CC244-8543-4597-B438-BBEBA8769E29}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CollaborationSystem.Infrastructure", "src\CollaborationSystem.Infrastructure\CollaborationSystem.Infrastructure.csproj", "{04BDFA43-4610-431C-BD8C-908EEA27DA07}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CollaborationSystem.Tests", "tests\CollaborationSystem.Tests\CollaborationSystem.Tests.csproj", "{C5A9E450-1C1F-44F1-9F88-8904E2248460}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -71,6 +75,18 @@ Global
 		{04BDFA43-4610-431C-BD8C-908EEA27DA07}.Release|x64.Build.0 = Release|Any CPU
 		{04BDFA43-4610-431C-BD8C-908EEA27DA07}.Release|x86.ActiveCfg = Release|Any CPU
 		{04BDFA43-4610-431C-BD8C-908EEA27DA07}.Release|x86.Build.0 = Release|Any CPU
+		{C5A9E450-1C1F-44F1-9F88-8904E2248460}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C5A9E450-1C1F-44F1-9F88-8904E2248460}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C5A9E450-1C1F-44F1-9F88-8904E2248460}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{C5A9E450-1C1F-44F1-9F88-8904E2248460}.Debug|x64.Build.0 = Debug|Any CPU
+		{C5A9E450-1C1F-44F1-9F88-8904E2248460}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{C5A9E450-1C1F-44F1-9F88-8904E2248460}.Debug|x86.Build.0 = Debug|Any CPU
+		{C5A9E450-1C1F-44F1-9F88-8904E2248460}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C5A9E450-1C1F-44F1-9F88-8904E2248460}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C5A9E450-1C1F-44F1-9F88-8904E2248460}.Release|x64.ActiveCfg = Release|Any CPU
+		{C5A9E450-1C1F-44F1-9F88-8904E2248460}.Release|x64.Build.0 = Release|Any CPU
+		{C5A9E450-1C1F-44F1-9F88-8904E2248460}.Release|x86.ActiveCfg = Release|Any CPU
+		{C5A9E450-1C1F-44F1-9F88-8904E2248460}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -80,5 +96,6 @@ Global
 		{1B6F36BC-57D1-4889-9889-FF6CE4D99E11} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{EF7CC244-8543-4597-B438-BBEBA8769E29} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{04BDFA43-4610-431C-BD8C-908EEA27DA07} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
+		{C5A9E450-1C1F-44F1-9F88-8904E2248460} = {B5F99B51-62F2-4C63-B7D6-7BD3DD73CE55}
 	EndGlobalSection
 EndGlobal

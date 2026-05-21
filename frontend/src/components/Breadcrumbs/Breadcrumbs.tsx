@@ -10,7 +10,11 @@ interface Crumb {
   path: string;
 }
 
-export function Breadcrumbs() {
+interface BreadcrumbsProps {
+  currentSuggestionTitle?: string;
+}
+
+export function Breadcrumbs({ currentSuggestionTitle }: BreadcrumbsProps) {
   const location = useLocation();
   const { projectId, suggestionId } = useParams<{
     projectId?: string;
@@ -26,6 +30,11 @@ export function Breadcrumbs() {
 
   // Загружаем название предложения для страницы детализации
   useEffect(() => {
+    if (currentSuggestionTitle) {
+      setSuggestionTitle(currentSuggestionTitle);
+      return;
+    }
+
     if (
       pathParts.length >= 4 &&
       pathParts[0] === 'projects' &&
@@ -43,7 +52,7 @@ export function Breadcrumbs() {
     }
 
     setSuggestionTitle('');
-  }, [location.pathname, projectId, suggestionId]);
+  }, [currentSuggestionTitle, location.pathname, projectId, suggestionId]);
 
   // Загружаем название предложения для страницы профиля
   useEffect(() => {
@@ -86,17 +95,6 @@ export function Breadcrumbs() {
         });
       }
 
-      if (
-        prevParts.length === 3 &&
-        prevParts[0] === 'projects' &&
-        prevParts[2] === 'drafts'
-      ) {
-        crumbs.push({
-          label: 'Черновики',
-          path: `/${prevParts.join('/')}`,
-        });
-      }
-
       const isSuggestionDetail =
         prevParts.length >= 4 &&
         prevParts[0] === 'projects' &&
@@ -115,25 +113,12 @@ export function Breadcrumbs() {
 
     crumbs.push({ label: 'Профиль', path: '/profile' });
   } else {
-    // ← ЭТОГО БЛОКА НЕ БЫЛО
     // Обычные страницы (не профиль)
     if (pathParts.length >= 2 && pathParts[0] === 'projects' && projectId) {
       const project = projects.find((p) => p.id === projectId);
       crumbs.push({
         label: project?.name || 'Проект',
         path: `/projects/${projectId}`,
-      });
-    }
-
-    // Черновики
-    if (
-      pathParts.length === 3 &&
-      pathParts[0] === 'projects' &&
-      pathParts[2] === 'drafts'
-    ) {
-      crumbs.push({
-        label: 'Черновики',
-        path: `/${pathParts.join('/')}`,
       });
     }
 

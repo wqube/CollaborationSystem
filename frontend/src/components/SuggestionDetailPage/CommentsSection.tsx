@@ -8,34 +8,37 @@ interface CommentsSectionProps {
   projectId: string;
   suggestionId: string;
   comments: CommentNode[];
+  commentsError: string | null;
+  currentUserId: string | null;
   replyingToId: string | null;
   editingId: string | null;
   submitting?: boolean;
   onSendMain: (text: string) => Promise<void>;
-  onClearMainDraft: () => void;
   onStartReply: (id: string) => void;
   onCancelReply: () => void;
   onSubmitReply: (parentId: string, text: string) => Promise<void>;
-  onClearReplyDraft: () => void;
   onStartEdit: (id: string) => void;
   onCancelEdit: () => void;
   onSaveEdit: (id: string, text: string) => Promise<void>;
   onDelete: (id: string) => void;
 }
 
+const countComments = (nodes: CommentNode[]): number =>
+  nodes.reduce((sum, node) => sum + 1 + countComments(node.children), 0);
+
 export function CommentsSection({
   projectId,
   suggestionId,
   comments,
+  commentsError,
+  currentUserId,
   replyingToId,
   editingId,
   submitting = false,
   onSendMain,
-  onClearMainDraft,
   onStartReply,
   onCancelReply,
   onSubmitReply,
-  onClearReplyDraft,
   onStartEdit,
   onCancelEdit,
   onSaveEdit,
@@ -47,14 +50,18 @@ export function CommentsSection({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!draftText.trim()) return;
-    await onSendMain(draftText.trim());
-    await clearDraft();
-    onClearMainDraft();
+
+    try {
+      await onSendMain(draftText.trim());
+      await clearDraft();
+    } catch {
+      // Ошибка уже показана родительским компонентом.
+    }
   };
 
   return (
     <div className={styles.card}>
-      <h3>Обсуждение ({comments.length})</h3>
+      <h3>Обсуждение ({countComments(comments)})</h3>
       <form onSubmit={handleSubmit}>
         <textarea
           placeholder="Оставьте комментарий..."
@@ -80,8 +87,10 @@ export function CommentsSection({
         </div>
       </form>
 
+      {commentsError && <p className={styles.error}>{commentsError}</p>}
+
       <div className={styles.comments}>
-        {comments.length === 0 && (
+        {!commentsError && comments.length === 0 && (
           <p className={styles.empty}>Комментариев пока нет</p>
         )}
         {comments.map((c) => (
@@ -90,13 +99,13 @@ export function CommentsSection({
             comment={c}
             projectId={projectId}
             suggestionId={suggestionId}
+            currentUserId={currentUserId}
             replyingToId={replyingToId}
             editingId={editingId}
             submitting={submitting}
             onStartReply={onStartReply}
             onCancelReply={onCancelReply}
             onSubmitReply={onSubmitReply}
-            onClearReplyDraft={onClearReplyDraft}
             onStartEdit={onStartEdit}
             onCancelEdit={onCancelEdit}
             onSaveEdit={onSaveEdit}

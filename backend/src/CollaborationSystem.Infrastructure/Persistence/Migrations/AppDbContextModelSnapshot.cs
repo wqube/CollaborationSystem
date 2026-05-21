@@ -186,12 +186,12 @@ namespace CollaborationSystem.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("CreatedByUserId")
                         .HasColumnType("uuid");
 
+                    b.Property<DateTime?>("DeletedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<string>("Description")
                         .IsRequired()
                         .HasColumnType("text");
-
-                    b.Property<DateTime?>("DeletedAtUtc")
-                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -221,6 +221,8 @@ namespace CollaborationSystem.Infrastructure.Persistence.Migrations
                     b.HasIndex("CreatedByUserId");
 
                     b.HasIndex("NormalizedName")
+                        .IsUnique()
+                        .HasDatabaseName("UX_Projects_NormalizedName_Active")
                         .HasFilter("\"DeletedAtUtc\" IS NULL");
 
                     b.ToTable("Projects", "public");
@@ -369,13 +371,13 @@ namespace CollaborationSystem.Infrastructure.Persistence.Migrations
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid>("ProjectId")
-                        .HasColumnType("uuid");
-
                     b.Property<string>("NormalizedText")
                         .IsRequired()
-                        .HasMaxLength(2000)
-                        .HasColumnType("character varying(2000)");
+                        .HasMaxLength(4000)
+                        .HasColumnType("character varying(4000)");
+
+                    b.Property<Guid>("ProjectId")
+                        .HasColumnType("uuid");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -392,9 +394,9 @@ namespace CollaborationSystem.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("AuthorId");
 
-                    b.HasIndex("ProjectId");
-
-                    b.HasIndex("ProjectId", "NormalizedText");
+                    b.HasIndex("ProjectId", "NormalizedText")
+                        .IsUnique()
+                        .HasDatabaseName("UX_Suggestions_ProjectId_NormalizedText");
 
                     b.ToTable("Suggestions", "public");
                 });
@@ -405,10 +407,10 @@ namespace CollaborationSystem.Infrastructure.Persistence.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<DateTime>("CreatedAtUtc")
+                    b.Property<DateTime>("BudgetPeriodStartedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<DateTime>("BudgetPeriodStartedAtUtc")
+                    b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<Guid>("SuggestionId")

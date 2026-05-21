@@ -5,6 +5,7 @@ using CollaborationSystem.Domain.Enums;
 using CollaborationSystem.Infrastructure.Persistence;
 using CollaborationSystem.Infrastructure.Projects;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 using System.Text.RegularExpressions;
 
 namespace CollaborationSystem.Infrastructure.Suggestions;
@@ -133,16 +134,17 @@ public sealed class SuggestionService(
         }
 
         var text = request.Text.Trim();
-        var normalizedText = NormalizeValue(text);
-        var duplicateExists = await dbContext.Suggestions
+        var normalizedText = NormalizeText(text);
+        var suggestionExists = await dbContext.Suggestions
             .AsNoTracking()
             .AnyAsync(
                 x => x.ProjectId == projectId && x.NormalizedText == normalizedText,
                 cancellationToken);
 
-        if (duplicateExists)
+        if (suggestionExists)
         {
-            return SuggestionOperationResult<SuggestionSummaryResponse>.Failure(SuggestionOperationStatus.Conflict);
+            return SuggestionOperationResult<SuggestionSummaryResponse>.Failure(
+                SuggestionOperationStatus.SuggestionAlreadyExists);
         }
 
         var suggestion = new Suggestion
@@ -155,7 +157,15 @@ public sealed class SuggestionService(
         };
 
         dbContext.Suggestions.Add(suggestion);
-        await dbContext.SaveChangesAsync(cancellationToken);
+        try
+        {
+            await dbContext.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException exception) when (IsUniqueViolation(exception, "UX_Suggestions_ProjectId_NormalizedText"))
+        {
+            return SuggestionOperationResult<SuggestionSummaryResponse>.Failure(
+                SuggestionOperationStatus.SuggestionAlreadyExists);
+        }
 
         return SuggestionOperationResult<SuggestionSummaryResponse>.Success(
             ToSummaryResponse(suggestion, author, score: 0));
@@ -239,8 +249,8 @@ public sealed class SuggestionService(
         }
 
         var text = request.Text.Trim();
-        var normalizedText = NormalizeValue(text);
-        var duplicateExists = await dbContext.Suggestions
+        var normalizedText = NormalizeText(text);
+        var suggestionExists = await dbContext.Suggestions
             .AsNoTracking()
             .AnyAsync(
                 x => x.ProjectId == projectId &&
@@ -248,16 +258,25 @@ public sealed class SuggestionService(
                      x.NormalizedText == normalizedText,
                 cancellationToken);
 
-        if (duplicateExists)
+        if (suggestionExists)
         {
-            return SuggestionOperationResult<SuggestionSummaryResponse>.Failure(SuggestionOperationStatus.Conflict);
+            return SuggestionOperationResult<SuggestionSummaryResponse>.Failure(
+                SuggestionOperationStatus.SuggestionAlreadyExists);
         }
 
         suggestion.Text = text;
         suggestion.NormalizedText = normalizedText;
         suggestion.UpdatedAtUtc = DateTime.UtcNow;
 
-        await dbContext.SaveChangesAsync(cancellationToken);
+        try
+        {
+            await dbContext.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException exception) when (IsUniqueViolation(exception, "UX_Suggestions_ProjectId_NormalizedText"))
+        {
+            return SuggestionOperationResult<SuggestionSummaryResponse>.Failure(
+                SuggestionOperationStatus.SuggestionAlreadyExists);
+        }
 
         return SuggestionOperationResult<SuggestionSummaryResponse>.Success(
             ToSummaryResponse(suggestion, suggestion.Author, CalculateScore(suggestion.Votes)));
@@ -827,8 +846,13 @@ public sealed class SuggestionService(
         votes.Count(x => x.VoteType == VoteType.Up) -
         votes.Count(x => x.VoteType == VoteType.Down);
 
-    private static string NormalizeValue(string value) =>
-        Regex.Replace(value.Trim(), @"\s+", " ").ToUpperInvariant();
+    private static string NormalizeText(string text) =>
+        Regex.Replace(text.Trim(), @"\s+", " ").ToLowerInvariant();
+
+    private static bool IsUniqueViolation(DbUpdateException exception, string constraintName) =>
+        exception.InnerException is PostgresException postgresException &&
+        postgresException.SqlState == PostgresErrorCodes.UniqueViolation &&
+        postgresException.ConstraintName == constraintName;
 
     private async Task<int> GetSuggestionScoreAsync(Guid suggestionId, CancellationToken cancellationToken)
     {

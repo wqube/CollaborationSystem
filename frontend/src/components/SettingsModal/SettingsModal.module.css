@@ -35,15 +35,11 @@
   cursor: not-allowed;
 }
 
-.futureScope {
-  background: #f0f0f0;
+.settingsBlock {
+  background: #f8fbf9;
   padding: 16px;
+  border: 1px solid #d8e6df;
   border-radius: 12px;
-}
-
-.futureScope h4 {
-  margin-bottom: 16px;
-  color: #8a8a8a;
 }
 
 .row {
@@ -55,6 +51,7 @@
 .actions {
   display: flex;
   justify-content: flex-end;
+  flex-wrap: wrap;
   gap: 12px;
 }
 
@@ -84,4 +81,17 @@
   margin: 0;
   color: #d32f2f;
   font-size: 14px;
+}
+
+@media (max-width: 640px) {
+  .row {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .actions,
+  .dangerZone {
+    align-items: stretch;
+    flex-direction: column;
+  }
 }

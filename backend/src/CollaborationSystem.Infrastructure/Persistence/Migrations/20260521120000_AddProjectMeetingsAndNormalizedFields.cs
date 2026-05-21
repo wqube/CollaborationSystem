@@ -13,23 +13,6 @@ namespace CollaborationSystem.Infrastructure.Persistence.Migrations
         {
             migrationBuilder.Sql(
                 """
-                ALTER TABLE "public"."Projects"
-                ADD COLUMN IF NOT EXISTS "NormalizedName" character varying(200);
-
-                UPDATE "public"."Projects"
-                SET "NormalizedName" = UPPER(regexp_replace(btrim("Name"), '\s+', ' ', 'g'))
-                WHERE "NormalizedName" IS NULL OR "NormalizedName" = '';
-
-                ALTER TABLE "public"."Projects"
-                ALTER COLUMN "NormalizedName" SET NOT NULL;
-
-                CREATE INDEX IF NOT EXISTS "IX_Projects_NormalizedName"
-                ON "public"."Projects" ("NormalizedName")
-                WHERE "DeletedAtUtc" IS NULL;
-                """);
-
-            migrationBuilder.Sql(
-                """
                 ALTER TABLE "public"."ProjectMembers"
                 ADD COLUMN IF NOT EXISTS "LastAccessedAtUtc" timestamp with time zone;
 
@@ -39,22 +22,6 @@ namespace CollaborationSystem.Infrastructure.Persistence.Migrations
 
                 ALTER TABLE "public"."ProjectMembers"
                 ALTER COLUMN "LastAccessedAtUtc" SET NOT NULL;
-                """);
-
-            migrationBuilder.Sql(
-                """
-                ALTER TABLE "public"."Suggestions"
-                ADD COLUMN IF NOT EXISTS "NormalizedText" character varying(2000);
-
-                UPDATE "public"."Suggestions"
-                SET "NormalizedText" = UPPER(regexp_replace(btrim("Text"), '\s+', ' ', 'g'))
-                WHERE "NormalizedText" IS NULL OR "NormalizedText" = '';
-
-                ALTER TABLE "public"."Suggestions"
-                ALTER COLUMN "NormalizedText" SET NOT NULL;
-
-                CREATE INDEX IF NOT EXISTS "IX_Suggestions_ProjectId_NormalizedText"
-                ON "public"."Suggestions" ("ProjectId", "NormalizedText");
                 """);
 
             migrationBuilder.CreateTable(
@@ -114,13 +81,7 @@ namespace CollaborationSystem.Infrastructure.Persistence.Migrations
 
             migrationBuilder.Sql(
                 """
-                DROP INDEX IF EXISTS "public"."IX_Suggestions_ProjectId_NormalizedText";
-                ALTER TABLE "public"."Suggestions" DROP COLUMN IF EXISTS "NormalizedText";
-
                 ALTER TABLE "public"."ProjectMembers" DROP COLUMN IF EXISTS "LastAccessedAtUtc";
-
-                DROP INDEX IF EXISTS "public"."IX_Projects_NormalizedName";
-                ALTER TABLE "public"."Projects" DROP COLUMN IF EXISTS "NormalizedName";
                 """);
         }
     }
