@@ -19,4 +19,5 @@ public class Project : BaseEntity
     public ICollection<ProjectMember> Members { get; set; } = [];
     public ICollection<Suggestion> Suggestions { get; set; } = [];
     public ICollection<Draft> Drafts { get; set; } = [];
+    public ICollection<ProjectMeeting> Meetings { get; set; } = [];
 }

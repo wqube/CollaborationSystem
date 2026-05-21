@@ -9,6 +9,7 @@ public class ProjectMember : BaseEntity
     public Guid UserId { get; set; }
     public ProjectRole Role { get; set; } = ProjectRole.Member;
     public DateTime JoinedAtUtc { get; set; } = DateTime.UtcNow;
+    public DateTime LastAccessedAtUtc { get; set; } = DateTime.UtcNow;
     public int VotesRemaining { get; set; } = Project.DefaultVotesPerUser;
     public DateTime VotePeriodStartedAtUtc { get; set; } = DateTime.UtcNow;
     public DateTime NextVoteResetAtUtc { get; set; } = DateTime.UtcNow.AddDays(Project.DefaultVoteResetPeriodDays);

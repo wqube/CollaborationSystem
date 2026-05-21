@@ -6,6 +6,7 @@ using CollaborationSystem.Domain.Enums;
 using CollaborationSystem.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
+using System.Text.RegularExpressions;
 
 namespace CollaborationSystem.Infrastructure.Projects;
 
@@ -37,7 +38,7 @@ public sealed class ProjectService(
                 Name = x.Project.Name,
                 Description = x.Project.Description,
                 Role = x.Role,
-                LastAccessedAt = x.Project.UpdatedAtUtc,
+                LastAccessedAt = x.LastAccessedAtUtc,
                 CreatedByUserId = x.Project.CreatedByUserId,
                 CreatedAtUtc = x.Project.CreatedAtUtc,
                 UpdatedAtUtc = x.Project.UpdatedAtUtc
@@ -81,11 +82,15 @@ public sealed class ProjectService(
         }
 
         var utcNow = DateTime.UtcNow;
+        member.LastAccessedAtUtc = utcNow;
+        member.UpdatedAtUtc = utcNow;
 
         if (voteQuotaService.ApplyLazyReset(project, member, utcNow))
         {
-            await dbContext.SaveChangesAsync(cancellationToken);
+            member.UpdatedAtUtc = utcNow;
         }
+
+        await dbContext.SaveChangesAsync(cancellationToken);
 
         var members = await GetProjectMembersAsync(projectId, cancellationToken);
 
@@ -132,11 +137,15 @@ public sealed class ProjectService(
         }
 
         var utcNow = DateTime.UtcNow;
+        member.LastAccessedAtUtc = utcNow;
+        member.UpdatedAtUtc = utcNow;
 
         if (voteQuotaService.ApplyLazyReset(project, member, utcNow))
         {
-            await dbContext.SaveChangesAsync(cancellationToken);
+            member.UpdatedAtUtc = utcNow;
         }
+
+        await dbContext.SaveChangesAsync(cancellationToken);
 
         var membersPreview = await dbContext.ProjectMembers
             .AsNoTracking()
@@ -200,7 +209,7 @@ public sealed class ProjectService(
                 Name = project.Name,
                 Description = project.Description,
                 Role = member.Role,
-                LastAccessedAt = project.UpdatedAtUtc
+                LastAccessedAt = member.LastAccessedAtUtc
             },
             VoteSettings = ToVoteSettingsResponse(project),
             CurrentUserVoteQuota = voteQuotaService.ToResponse(project, member),
@@ -253,6 +262,7 @@ public sealed class ProjectService(
             UserId = currentUserId,
             Role = ProjectRole.Admin,
             JoinedAtUtc = utcNow,
+            LastAccessedAtUtc = utcNow,
             CreatedAtUtc = utcNow,
             UpdatedAtUtc = utcNow
         };
@@ -270,18 +280,17 @@ public sealed class ProjectService(
                 ProjectOperationStatus.ProjectNameAlreadyExists);
         }
 
-        return ProjectOperationResult<ProjectSummaryResponse>.Success(
-            new ProjectSummaryResponse
-            {
-                Id = project.Id,
-                Name = project.Name,
-                Description = project.Description,
-                Role = ProjectRole.Admin,
-                LastAccessedAt = project.UpdatedAtUtc,
-                CreatedByUserId = project.CreatedByUserId,
-                CreatedAtUtc = project.CreatedAtUtc,
-                UpdatedAtUtc = project.UpdatedAtUtc
-            });
+        return ProjectOperationResult<ProjectSummaryResponse>.Success(new ProjectSummaryResponse
+        {
+            Id = project.Id,
+            Name = project.Name,
+            Description = project.Description,
+            Role = ProjectRole.Admin,
+            LastAccessedAt = member.LastAccessedAtUtc,
+            CreatedByUserId = project.CreatedByUserId,
+            CreatedAtUtc = project.CreatedAtUtc,
+            UpdatedAtUtc = project.UpdatedAtUtc
+        });
     }
 
     public async Task<ProjectOperationResult<ProjectSummaryResponse>> UpdateProjectAsync(
@@ -349,14 +358,13 @@ public sealed class ProjectService(
             return ProjectOperationResult<ProjectSummaryResponse>.Failure(
                 ProjectOperationStatus.ProjectNameAlreadyExists);
         }
-
         return ProjectOperationResult<ProjectSummaryResponse>.Success(new ProjectSummaryResponse
         {
             Id = project.Id,
             Name = project.Name,
             Description = project.Description,
             Role = member.Role,
-            LastAccessedAt = project.UpdatedAtUtc,
+            LastAccessedAt = member.LastAccessedAtUtc,
             CreatedByUserId = project.CreatedByUserId,
             CreatedAtUtc = project.CreatedAtUtc,
             UpdatedAtUtc = project.UpdatedAtUtc
@@ -468,7 +476,7 @@ public sealed class ProjectService(
         };
 
     private static string NormalizeName(string name) =>
-        name.Trim().ToLowerInvariant();
+        Regex.Replace(name.Trim(), @"\s+", " ").ToLowerInvariant();
 
     private static bool IsUniqueViolation(DbUpdateException exception, string constraintName) =>
         exception.InnerException is PostgresException postgresException &&

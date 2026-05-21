@@ -11,6 +11,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
 {
     public DbSet<AppUser> UsersProfile => Set<AppUser>();
     public DbSet<Project> Projects => Set<Project>();
+    public DbSet<ProjectMeeting> ProjectMeetings => Set<ProjectMeeting>();
     public DbSet<ProjectMember> ProjectMembers => Set<ProjectMember>();
     public DbSet<Suggestion> Suggestions => Set<Suggestion>();
     public DbSet<Vote> Votes => Set<Vote>();
@@ -26,6 +27,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
 
         builder.Entity<AppUser>().ToTable("Users");
         builder.Entity<Project>().ToTable("Projects");
+        builder.Entity<ProjectMeeting>().ToTable("ProjectMeetings");
         builder.Entity<ProjectMember>().ToTable("ProjectMembers");
         builder.Entity<Suggestion>().ToTable("Suggestions");
         builder.Entity<Vote>().ToTable("Votes");
@@ -82,6 +84,26 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
         builder.Entity<ProjectMember>()
             .Property(x => x.Role)
             .HasConversion<string>();
+
+        builder.Entity<ProjectMeeting>()
+            .Property(x => x.Title)
+            .HasMaxLength(200);
+
+        builder.Entity<ProjectMeeting>()
+            .Property(x => x.Location)
+            .HasMaxLength(300);
+
+        builder.Entity<ProjectMeeting>()
+            .HasOne(x => x.Project)
+            .WithMany(x => x.Meetings)
+            .HasForeignKey(x => x.ProjectId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Entity<ProjectMeeting>()
+            .HasOne(x => x.CreatedByUser)
+            .WithMany()
+            .HasForeignKey(x => x.CreatedByUserId)
+            .OnDelete(DeleteBehavior.Restrict);
 
         builder.Entity<Suggestion>()
             .Property(x => x.Status)

@@ -228,6 +228,51 @@ namespace CollaborationSystem.Infrastructure.Persistence.Migrations
                     b.ToTable("Projects", "public");
                 });
 
+            modelBuilder.Entity("CollaborationSystem.Domain.Entities.ProjectMeeting", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Agenda")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("CreatedByUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("EndsAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Location")
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)");
+
+                    b.Property<Guid>("ProjectId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("StartsAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedByUserId");
+
+                    b.HasIndex("ProjectId");
+
+                    b.ToTable("ProjectMeetings", "public");
+                });
+
             modelBuilder.Entity("CollaborationSystem.Domain.Entities.ProjectMember", b =>
                 {
                     b.Property<Guid>("Id")
@@ -238,6 +283,9 @@ namespace CollaborationSystem.Infrastructure.Persistence.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<DateTime>("JoinedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("LastAccessedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<DateTime>("NextVoteResetAtUtc")
@@ -663,6 +711,25 @@ namespace CollaborationSystem.Infrastructure.Persistence.Migrations
                     b.Navigation("CreatedByUser");
                 });
 
+            modelBuilder.Entity("CollaborationSystem.Domain.Entities.ProjectMeeting", b =>
+                {
+                    b.HasOne("CollaborationSystem.Domain.Entities.AppUser", "CreatedByUser")
+                        .WithMany()
+                        .HasForeignKey("CreatedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("CollaborationSystem.Domain.Entities.Project", "Project")
+                        .WithMany("Meetings")
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("CreatedByUser");
+
+                    b.Navigation("Project");
+                });
+
             modelBuilder.Entity("CollaborationSystem.Domain.Entities.ProjectMember", b =>
                 {
                     b.HasOne("CollaborationSystem.Domain.Entities.Project", "Project")
@@ -805,6 +872,8 @@ namespace CollaborationSystem.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("CollaborationSystem.Domain.Entities.Project", b =>
                 {
                     b.Navigation("Drafts");
+
+                    b.Navigation("Meetings");
 
                     b.Navigation("Members");
 

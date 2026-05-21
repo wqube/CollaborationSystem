@@ -52,6 +52,7 @@ public sealed class ProjectMemberService(
             UserId = request.UserId,
             Role = request.Role,
             JoinedAtUtc = utcNow,
+            LastAccessedAtUtc = utcNow,
             CreatedAtUtc = utcNow,
             UpdatedAtUtc = utcNow
         };

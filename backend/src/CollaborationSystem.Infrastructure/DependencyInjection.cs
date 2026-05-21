@@ -30,6 +30,7 @@ public static class DependencyInjection
         services.AddScoped<IRefreshSessionStore, DbRefreshSessionStore>();
         services.AddScoped<IProjectMemberService, ProjectMemberService>();
         services.AddScoped<IProjectService, ProjectService>();
+        services.AddScoped<IProjectMeetingService, ProjectMeetingService>();
         services.AddScoped<VoteQuotaService>();
         services.AddScoped<IUserDirectoryService, UserDirectoryService>();
         services.AddScoped<ISuggestionService, SuggestionService>();

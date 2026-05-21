@@ -24,6 +24,7 @@ public class SuggestionsController(ISuggestionService suggestionService) : Contr
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
     public async Task<ActionResult<PagedResponse<SuggestionSummaryResponse>>> GetSuggestions(
         Guid projectId,
         [FromQuery] GetSuggestionsQuery query,

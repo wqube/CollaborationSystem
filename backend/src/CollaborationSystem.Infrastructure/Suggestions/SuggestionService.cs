@@ -6,6 +6,7 @@ using CollaborationSystem.Infrastructure.Persistence;
 using CollaborationSystem.Infrastructure.Projects;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
+using System.Text.RegularExpressions;
 
 namespace CollaborationSystem.Infrastructure.Suggestions;
 
@@ -846,7 +847,7 @@ public sealed class SuggestionService(
         votes.Count(x => x.VoteType == VoteType.Down);
 
     private static string NormalizeText(string text) =>
-        text.Trim().ToLowerInvariant();
+        Regex.Replace(text.Trim(), @"\s+", " ").ToLowerInvariant();
 
     private static bool IsUniqueViolation(DbUpdateException exception, string constraintName) =>
         exception.InnerException is PostgresException postgresException &&

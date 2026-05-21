@@ -630,6 +630,13 @@ Query params:
 
 Ошибки: `400`, `401`.
 
+Rules:
+
+- project name is normalized by trimming, collapsing repeated whitespace, and comparing case-insensitively;
+- if an active project with the same normalized name already exists, return `409 Conflict`.
+
+Errors also include: `409`.
+
 ### 4.8 `GET /api/v1/projects/{projectId}`
 
 Назначение: получить карточку проекта и его участников.
@@ -760,6 +767,67 @@ Rules:
 
 Errors: `401`, `403`, `404`.
 
+### 4.9.2 `GET /api/v1/projects/{projectId}/meetings`
+
+Purpose: return the manual meeting schedule for a project.
+
+Access: any project member.
+
+Example response:
+
+```json
+[
+  {
+    "id": "77a0a2ec-7f3f-4d71-9420-8be22e7b71f5",
+    "projectId": "7ca7d640-d843-45b2-9701-0b0efb8c4af1",
+    "createdByUserId": "3f11a6dc-79a6-43f7-ac88-bb78dd70d712",
+    "title": "Weekly planning",
+    "startsAtUtc": "2026-04-10T09:00:00Z",
+    "endsAtUtc": "2026-04-10T09:30:00Z",
+    "location": "Room 401",
+    "agenda": "Review roadmap and blockers",
+    "createdAtUtc": "2026-04-09T18:30:00Z",
+    "updatedAtUtc": "2026-04-09T18:30:00Z"
+  }
+]
+```
+
+Errors: `401`, `403`, `404`.
+
+### 4.9.3 `POST /api/v1/projects/{projectId}/meetings`
+
+Purpose: manually add a meeting to the project schedule.
+
+Access: project `Admin` only.
+
+Request body: `CreateProjectMeetingRequest`.
+
+Example request:
+
+```json
+{
+  "title": "Weekly planning",
+  "startsAtUtc": "2026-04-10T09:00:00Z",
+  "endsAtUtc": "2026-04-10T09:30:00Z",
+  "location": "Room 401",
+  "agenda": "Review roadmap and blockers"
+}
+```
+
+Success: `201 Created` with `ProjectMeetingResponse`.
+
+Errors: `400`, `401`, `403`, `404`.
+
+### 4.9.4 `DELETE /api/v1/projects/{projectId}/meetings/{meetingId}`
+
+Purpose: remove a manually scheduled project meeting.
+
+Access: project `Admin` only.
+
+Success: `204 No Content`.
+
+Errors: `401`, `403`, `404`.
+
 ### 4.10 `PATCH /api/v1/projects/{projectId}/members/{userId}`
 
 Additional rule: returns `409` if the change would leave the project without any `Admin`.
@@ -876,6 +944,8 @@ Query params:
 
 ### 4.13 `GET /api/v1/projects/{projectId}/dashboard`
 
+Implementation note: `lastAccessedAt` is stored per membership in `ProjectMember.lastAccessedAtUtc`. The dashboard endpoint updates that field for the current user; `GET /api/v1/projects` returns the membership value, not `Project.updatedAtUtc`.
+
 Назначение: агрегированный endpoint для страницы проекта с коротким preview предложений.
 
 Side-effect: при успешном вызове сервер обновляет lastAccessedAt для текущего пользователя в рамках данного проекта. Это значение используется клиентом при старте приложения для определения последнего открытого проекта через GET /api/v1/projects.
@@ -979,6 +1049,13 @@ Path params:
 ```
 
 Ошибки: `400`, `401`, `403`, `404`.
+
+Rules:
+
+- suggestion text is normalized by trimming, collapsing repeated whitespace, and comparing case-insensitively;
+- if this project already has a suggestion with the same normalized text, return `409 Conflict`.
+
+Errors also include: `409`.
 
 ### 4.15 `GET /api/v1/projects/{projectId}/suggestions/{suggestionId}`
 
