@@ -5,6 +5,7 @@ using CollaborationSystem.Domain.Enums;
 using CollaborationSystem.Infrastructure.Persistence;
 using CollaborationSystem.Infrastructure.Projects;
 using Microsoft.EntityFrameworkCore;
+using System.Text.RegularExpressions;
 
 namespace CollaborationSystem.Infrastructure.Suggestions;
 
@@ -131,11 +132,25 @@ public sealed class SuggestionService(
                 SuggestionOperationStatus.UserNotFound);
         }
 
+        var text = request.Text.Trim();
+        var normalizedText = NormalizeValue(text);
+        var duplicateExists = await dbContext.Suggestions
+            .AsNoTracking()
+            .AnyAsync(
+                x => x.ProjectId == projectId && x.NormalizedText == normalizedText,
+                cancellationToken);
+
+        if (duplicateExists)
+        {
+            return SuggestionOperationResult<SuggestionSummaryResponse>.Failure(SuggestionOperationStatus.Conflict);
+        }
+
         var suggestion = new Suggestion
         {
             ProjectId = projectId,
             AuthorId = currentUserId,
-            Text = request.Text.Trim(),
+            Text = text,
+            NormalizedText = normalizedText,
             Status = SuggestionStatus.New
         };
 
@@ -223,7 +238,23 @@ public sealed class SuggestionService(
                 SuggestionOperationStatus.UserNotFound);
         }
 
-        suggestion.Text = request.Text.Trim();
+        var text = request.Text.Trim();
+        var normalizedText = NormalizeValue(text);
+        var duplicateExists = await dbContext.Suggestions
+            .AsNoTracking()
+            .AnyAsync(
+                x => x.ProjectId == projectId &&
+                     x.Id != suggestionId &&
+                     x.NormalizedText == normalizedText,
+                cancellationToken);
+
+        if (duplicateExists)
+        {
+            return SuggestionOperationResult<SuggestionSummaryResponse>.Failure(SuggestionOperationStatus.Conflict);
+        }
+
+        suggestion.Text = text;
+        suggestion.NormalizedText = normalizedText;
         suggestion.UpdatedAtUtc = DateTime.UtcNow;
 
         await dbContext.SaveChangesAsync(cancellationToken);
@@ -795,6 +826,9 @@ public sealed class SuggestionService(
     private static int CalculateScore(IEnumerable<Vote> votes) =>
         votes.Count(x => x.VoteType == VoteType.Up) -
         votes.Count(x => x.VoteType == VoteType.Down);
+
+    private static string NormalizeValue(string value) =>
+        Regex.Replace(value.Trim(), @"\s+", " ").ToUpperInvariant();
 
     private async Task<int> GetSuggestionScoreAsync(Guid suggestionId, CancellationToken cancellationToken)
     {

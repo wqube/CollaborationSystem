@@ -5,6 +5,7 @@ using CollaborationSystem.Domain.Entities;
 using CollaborationSystem.Domain.Enums;
 using CollaborationSystem.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
+using System.Text.RegularExpressions;
 
 namespace CollaborationSystem.Infrastructure.Projects;
 
@@ -36,7 +37,7 @@ public sealed class ProjectService(
                 Name = x.Project.Name,
                 Description = x.Project.Description,
                 Role = x.Role,
-                LastAccessedAt = x.Project.UpdatedAtUtc,
+                LastAccessedAt = x.LastAccessedAtUtc,
                 CreatedByUserId = x.Project.CreatedByUserId,
                 CreatedAtUtc = x.Project.CreatedAtUtc,
                 UpdatedAtUtc = x.Project.UpdatedAtUtc
@@ -80,11 +81,15 @@ public sealed class ProjectService(
         }
 
         var utcNow = DateTime.UtcNow;
+        member.LastAccessedAtUtc = utcNow;
+        member.UpdatedAtUtc = utcNow;
 
         if (voteQuotaService.ApplyLazyReset(project, member, utcNow))
         {
-            await dbContext.SaveChangesAsync(cancellationToken);
+            member.UpdatedAtUtc = utcNow;
         }
+
+        await dbContext.SaveChangesAsync(cancellationToken);
 
         var members = await GetProjectMembersAsync(projectId, cancellationToken);
 
@@ -131,11 +136,15 @@ public sealed class ProjectService(
         }
 
         var utcNow = DateTime.UtcNow;
+        member.LastAccessedAtUtc = utcNow;
+        member.UpdatedAtUtc = utcNow;
 
         if (voteQuotaService.ApplyLazyReset(project, member, utcNow))
         {
-            await dbContext.SaveChangesAsync(cancellationToken);
+            member.UpdatedAtUtc = utcNow;
         }
+
+        await dbContext.SaveChangesAsync(cancellationToken);
 
         var membersPreview = await dbContext.ProjectMembers
             .AsNoTracking()
@@ -199,7 +208,7 @@ public sealed class ProjectService(
                 Name = project.Name,
                 Description = project.Description,
                 Role = member.Role,
-                LastAccessedAt = project.UpdatedAtUtc
+                LastAccessedAt = member.LastAccessedAtUtc
             },
             VoteSettings = ToVoteSettingsResponse(project),
             CurrentUserVoteQuota = voteQuotaService.ToResponse(project, member),
@@ -214,16 +223,30 @@ public sealed class ProjectService(
         });
     }
 
-    public async Task<ProjectSummaryResponse> CreateProjectAsync(
+    public async Task<ProjectOperationResult<ProjectSummaryResponse>> CreateProjectAsync(
         CreateProjectRequest request,
         CancellationToken cancellationToken = default)
     {
         var currentUserId = currentUserService.GetRequiredUserId();
         var utcNow = DateTime.UtcNow;
+        var name = request.Name.Trim();
+        var normalizedName = NormalizeValue(name);
+
+        var projectAlreadyExists = await dbContext.Projects
+            .AsNoTracking()
+            .AnyAsync(
+                x => x.DeletedAtUtc == null && x.NormalizedName == normalizedName,
+                cancellationToken);
+
+        if (projectAlreadyExists)
+        {
+            return ProjectOperationResult<ProjectSummaryResponse>.Failure(ProjectOperationStatus.Conflict);
+        }
 
         var project = new Project
         {
-            Name = request.Name.Trim(),
+            Name = name,
+            NormalizedName = normalizedName,
             Description = request.Description.Trim(),
             CreatedByUserId = currentUserId,
             CreatedAtUtc = utcNow,
@@ -237,6 +260,7 @@ public sealed class ProjectService(
             UserId = currentUserId,
             Role = ProjectRole.Admin,
             JoinedAtUtc = utcNow,
+            LastAccessedAtUtc = utcNow,
             CreatedAtUtc = utcNow,
             UpdatedAtUtc = utcNow
         };
@@ -246,17 +270,17 @@ public sealed class ProjectService(
 
         await dbContext.SaveChangesAsync(cancellationToken);
 
-        return new ProjectSummaryResponse
+        return ProjectOperationResult<ProjectSummaryResponse>.Success(new ProjectSummaryResponse
         {
             Id = project.Id,
             Name = project.Name,
             Description = project.Description,
             Role = ProjectRole.Admin,
-            LastAccessedAt = project.UpdatedAtUtc,
+            LastAccessedAt = member.LastAccessedAtUtc,
             CreatedByUserId = project.CreatedByUserId,
             CreatedAtUtc = project.CreatedAtUtc,
             UpdatedAtUtc = project.UpdatedAtUtc
-        };
+        });
     }
 
     public async Task<ProjectOperationResult<bool>> DeleteProjectAsync(
@@ -362,4 +386,7 @@ public sealed class ProjectService(
             VotesPerUser = project.VotesPerUser,
             VoteResetPeriodDays = project.VoteResetPeriodDays
         };
+
+    private static string NormalizeValue(string value) =>
+        Regex.Replace(value.Trim(), @"\s+", " ").ToUpperInvariant();
 }

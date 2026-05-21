@@ -38,13 +38,16 @@ public class ProjectsController(IProjectService projectService) : ControllerBase
     [ProducesResponseType(typeof(ProjectSummaryResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
     public async Task<ActionResult<ProjectSummaryResponse>> CreateProject(
         [FromBody] CreateProjectRequest request,
         CancellationToken cancellationToken)
     {
-        var createdProject = await projectService.CreateProjectAsync(request, cancellationToken);
+        var result = await projectService.CreateProjectAsync(request, cancellationToken);
 
-        return CreatedAtAction(nameof(GetProjectById), new { projectId = createdProject.Id }, createdProject);
+        return result.Status == ProjectOperationStatus.Success && result.Value is not null
+            ? CreatedAtAction(nameof(GetProjectById), new { projectId = result.Value.Id }, result.Value)
+            : ToProjectErrorActionResult(result.Status);
     }
 
     /// <summary>
@@ -138,6 +141,9 @@ public class ProjectsController(IProjectService projectService) : ControllerBase
             ProjectOperationStatus.ProjectNotFound => Problem(
                 statusCode: StatusCodes.Status404NotFound,
                 title: "Project not found."),
+            ProjectOperationStatus.Conflict => Problem(
+                statusCode: StatusCodes.Status409Conflict,
+                title: "Project with this name already exists."),
             _ => Problem(
                 statusCode: StatusCodes.Status400BadRequest,
                 title: "Project operation failed.")
