@@ -103,6 +103,7 @@ export function CommentsSection({
             replyingToId={replyingToId}
             editingId={editingId}
             submitting={submitting}
+            depth={1}
             onStartReply={onStartReply}
             onCancelReply={onCancelReply}
             onSubmitReply={onSubmitReply}
