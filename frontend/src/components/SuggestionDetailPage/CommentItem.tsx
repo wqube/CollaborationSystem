@@ -12,6 +12,7 @@ interface CommentItemProps {
   replyingToId: string | null;
   editingId: string | null;
   submitting?: boolean;
+  depth: number;
   onStartReply: (id: string) => void;
   onCancelReply: () => void;
   onSubmitReply: (parentId: string, text: string) => Promise<void>;
@@ -29,6 +30,7 @@ export function CommentItem({
   replyingToId,
   editingId,
   submitting = false,
+  depth,
   onStartReply,
   onCancelReply,
   onSubmitReply,
@@ -41,6 +43,7 @@ export function CommentItem({
   const isReplying = replyingToId === comment.id;
   const isEditing = editingId === comment.id;
   const canManageComment = currentUserId === comment.author.id;
+  const canReply = depth < 5;
 
   useEffect(() => {
     if (!isEditing) {
@@ -97,9 +100,11 @@ export function CommentItem({
 
       {!isEditing && (
         <div className={styles.commentBtns}>
-          <button type="button" onClick={() => onStartReply(comment.id)}>
-            Ответить
-          </button>
+          {canReply && (
+            <button type="button" onClick={() => onStartReply(comment.id)}>
+              Ответить
+            </button>
+          )}
           {canManageComment && (
             <>
               <button type="button" onClick={() => onStartEdit(comment.id)}>
@@ -144,6 +149,7 @@ export function CommentItem({
               replyingToId={replyingToId}
               editingId={editingId}
               submitting={submitting}
+              depth={depth + 1}
               onStartReply={onStartReply}
               onCancelReply={onCancelReply}
               onSubmitReply={onSubmitReply}
