@@ -26,7 +26,6 @@ export function ProjectSuggestionsPanel({
   onOpenSuggestion,
 }: ProjectSuggestionsPanelProps) {
   const {
-    statusFilter,
     search,
     sort,
     order,
@@ -38,7 +37,6 @@ export function ProjectSuggestionsPanel({
     loading,
     error,
     handleSearchChange,
-    handleStatusChange,
     handleSortChange,
     handleOrderChange,
     setPage,
@@ -53,12 +51,10 @@ export function ProjectSuggestionsPanel({
         <>
           <ProjectVoteQuotaBar voteQuota={voteQuota} />
           <ProjectSuggestionsFilters
-            statusFilter={statusFilter}
             search={search}
             sort={sort}
             order={order}
             onSearchChange={handleSearchChange}
-            onStatusChange={handleStatusChange}
             onSortChange={handleSortChange}
             onOrderChange={handleOrderChange}
           />
