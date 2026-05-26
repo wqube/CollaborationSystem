@@ -5,7 +5,7 @@ import { Button } from '../ui/Button/Button';
 import { Badge } from '../ui/Badge/Badge';
 import apiClient from '../../shared/api/client';
 import { getUsers } from '../../shared/api/users';
-import { useAppDispatcher } from '../../shared/store/hooks';
+import { useAppDispatcher, userAppSelector } from '../../shared/store/hooks';
 import { fetchProjects } from '../../shared/store/projectsSlice';
 import type {
   ProjectDetails,
@@ -34,6 +34,7 @@ export function MembersModal({
 }: MembersModalProps) {
   const dispatch = useAppDispatcher();
   const navigate = useNavigate();
+  const currentUserId = userAppSelector((state) => state.auth.user?.id ?? null);
   const [members, setMembers] = useState<ProjectMemberDto[]>([]);
   const [loading, setLoading] = useState(false);
   const [adding, setAdding] = useState(false);
@@ -56,7 +57,11 @@ export function MembersModal({
   const [memberRemoving, setMemberRemoving] = useState(false);
   const [leaveConfirmationOpen, setLeaveConfirmationOpen] = useState(false);
   const [leavingProject, setLeavingProject] = useState(false);
-  const canLeaveProject = !canManageMembers;
+  const currentMember = useMemo(
+    () => members.find((member) => member.userId === currentUserId),
+    [currentUserId, members],
+  );
+  const canLeaveProject = Boolean(currentMember);
 
   const loadMembers = useCallback(async () => {
     setLoading(true);
@@ -128,6 +133,30 @@ export function MembersModal({
     [users, memberIds],
   );
 
+  const exactAvailableUserByEmail = useMemo(() => {
+    const normalizedSearch = userSearch.trim().toLowerCase();
+
+    if (!normalizedSearch.includes('@')) {
+      return undefined;
+    }
+
+    return availableUsers.find(
+      (user) => user.email.toLowerCase() === normalizedSearch,
+    );
+  }, [availableUsers, userSearch]);
+
+  const foundExistingMemberByEmail = useMemo(() => {
+    const normalizedSearch = userSearch.trim().toLowerCase();
+
+    if (!normalizedSearch.includes('@')) {
+      return undefined;
+    }
+
+    return members.find(
+      (member) => member.email.toLowerCase() === normalizedSearch,
+    );
+  }, [members, userSearch]);
+
   useEffect(() => {
     if (
       selectedUserId &&
@@ -136,6 +165,12 @@ export function MembersModal({
       setSelectedUserId('');
     }
   }, [availableUsers, selectedUserId]);
+
+  useEffect(() => {
+    if (exactAvailableUserByEmail) {
+      setSelectedUserId(exactAvailableUserByEmail.id);
+    }
+  }, [exactAvailableUserByEmail]);
 
   const handleAddMember = async () => {
     if (!canManageMembers) return;
@@ -260,9 +295,15 @@ export function MembersModal({
       onClose();
       await dispatch(fetchProjects());
       navigate('/projects');
-    } catch {
+    } catch (err: unknown) {
+      const status = (err as { response?: { status?: number } })?.response
+        ?.status;
       setLeaveConfirmationOpen(false);
-      setError('Не удалось выйти из проекта');
+      setError(
+        status === 409
+          ? 'Нельзя выйти из проекта, пока вы единственный администратор'
+          : 'Не удалось выйти из проекта',
+      );
     } finally {
       setLeavingProject(false);
     }
@@ -336,13 +377,15 @@ export function MembersModal({
                       </option>
                     ))}
                   </select>
-                  {!usersLoading &&
-                    users.length > 0 &&
-                    availableUsers.length === 0 && (
-                      <span className={styles.helperText}>
-                        Все найденные пользователи уже в проекте
-                      </span>
-                    )}
+                    {!usersLoading &&
+                      users.length > 0 &&
+                      availableUsers.length === 0 && (
+                        <span className={styles.helperText}>
+                          {foundExistingMemberByEmail
+                            ? 'Пользователь с этим email уже в проекте'
+                            : 'Все найденные пользователи уже в проекте'}
+                        </span>
+                      )}
                 </div>
                 <select
                   className={styles.roleSelect}
@@ -370,40 +413,59 @@ export function MembersModal({
 
           <h4>Текущие участники ({members.length})</h4>
           <div className={styles.membersList}>
-            {members.map((member) => (
-              <div key={member.userId} className={styles.memberItem}>
-                <div className={styles.memberInfo}>
-                  <div className={styles.avatar}>
-                    {member.displayName
-                      .split(' ')
-                      .map((w) => w[0])
-                      .join('')}
+            {members.map((member) => {
+              const isCurrentMember = member.userId === currentUserId;
+
+              return (
+                <div key={member.userId} className={styles.memberItem}>
+                  <div className={styles.memberInfo}>
+                    <div className={styles.avatar}>
+                      {member.displayName
+                        .split(' ')
+                        .map((w) => w[0])
+                        .join('')}
+                    </div>
+                    <div>
+                      <strong>{member.displayName}</strong>
+                      <span className={styles.email}>{member.email}</span>
+                      <span className={styles.joined}>
+                        Присоединился: {formatDate(member.joinedAt)}
+                      </span>
+                    </div>
                   </div>
-                  <div>
-                    <strong>{member.displayName}</strong>
-                    <span className={styles.email}>{member.email}</span>
-                    <span className={styles.joined}>
-                      Присоединился: {formatDate(member.joinedAt)}
-                    </span>
-                  </div>
-                </div>
-                <div className={styles.memberActions}>
-                  {(canManageRoles && (
-                    <>
-                      <select
-                        value={member.role}
-                        onChange={(e) =>
-                          handleChangeRoleRequest(
-                            member.userId,
-                            e.target.value as ProjectRole,
-                          )
-                        }
-                        className={styles.roleSelectSm}
-                        disabled={roleChanging}
-                      >
-                        <option value="Admin">{ROLE_LABELS.Admin}</option>
-                        <option value="Member">{ROLE_LABELS.Member}</option>
-                      </select>
+                  <div className={styles.memberActions}>
+                    {(canManageRoles && (
+                      <>
+                        <select
+                          value={member.role}
+                          onChange={(e) =>
+                            handleChangeRoleRequest(
+                              member.userId,
+                              e.target.value as ProjectRole,
+                            )
+                          }
+                          className={styles.roleSelectSm}
+                          disabled={roleChanging}
+                        >
+                          <option value="Admin">{ROLE_LABELS.Admin}</option>
+                          <option value="Member">{ROLE_LABELS.Member}</option>
+                        </select>
+                        {!isCurrentMember && (
+                          <button
+                            className={styles.removeBtn}
+                            onClick={() =>
+                              handleRemoveMemberRequest(member.userId)
+                            }
+                            disabled={memberRemoving}
+                          >
+                            X
+                          </button>
+                        )}
+                      </>
+                    )) || (
+                      <Badge variant={getProjectRoleBadgeVariant(member.role)} />
+                    )}
+                    {!isCurrentMember && !canManageRoles && canManageMembers && (
                       <button
                         className={styles.removeBtn}
                         onClick={() => handleRemoveMemberRequest(member.userId)}
@@ -411,22 +473,11 @@ export function MembersModal({
                       >
                         X
                       </button>
-                    </>
-                  )) || (
-                    <Badge variant={getProjectRoleBadgeVariant(member.role)} />
-                  )}
-                  {!canManageRoles && canManageMembers && (
-                    <button
-                      className={styles.removeBtn}
-                      onClick={() => handleRemoveMemberRequest(member.userId)}
-                      disabled={memberRemoving}
-                    >
-                      X
-                    </button>
-                  )}
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
             {!loading && members.length === 0 && (
               <p className={styles.emptyText}>Нет участников</p>
             )}
@@ -436,7 +487,11 @@ export function MembersModal({
             <div className={styles.leaveSection}>
               <div>
                 <h4>Выход из проекта</h4>
-                <p>Вы перестанете видеть проект и участвовать в обсуждениях.</p>
+                <p>
+                  Вы перестанете видеть проект и участвовать в обсуждениях.
+                  Администратор может выйти, если в проекте останется другой
+                  администратор.
+                </p>
               </div>
               <Button
                 variant="danger"
