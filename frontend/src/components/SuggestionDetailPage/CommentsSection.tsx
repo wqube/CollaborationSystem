@@ -71,10 +71,12 @@ export function CommentsSection({
           onChange={(e) => handleTextChange(e.target.value)}
           disabled={saveStatus === 'saving'}
         />
-        <div className={styles.commentActions}>
-          {statusLabel && (
+        {statusLabel && (
+          <div className={styles.draftStatusRow}>
             <span className={styles.draftStatus}>{statusLabel}</span>
-          )}
+          </div>
+        )}
+        <div className={styles.commentActions}>
           <Button
             variant="primary"
             type="submit"
