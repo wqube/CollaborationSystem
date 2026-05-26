@@ -28,6 +28,23 @@ export interface CurrentUserResponse extends UserDto {
   authMode: string;
 }
 
+export interface LoginRequest {
+  email: string;
+  password: string;
+}
+
+export interface LoginResponse {
+  accessToken: string;
+  expiresIn: number;
+  user: UserDto;
+}
+
+export interface RefreshResponse {
+  accessToken: string;
+  expiresIn: number;
+  user: UserDto;
+}
+
 // Черновики
 interface SuggestionDraftPayload {
   text: string;
@@ -149,7 +166,7 @@ export interface SuggestionDetails {
 // -- Requests ----------------------
 export interface CreateProjectRequest {
   name: string;
-  description?: string; // ---- уточнить обязательное поле или нет.
+  description?: string; // ---- уточнили, поле необязательное.
 }
 
 export interface AddProjectMemberRequest {
