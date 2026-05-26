@@ -1,9 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Modal } from '../ui/Modal/Modal';
 import { Button } from '../ui/Button/Button';
 import { Badge } from '../ui/Badge/Badge';
 import apiClient from '../../shared/api/client';
 import { getUsers } from '../../shared/api/users';
+import { useAppDispatcher } from '../../shared/store/hooks';
+import { fetchProjects } from '../../shared/store/projectsSlice';
 import type {
   ProjectDetails,
   ProjectMemberDto,
@@ -29,6 +32,8 @@ export function MembersModal({
   canManageMembers,
   canManageRoles,
 }: MembersModalProps) {
+  const dispatch = useAppDispatcher();
+  const navigate = useNavigate();
   const [members, setMembers] = useState<ProjectMemberDto[]>([]);
   const [loading, setLoading] = useState(false);
   const [adding, setAdding] = useState(false);
@@ -49,6 +54,9 @@ export function MembersModal({
     displayName: string;
   } | null>(null);
   const [memberRemoving, setMemberRemoving] = useState(false);
+  const [leaveConfirmationOpen, setLeaveConfirmationOpen] = useState(false);
+  const [leavingProject, setLeavingProject] = useState(false);
+  const canLeaveProject = !canManageMembers;
 
   const loadMembers = useCallback(async () => {
     setLoading(true);
@@ -75,6 +83,7 @@ export function MembersModal({
     setSelectedUserId('');
     setRoleChangeConfirmation(null);
     setRemoveMemberConfirmation(null);
+    setLeaveConfirmationOpen(false);
     setError(null);
   }, [open]);
 
@@ -232,6 +241,33 @@ export function MembersModal({
     setRemoveMemberConfirmation(null);
   };
 
+  const handleLeaveProjectRequest = () => {
+    setError(null);
+    setLeaveConfirmationOpen(true);
+  };
+
+  const handleCancelLeaveProject = () => {
+    if (leavingProject) return;
+    setLeaveConfirmationOpen(false);
+  };
+
+  const handleConfirmLeaveProject = async () => {
+    try {
+      setLeavingProject(true);
+      setError(null);
+      await apiClient.delete(`/projects/${projectId}/members/me`);
+      setLeaveConfirmationOpen(false);
+      onClose();
+      await dispatch(fetchProjects());
+      navigate('/projects');
+    } catch {
+      setLeaveConfirmationOpen(false);
+      setError('Не удалось выйти из проекта');
+    } finally {
+      setLeavingProject(false);
+    }
+  };
+
   const handleMembersModalClose = () => {
     if (roleChangeConfirmation) {
       handleCancelRoleChange();
@@ -240,6 +276,11 @@ export function MembersModal({
 
     if (removeMemberConfirmation) {
       handleCancelRemoveMember();
+      return;
+    }
+
+    if (leaveConfirmationOpen) {
+      handleCancelLeaveProject();
       return;
     }
 
@@ -390,6 +431,22 @@ export function MembersModal({
               <p className={styles.emptyText}>Нет участников</p>
             )}
           </div>
+
+          {canLeaveProject && (
+            <div className={styles.leaveSection}>
+              <div>
+                <h4>Выход из проекта</h4>
+                <p>Вы перестанете видеть проект и участвовать в обсуждениях.</p>
+              </div>
+              <Button
+                variant="danger"
+                onClick={handleLeaveProjectRequest}
+                disabled={leavingProject}
+              >
+                Выйти из проекта
+              </Button>
+            </div>
+          )}
         </div>
       </Modal>
 
@@ -459,6 +516,36 @@ export function MembersModal({
             </div>
           </div>
         )}
+      </Modal>
+
+      <Modal
+        isOpen={leaveConfirmationOpen}
+        onClose={handleCancelLeaveProject}
+        title="Подтверждение выхода"
+        size="sm"
+        closeOnOverlayClick={!leavingProject}
+      >
+        <div className={styles.confirmationContent}>
+          <p className={styles.confirmationText}>
+            Вы точно хотите выйти из проекта?
+          </p>
+          <div className={styles.confirmationActions}>
+            <Button
+              variant="outline"
+              onClick={handleCancelLeaveProject}
+              disabled={leavingProject}
+            >
+              Нет
+            </Button>
+            <Button
+              variant="danger"
+              onClick={handleConfirmLeaveProject}
+              disabled={leavingProject}
+            >
+              {leavingProject ? 'Выход...' : 'Да'}
+            </Button>
+          </div>
+        </div>
       </Modal>
     </>
   );

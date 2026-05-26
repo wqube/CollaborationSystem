@@ -5,7 +5,8 @@ import {
   getComments,
   updateComment,
 } from '../shared/api/comments';
-import type { CommentDto, CommentNode } from '../types/api';
+import { getProjectDrafts } from '../shared/api/drafts';
+import type { CommentDraft, CommentDto, CommentNode } from '../types/api';
 
 const buildCommentTree = (comments: CommentDto[]): CommentNode[] => {
   const map: Record<string, CommentNode> = {};
@@ -67,6 +68,43 @@ export function useSuggestionComments({
   useEffect(() => {
     void refreshComments();
   }, [refreshComments]);
+
+  useEffect(() => {
+    if (!projectId || !suggestionId) return;
+
+    let cancelled = false;
+
+    const openLatestReplyDraft = async () => {
+      try {
+        const response = await getProjectDrafts(projectId, {
+          type: 'Comment',
+          pageSize: 100,
+        });
+
+        const latestReplyDraft = response.items.find(
+          (draft): draft is CommentDraft =>
+            draft.type === 'Comment' &&
+            draft.payload.suggestionId === suggestionId &&
+            draft.payload.parentCommentId !== null &&
+            draft.payload.text.trim().length > 0,
+        );
+
+        if (!cancelled && latestReplyDraft) {
+          setReplyingToId((current) =>
+            current ?? latestReplyDraft.payload.parentCommentId,
+          );
+        }
+      } catch {
+        // Черновики ответов не критичны для отображения комментариев.
+      }
+    };
+
+    void openLatestReplyDraft();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [projectId, suggestionId]);
 
   const sendMainComment = useCallback(
     async (text: string): Promise<void> => {

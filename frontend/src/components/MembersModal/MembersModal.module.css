@@ -145,6 +145,28 @@ hr {
   color: #8a8a8a;
 }
 
+.leaveSection {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px;
+  border: 1px solid #ffcdd2;
+  border-radius: 12px;
+  background: #fff7f8;
+}
+
+.leaveSection h4 {
+  margin: 0 0 6px;
+}
+
+.leaveSection p {
+  margin: 0;
+  color: #8a8a8a;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
 .confirmationContent {
   display: flex;
   flex-direction: column;
@@ -166,7 +188,8 @@ hr {
 
 @media (max-width: 640px) {
   .addForm,
-  .memberItem {
+  .memberItem,
+  .leaveSection {
     align-items: stretch;
     flex-direction: column;
   }

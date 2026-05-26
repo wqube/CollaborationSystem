@@ -45,10 +45,12 @@ export function CommentReplyForm({
         className={styles.commentInput}
         disabled={saveStatus === 'saving'}
       />
-      <div className={styles.replyActions}>
-        {statusLabel && (
+      {statusLabel && (
+        <div className={styles.draftStatusRow}>
           <span className={styles.draftStatus}>{statusLabel}</span>
-        )}
+        </div>
+      )}
+      <div className={styles.replyActions}>
         <Button
           type="submit"
           variant="primary"
