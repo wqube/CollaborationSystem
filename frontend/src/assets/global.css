@@ -107,6 +107,10 @@ select {
   background: white;
 }
 
+textarea {
+  resize: vertical;
+}
+
 input:focus,
 textarea:focus,
 select:focus {
