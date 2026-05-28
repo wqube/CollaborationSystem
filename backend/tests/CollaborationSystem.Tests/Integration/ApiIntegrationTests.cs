@@ -4,8 +4,10 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using CollaborationSystem.Application.DTOs.Auth;
+using CollaborationSystem.Application.DTOs.Drafts;
 using CollaborationSystem.Application.DTOs.Projects;
 using CollaborationSystem.Application.DTOs.Suggestions;
+using CollaborationSystem.Application.DTOs.Users;
 using CollaborationSystem.Domain.Enums;
 using Microsoft.AspNetCore.Mvc.Testing;
 
@@ -20,6 +22,7 @@ public sealed class ApiIntegrationTests(IntegrationTestWebApplicationFactory fac
     };
 
     private static readonly Guid TestUserId = Guid.Parse("11111111-1111-1111-1111-111111111111");
+    private static readonly Guid AdminUserId = Guid.Parse("22222222-2222-2222-2222-222222222222");
 
     [Fact]
     public async Task Main_project_flow_creates_project_member_suggestion_vote_and_updates_status()
@@ -116,6 +119,144 @@ public sealed class ApiIntegrationTests(IntegrationTestWebApplicationFactory fac
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
     }
 
+    [Fact]
+    public async Task Users_endpoint_returns_seeded_users_after_login()
+    {
+        await factory.ResetDatabaseAsync();
+        using var adminClient = await CreateAuthorizedClientAsync("admin@test.local");
+        using var memberClient = await CreateAuthorizedClientAsync("test@test.local");
+
+        var users = await GetJsonAsync<PagedResponse<UserListItemResponse>>(
+            adminClient,
+            "/api/v1/users?page=1&pageSize=10");
+
+        Assert.Contains(users.Items, user => user.Email == "admin@test.local");
+        Assert.Contains(users.Items, user => user.Email == "test@test.local");
+        Assert.True(users.Total >= 2);
+
+        _ = memberClient;
+    }
+
+    [Fact]
+    public async Task Project_delete_removes_project_and_follow_up_read_returns_not_found()
+    {
+        await factory.ResetDatabaseAsync();
+        using var adminClient = await CreateAuthorizedClientAsync("admin@test.local");
+
+        var project = await CreateProjectAsync(adminClient, "Integration delete project");
+        var details = await GetJsonAsync<ProjectDetailsResponse>(
+            adminClient,
+            $"/api/v1/projects/{project.Id}");
+        var dashboard = await GetJsonAsync<ProjectDashboardResponse>(
+            adminClient,
+            $"/api/v1/projects/{project.Id}/dashboard?page=1&pageSize=10");
+
+        var deleteResponse = await adminClient.DeleteAsync($"/api/v1/projects/{project.Id}");
+        var projectAfterDeleteResponse = await adminClient.GetAsync($"/api/v1/projects/{project.Id}");
+
+        Assert.Equal(project.Id, details.Id);
+        Assert.Equal(project.Id, dashboard.Project.Id);
+        Assert.Equal(HttpStatusCode.NoContent, deleteResponse.StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, projectAfterDeleteResponse.StatusCode);
+    }
+
+    [Fact]
+    public async Task Comment_flow_creates_lists_updates_and_deletes_comments()
+    {
+        await factory.ResetDatabaseAsync();
+        using var adminClient = await CreateAuthorizedClientAsync("admin@test.local");
+
+        var project = await CreateProjectAsync(adminClient, "Integration comments");
+        var suggestion = await CreateSuggestionAsync(adminClient, project.Id, "Discuss comment flow");
+
+        var createdComment = await PostJsonAsync<CommentResponse>(
+            adminClient,
+            $"/api/v1/projects/{project.Id}/suggestions/{suggestion.Id}/comments",
+            new CreateCommentRequest { Text = "Первый комментарий" });
+        var comments = await GetJsonAsync<List<CommentResponse>>(
+            adminClient,
+            $"/api/v1/projects/{project.Id}/suggestions/{suggestion.Id}/comments");
+        var updatedComment = await PatchJsonAsync<CommentResponse>(
+            adminClient,
+            $"/api/v1/projects/{project.Id}/comments/{createdComment.Id}",
+            new UpdateCommentRequest { Text = "Обновлённый комментарий" });
+
+        var deleteResponse = await adminClient.DeleteAsync(
+            $"/api/v1/projects/{project.Id}/comments/{createdComment.Id}");
+        var commentsAfterDelete = await GetJsonAsync<List<CommentResponse>>(
+            adminClient,
+            $"/api/v1/projects/{project.Id}/suggestions/{suggestion.Id}/comments");
+
+        Assert.Single(comments);
+        Assert.Equal(createdComment.Id, comments[0].Id);
+        Assert.Equal("Обновлённый комментарий", updatedComment.Text);
+        Assert.Equal(HttpStatusCode.NoContent, deleteResponse.StatusCode);
+        Assert.Empty(commentsAfterDelete);
+    }
+
+    [Fact]
+    public async Task Draft_flow_upserts_lists_and_deletes_suggestion_and_comment_drafts()
+    {
+        await factory.ResetDatabaseAsync();
+        using var adminClient = await CreateAuthorizedClientAsync("admin@test.local");
+
+        var project = await CreateProjectAsync(adminClient, "Integration drafts");
+        var suggestion = await CreateSuggestionAsync(adminClient, project.Id, "Draft target suggestion");
+        var suggestionDraftId = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
+        var commentDraftId = Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
+
+        var suggestionDraft = await PutJsonAsync<DraftResponse>(
+            adminClient,
+            $"/api/v1/projects/{project.Id}/drafts/suggestion/{suggestionDraftId}",
+            new UpsertSuggestionDraftRequest { Text = "Черновик предложения" });
+        var commentDraft = await PutJsonAsync<DraftResponse>(
+            adminClient,
+            $"/api/v1/projects/{project.Id}/drafts/comment/{commentDraftId}",
+            new UpsertCommentDraftRequest
+            {
+                SuggestionId = suggestion.Id,
+                ParentCommentId = null,
+                Text = "Черновик комментария"
+            });
+        var drafts = await GetJsonAsync<PagedResponse<DraftResponse>>(
+            adminClient,
+            $"/api/v1/projects/{project.Id}/drafts?page=1&pageSize=20");
+
+        var deleteResponse = await adminClient.DeleteAsync(
+            $"/api/v1/projects/{project.Id}/drafts/{suggestionDraftId}");
+        var draftsAfterDelete = await GetJsonAsync<PagedResponse<DraftResponse>>(
+            adminClient,
+            $"/api/v1/projects/{project.Id}/drafts?page=1&pageSize=20");
+
+        Assert.Equal(DraftType.Suggestion, suggestionDraft.Type);
+        Assert.Equal("Черновик предложения", suggestionDraft.Payload.GetProperty("text").GetString());
+        Assert.Equal(DraftType.Comment, commentDraft.Type);
+        Assert.Equal("Черновик комментария", commentDraft.Payload.GetProperty("text").GetString());
+        Assert.Contains(drafts.Items, draft => draft.Id == suggestionDraftId);
+        Assert.Contains(drafts.Items, draft => draft.Id == commentDraftId);
+        Assert.Equal(HttpStatusCode.NoContent, deleteResponse.StatusCode);
+        Assert.DoesNotContain(draftsAfterDelete.Items, draft => draft.Id == suggestionDraftId);
+    }
+
+    [Fact]
+    public async Task Last_admin_cannot_demote_self_or_leave_project()
+    {
+        await factory.ResetDatabaseAsync();
+        using var adminClient = await CreateAuthorizedClientAsync("admin@test.local");
+
+        var project = await CreateProjectAsync(adminClient, "Integration last admin");
+
+        var demoteResponse = await adminClient.PatchAsJsonAsync(
+            $"/api/v1/projects/{project.Id}/members/{AdminUserId}",
+            new UpdateProjectMemberRoleRequest { Role = ProjectRole.Member },
+            JsonOptions);
+        var leaveResponse = await adminClient.DeleteAsync(
+            $"/api/v1/projects/{project.Id}/members/me");
+
+        Assert.Equal(HttpStatusCode.Conflict, demoteResponse.StatusCode);
+        Assert.Equal(HttpStatusCode.Conflict, leaveResponse.StatusCode);
+    }
+
     private static async Task<ProjectSummaryResponse> CreateProjectAsync(HttpClient client, string name) =>
         await PostJsonAsync<ProjectSummaryResponse>(
             client,
@@ -155,6 +296,12 @@ public sealed class ApiIntegrationTests(IntegrationTestWebApplicationFactory fac
 
     private HttpClient CreateClientWithCookies() =>
         factory.CreateClient(new WebApplicationFactoryClientOptions { HandleCookies = true });
+
+    private static async Task<T> GetJsonAsync<T>(HttpClient client, string requestUri)
+    {
+        var response = await client.GetAsync(requestUri);
+        return await ReadSuccessAsync<T>(response);
+    }
 
     private static async Task<T> PostJsonAsync<T>(HttpClient client, string requestUri, object? value)
     {

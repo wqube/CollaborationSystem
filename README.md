@@ -204,3 +204,55 @@ REFRESH_TOKEN_COOKIE_SECURE=true
    docker compose -f docker-compose.dev.yml down -v
    docker compose -f docker-compose.dev.yml up --build
    ```
+
+
+## Автотесты и CI
+
+В репозитории используются два слоя автотестов:
+
+- **Backend API и бизнес-логика** — `xUnit` в `backend/tests/CollaborationSystem.Tests`
+- **Frontend unit/component tests** — `Vitest` в `frontend/src/tests`
+
+### Локальный запуск тестов
+
+**Frontend**
+
+```bash
+cd frontend
+npm ci
+npm test
+```
+
+**Backend**
+
+```bash
+# Docker должен быть запущен, потому что integration tests используют Testcontainers
+dotnet test backend/tests/CollaborationSystem.Tests/CollaborationSystem.Tests.csproj
+```
+
+### Что проверяют добавленные автотесты
+
+На backend покрыты сценарии:
+- авторизация и refresh/logout flow;
+- создание проекта, участников, предложений и голосование;
+- получение списка пользователей;
+- удаление проекта;
+- создание, обновление и удаление комментариев;
+- сохранение и удаление черновиков;
+- защита от снятия роли у последнего администратора.
+
+На frontend дополнительно покрыт сценарий подтверждения смены роли участника в `MembersModal`.
+
+### CI и развёртывание на виртуальной машине
+
+Файл `.github/workflows/ci.yml` описывает полный прогон на `ubuntu-latest`:
+
+1. устанавливает Node.js и запускает frontend-тесты;
+2. устанавливает .NET 10 и запускает backend-тесты;
+3. поднимает весь dev-стенд через `docker-compose.dev.yml`;
+4. проверяет доступность backend (`/health`) и frontend после старта.
+
+Таким образом workflow одновременно показывает:
+- как проект разворачивается на виртуальной машине GitHub Actions;
+- как автоматически запускаются тесты;
+- как выполняется финальная smoke-проверка после развёртывания.
