@@ -13,5 +13,10 @@ Thumbs.db
 *.log
 npm-debug.log*
 
+# Local environment
+.env
+.env.*
+!.env.example
+
 # Local .NET CLI/nuget caches
 .dotnet/
