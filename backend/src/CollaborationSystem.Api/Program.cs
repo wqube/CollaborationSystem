@@ -60,11 +60,14 @@ app.UseStatusCodePages();
 app.UseCors("Frontend");
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseDefaultFiles();
+app.UseStaticFiles();
 app.MapControllers();
 app.MapGet("/health", () => Results.Ok(new HealthResponse { Status = "ok" }))
     .WithName("GetHealth")
     .WithTags("Health")
     .Produces<HealthResponse>(StatusCodes.Status200OK);
+app.MapFallbackToFile("index.html");
 app.Run();
 
 /// <summary>

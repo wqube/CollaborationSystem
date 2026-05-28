@@ -137,7 +137,41 @@ git push origin feature/fe-название-задачи
 Из корня репозитория:
 
 ```bash
-docker compose -f docker-compose.dev.yml up --build
+   docker compose -f docker-compose.dev.yml up --build
+   ```
+
+## Production Docker-стенд
+
+Из корня репозитория:
+
+```bash
+cp .env.example .env
+# Обязательно поменять POSTGRES_PASSWORD, JWT_KEY и PUBLIC_ORIGIN под сервер.
+docker compose up -d --build
+```
+
+Production-стенд собирается в один контейнер:
+- ASP.NET API слушает `8080` внутри контейнера.
+- React build лежит в `wwwroot` и раздается через ASP.NET.
+- PostgreSQL запускается внутри этого же контейнера на `127.0.0.1:5432`.
+- Наружу публикуется только `APP_PORT`, по умолчанию `8082`.
+
+Проверка после запуска:
+
+```bash
+curl http://localhost:8082/health
+docker compose ps
+```
+
+Для сервера достаточно открыть наружу только `APP_PORT`. Backend и PostgreSQL
+не публикуются отдельными host-портами.
+
+Если приложение доступно через HTTPS-домен, в `.env` нужно указать:
+
+```env
+PUBLIC_ORIGIN=https://example.com
+APP_PORT=8082
+REFRESH_TOKEN_COOKIE_SECURE=true
 ```
 
 Сервисы:
