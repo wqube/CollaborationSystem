@@ -11,6 +11,7 @@ import {
 } from '../../shared/api/drafts';
 import { createSuggestion } from '../../shared/api/suggestions';
 import { getSuggestionCreateErrorMessage } from '../../shared/api/errors';
+import { createUuid } from '../../shared/utils/createUuid';
 import styles from '../CreateSuggestionModal/CreateSuggestionModal.module.css';
 
 interface CreateSuggestionModalProps {
@@ -106,7 +107,7 @@ export function CreateSuggestionModal({
       if (!value.trim()) return null;
 
       setSaveStatus('saving');
-      const draftId = draftIdRef.current ?? crypto.randomUUID();
+      const draftId = draftIdRef.current ?? createUuid();
       draftIdRef.current = draftId;
 
       try {
