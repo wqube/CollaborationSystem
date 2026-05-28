@@ -6,7 +6,6 @@
 **/TestResults/
 **/*.user
 **/*.suo
-tests/
 deadline_1/
 Dockerfile.dev
 docker-compose.yml
