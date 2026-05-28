@@ -13,6 +13,9 @@ Thumbs.db
 *.log
 npm-debug.log*
 
+# Office temporary lock files
+~$*
+
 # Local environment
 .env
 .env.*
