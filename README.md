@@ -150,11 +150,11 @@ cp .env.example .env
 docker compose up -d --build
 ```
 
-Production-стенд собирается в один контейнер:
-- ASP.NET API слушает `8080` внутри контейнера.
-- React build лежит в `wwwroot` и раздается через ASP.NET.
-- PostgreSQL запускается внутри этого же контейнера на `127.0.0.1:5432`.
-- Наружу публикуется только `APP_PORT`, по умолчанию `8082`.
+Production-стенд запускается в отдельных контейнерах:
+- `frontend` — nginx раздает React build и проксирует `/api` и `/health` в backend.
+- `backend` — ASP.NET API слушает `8080` внутри Docker-сети.
+- `postgres` — PostgreSQL 16 с постоянным volume `postgres-data`.
+- Наружу публикуется только frontend-порт `APP_PORT`, по умолчанию `8082`.
 
 Проверка после запуска:
 
@@ -164,7 +164,7 @@ docker compose ps
 ```
 
 Для сервера достаточно открыть наружу только `APP_PORT`. Backend и PostgreSQL
-не публикуются отдельными host-портами.
+остаются доступными только внутри Docker-сети и не публикуются отдельными host-портами.
 
 Если приложение доступно через HTTPS-домен, в `.env` нужно указать:
 
@@ -174,7 +174,7 @@ APP_PORT=8082
 REFRESH_TOKEN_COOKIE_SECURE=true
 ```
 
-Сервисы:
+Dev-сервисы:
 - Frontend: `http://localhost:5173`
 - Backend API: `http://localhost:5227`
 - Swagger: `http://localhost:5227/swagger`

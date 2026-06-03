@@ -1,19 +1,32 @@
 name: collaboration-system
 
 services:
-  app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      args:
-        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-/api/v1}
-    image: collaborationsystem:latest
+  postgres:
+    image: postgres:16
+    container_name: collaborationsystem-postgres
     restart: unless-stopped
     environment:
-      ASPNETCORE_ENVIRONMENT: Production
       POSTGRES_DB: ${POSTGRES_DB:-collaboration_system}
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-collaboration_system}"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: collaborationsystem-backend
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=${POSTGRES_DB:-collaboration_system};Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
       Jwt__Issuer: ${JWT_ISSUER:-CollaborationSystem}
       Jwt__Audience: ${JWT_AUDIENCE:-CollaborationSystem.Client}
       Jwt__Key: ${JWT_KEY:?Set JWT_KEY in .env}
@@ -21,13 +34,32 @@ services:
       Auth__RefreshTokenCookieSecure: ${REFRESH_TOKEN_COOKIE_SECURE:-false}
       Auth__RefreshTokenLifetimeDays: ${REFRESH_TOKEN_LIFETIME_DAYS:-7}
       Cors__AllowedOrigins__0: ${PUBLIC_ORIGIN:-http://localhost:8082}
-    ports:
-      - "${APP_PORT:-8082}:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
     volumes:
-      - postgres-data:/var/lib/postgresql/data
       - data-protection-keys:/root/.aspnet/DataProtection-Keys
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -p 5432 && bash -ec '</dev/tcp/127.0.0.1/8080'"]
+      test: ["CMD-SHELL", "bash -ec '</dev/tcp/127.0.0.1/8080'"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-/api/v1}
+    container_name: collaborationsystem-frontend
+    restart: unless-stopped
+    ports:
+      - "${APP_PORT:-8082}:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1/health >/dev/null"]
       interval: 30s
       timeout: 5s
       retries: 5
