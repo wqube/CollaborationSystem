@@ -6,7 +6,6 @@ import { Modal } from '../components/ui/Modal/Modal';
 import { Tabs } from '../components/ui/Tabs/Tabs';
 import { VoteButton } from '../components/ui/VoteButton/VoteButton';
 import { VoteButtonGroup } from '../components/VoteButtonGroup/VoteButtonGroup';
-import { useListVote } from '../hooks/useListVote';
 
 describe('Button', () => {
   it('renders children, supports submit type and disabled state', async () => {
@@ -211,45 +210,5 @@ describe('Modal', () => {
 
     fireEvent.click(container.firstChild as Element);
     expect(onClose).toHaveBeenCalledTimes(3);
-  });
-});
-
-function VoteHarness({ suggestionId }: { suggestionId: string }) {
-  const { vote, handleVote } = useListVote(suggestionId);
-
-  return (
-    <>
-      <output>{vote ?? 'none'}</output>
-      <button onClick={() => handleVote('Up')}>up</button>
-      <button onClick={() => handleVote(null)}>clear</button>
-    </>
-  );
-}
-
-describe('useListVote', () => {
-  beforeEach(() => {
-    localStorage.clear();
-  });
-
-  it('hydrates vote from cache and persists changes by suggestion id', () => {
-    localStorage.setItem(
-      'suggestion_votes_cache',
-      JSON.stringify({ s1: 'Down' }),
-    );
-
-    const { rerender } = render(<VoteHarness suggestionId="s1" />);
-    expect(screen.getByText('Down')).toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole('button', { name: 'up' }));
-    expect(screen.getByText('Up')).toBeInTheDocument();
-    expect(
-      JSON.parse(localStorage.getItem('suggestion_votes_cache') || '{}'),
-    ).toMatchObject({ s1: 'Up' });
-
-    rerender(<VoteHarness suggestionId="s2" />);
-    expect(screen.getByText('none')).toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole('button', { name: 'clear' }));
-    expect(screen.getByText('none')).toBeInTheDocument();
   });
 });

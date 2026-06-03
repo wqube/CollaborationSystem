@@ -38,8 +38,6 @@ export function useSuggestionVote({
 
       const isCreatingVote = voteType !== null && userVote === null;
 
-      console.log(1);
-
       if (
         isCreatingVote &&
         voteQuota !== null &&

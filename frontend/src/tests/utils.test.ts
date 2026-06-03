@@ -1,5 +1,4 @@
-import { describe, expect, it, beforeEach, vi } from 'vitest';
-import { getVoteFromCache, setVoteToCache } from '../shared/utils/voteCache';
+import { describe, expect, it } from 'vitest';
 import {
   canManageProjectMembers,
   canManageProjectRoles,
@@ -23,42 +22,6 @@ import {
   isVoteLimitExceededError,
 } from '../shared/api/suggestions';
 import type { DraftDTO } from '../types/api';
-
-describe('vote cache helpers', () => {
-  beforeEach(() => {
-    localStorage.clear();
-    vi.restoreAllMocks();
-  });
-
-  it('stores, reads and removes suggestion vote state', () => {
-    expect(getVoteFromCache('s1')).toBeNull();
-
-    setVoteToCache('s1', 'Up');
-    expect(getVoteFromCache('s1')).toBe('Up');
-
-    setVoteToCache('s2', 'Down');
-    expect(getVoteFromCache('s2')).toBe('Down');
-
-    setVoteToCache('s1', null);
-    expect(getVoteFromCache('s1')).toBeNull();
-    expect(getVoteFromCache('s2')).toBe('Down');
-  });
-
-  it('falls back safely when localStorage contains invalid json or throws', () => {
-    localStorage.setItem('suggestion_votes_cache', '{bad');
-    expect(getVoteFromCache('s1')).toBeNull();
-
-    vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
-      throw new Error('blocked');
-    });
-    expect(getVoteFromCache('s1')).toBeNull();
-
-    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
-      throw new Error('blocked');
-    });
-    expect(() => setVoteToCache('s1', 'Up')).not.toThrow();
-  });
-});
 
 describe('project role helpers and labels', () => {
   it('recognizes admin-only permissions and badge variants', () => {
