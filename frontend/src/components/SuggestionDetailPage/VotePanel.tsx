@@ -84,7 +84,7 @@ export function VotePanel({
 
       {detail.votes.length > 0 && (
         <div className={styles.voters}>
-          <h4>Up ({detail.votes.filter((v) => v.voteType === 'Up').length})</h4>
+          <h4>За ({detail.votes.filter((v) => v.voteType === 'Up').length})</h4>
           <div className={styles.tags}>
             {detail.votes
               .filter((v) => v.voteType === 'Up')
@@ -93,7 +93,7 @@ export function VotePanel({
               ))}
           </div>
           <h4>
-            Down ({detail.votes.filter((v) => v.voteType === 'Down').length})
+            Против ({detail.votes.filter((v) => v.voteType === 'Down').length})
           </h4>
           <div className={styles.tags}>
             {detail.votes

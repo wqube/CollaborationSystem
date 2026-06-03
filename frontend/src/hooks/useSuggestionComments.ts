@@ -90,8 +90,8 @@ export function useSuggestionComments({
         );
 
         if (!cancelled && latestReplyDraft) {
-          setReplyingToId((current) =>
-            current ?? latestReplyDraft.payload.parentCommentId,
+          setReplyingToId(
+            (current) => current ?? latestReplyDraft.payload.parentCommentId,
           );
         }
       } catch {

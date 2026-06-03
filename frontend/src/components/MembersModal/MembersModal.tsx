@@ -377,15 +377,15 @@ export function MembersModal({
                       </option>
                     ))}
                   </select>
-                    {!usersLoading &&
-                      users.length > 0 &&
-                      availableUsers.length === 0 && (
-                        <span className={styles.helperText}>
-                          {foundExistingMemberByEmail
-                            ? 'Пользователь с этим email уже в проекте'
-                            : 'Все найденные пользователи уже в проекте'}
-                        </span>
-                      )}
+                  {!usersLoading &&
+                    users.length > 0 &&
+                    availableUsers.length === 0 && (
+                      <span className={styles.helperText}>
+                        {foundExistingMemberByEmail
+                          ? 'Пользователь с этим email уже в проекте'
+                          : 'Все найденные пользователи уже в проекте'}
+                      </span>
+                    )}
                 </div>
                 <select
                   className={styles.roleSelect}
@@ -463,17 +463,23 @@ export function MembersModal({
                         )}
                       </>
                     )) || (
-                      <Badge variant={getProjectRoleBadgeVariant(member.role)} />
+                      <Badge
+                        variant={getProjectRoleBadgeVariant(member.role)}
+                      />
                     )}
-                    {!isCurrentMember && !canManageRoles && canManageMembers && (
-                      <button
-                        className={styles.removeBtn}
-                        onClick={() => handleRemoveMemberRequest(member.userId)}
-                        disabled={memberRemoving}
-                      >
-                        X
-                      </button>
-                    )}
+                    {!isCurrentMember &&
+                      !canManageRoles &&
+                      canManageMembers && (
+                        <button
+                          className={styles.removeBtn}
+                          onClick={() =>
+                            handleRemoveMemberRequest(member.userId)
+                          }
+                          disabled={memberRemoving}
+                        >
+                          X
+                        </button>
+                      )}
                   </div>
                 </div>
               );

@@ -6,8 +6,6 @@ export function ProtectedRoute() {
   const token = userAppSelector((state) => state.auth.accessToken);
   const initialized = userAppSelector((state) => state.auth.initialized);
 
-  console.log('ProtectedRoute render:', { user, token, initialized });
-
   if (!initialized) {
     return <div>Загрузка...</div>;
   }
