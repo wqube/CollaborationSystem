@@ -30,6 +30,7 @@ services:
       Jwt__Issuer: ${JWT_ISSUER:-CollaborationSystem}
       Jwt__Audience: ${JWT_AUDIENCE:-CollaborationSystem.Client}
       Jwt__Key: ${JWT_KEY:?Set JWT_KEY in .env}
+      JWT_KEY: ${JWT_KEY:?Set JWT_KEY in .env}
       Jwt__AccessTokenLifetimeMinutes: ${JWT_ACCESS_TOKEN_LIFETIME_MINUTES:-15}
       Auth__RefreshTokenCookieSecure: ${REFRESH_TOKEN_COOKIE_SECURE:-false}
       Auth__RefreshTokenLifetimeDays: ${REFRESH_TOKEN_LIFETIME_DAYS:-7}
