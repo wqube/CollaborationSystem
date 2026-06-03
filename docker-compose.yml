@@ -1,5 +1,3 @@
-name: collaboration-system
-
 services:
   postgres:
     image: postgres:16
