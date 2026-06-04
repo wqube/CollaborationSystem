@@ -194,7 +194,7 @@ Dev-сервисы:
 |---|---|---|
 | Test User | `test@test.local` | `password` |
 | Admin User | `admin@test.local` | `password` |
-| Михаил Баранчик | `mikhail.baranchik@test.local` | `password` |
+| Михаил Баранов | `mikhail.baranov@test.local` | `password` |
 | Анна Иванова | `anna.ivanova@test.local` | `password` |
 | Дмитрий Петров | `dmitry.petrov@test.local` | `password` |
 | Екатерина Смирнова | `ekaterina.smirnova@test.local` | `password` |
@@ -202,6 +202,10 @@ Dev-сервисы:
 | София Попова | `sofia.popova@test.local` | `password` |
 | Алексей Волков | `alexey.volkov@test.local` | `password` |
 | Мария Соколова | `maria.sokolova@test.local` | `password` |
+| Эльмир Нуруллин | `elmir.nurullin@test.local` | `password` |
+| Никита Малышонков | `nikita.malyshonkov@test.local` | `password` |
+| Заварзин Всеволод | `vsevolod.zavarzin@test.local` | `password` |
+| Тарасов Александр | `alexander.tarasov@test.local` | `password` |
 
 Если авторизация не проходит:
 1. Открыть DevTools -> Application -> Cookies и проверить `refreshToken` для `http://localhost:5227`.

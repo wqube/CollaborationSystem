@@ -25,9 +25,9 @@ public sealed class DevUserStore(AppDbContext dbContext) : IDevUserStore
             "password"),
         new(
             Guid.Parse("33333333-3333-3333-3333-333333333333"),
-            "mikhail.baranchik@test.local",
-            "Михаил Баранчик",
-            "TBANK\\mikhail.baranchik",
+            "mikhail.baranov@test.local",
+            "Михаил Баранов",
+            "TBANK\\mikhail.baranov",
             "password"),
         new(
             Guid.Parse("44444444-4444-4444-4444-444444444444"),
@@ -70,6 +70,30 @@ public sealed class DevUserStore(AppDbContext dbContext) : IDevUserStore
             "maria.sokolova@test.local",
             "Мария Соколова",
             "TBANK\\maria.sokolova",
+            "password"),
+        new(
+            Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"),
+            "elmir.nurullin@test.local",
+            "Эльмир Нуруллин",
+            "TBANK\\elmir.nurullin",
+            "password"),
+        new(
+            Guid.Parse("cccccccc-cccc-cccc-cccc-cccccccccccc"),
+            "nikita.malyshonkov@test.local",
+            "Никита Малышонков",
+            "TBANK\\nikita.malyshonkov",
+            "password"),
+        new(
+            Guid.Parse("dddddddd-dddd-dddd-dddd-dddddddddddd"),
+            "vsevolod.zavarzin@test.local",
+            "Заварзин Всеволод",
+            "TBANK\\vsevolod.zavarzin",
+            "password"),
+        new(
+            Guid.Parse("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee"),
+            "alexander.tarasov@test.local",
+            "Тарасов Александр",
+            "TBANK\\alexander.tarasov",
             "password")
     ];
 

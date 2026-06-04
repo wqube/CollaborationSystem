@@ -184,10 +184,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
             new AppUser
             {
                 Id = Guid.Parse("33333333-3333-3333-3333-333333333333"),
-                Email = "mikhail.baranchik@test.local",
-                DisplayName = "Михаил Баранчик",
+                Email = "mikhail.baranov@test.local",
+                DisplayName = "Михаил Баранов",
                 PasswordHash = "DEV_PASSWORD_HASH",
-                DomainLogin = "TBANK\\mikhail.baranchik",
+                DomainLogin = "TBANK\\mikhail.baranov",
                 CreatedAtUtc = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc),
                 UpdatedAtUtc = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)
             },
@@ -258,6 +258,46 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
                 DisplayName = "Мария Соколова",
                 PasswordHash = "DEV_PASSWORD_HASH",
                 DomainLogin = "TBANK\\maria.sokolova",
+                CreatedAtUtc = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                UpdatedAtUtc = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)
+            },
+            new AppUser
+            {
+                Id = Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"),
+                Email = "elmir.nurullin@test.local",
+                DisplayName = "Эльмир Нуруллин",
+                PasswordHash = "DEV_PASSWORD_HASH",
+                DomainLogin = "TBANK\\elmir.nurullin",
+                CreatedAtUtc = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                UpdatedAtUtc = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)
+            },
+            new AppUser
+            {
+                Id = Guid.Parse("cccccccc-cccc-cccc-cccc-cccccccccccc"),
+                Email = "nikita.malyshonkov@test.local",
+                DisplayName = "Никита Малышонков",
+                PasswordHash = "DEV_PASSWORD_HASH",
+                DomainLogin = "TBANK\\nikita.malyshonkov",
+                CreatedAtUtc = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                UpdatedAtUtc = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)
+            },
+            new AppUser
+            {
+                Id = Guid.Parse("dddddddd-dddd-dddd-dddd-dddddddddddd"),
+                Email = "vsevolod.zavarzin@test.local",
+                DisplayName = "Заварзин Всеволод",
+                PasswordHash = "DEV_PASSWORD_HASH",
+                DomainLogin = "TBANK\\vsevolod.zavarzin",
+                CreatedAtUtc = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                UpdatedAtUtc = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)
+            },
+            new AppUser
+            {
+                Id = Guid.Parse("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee"),
+                Email = "alexander.tarasov@test.local",
+                DisplayName = "Тарасов Александр",
+                PasswordHash = "DEV_PASSWORD_HASH",
+                DomainLogin = "TBANK\\alexander.tarasov",
                 CreatedAtUtc = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc),
                 UpdatedAtUtc = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)
             });
