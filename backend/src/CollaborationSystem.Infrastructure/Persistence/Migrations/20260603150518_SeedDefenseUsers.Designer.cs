@@ -3,6 +3,7 @@ using System;
 using CollaborationSystem.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace CollaborationSystem.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260603150518_SeedDefenseUsers")]
+    partial class SeedDefenseUsers
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -87,9 +90,9 @@ namespace CollaborationSystem.Infrastructure.Persistence.Migrations
                         {
                             Id = new Guid("33333333-3333-3333-3333-333333333333"),
                             CreatedAtUtc = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            DisplayName = "Михаил Баранов",
-                            DomainLogin = "TBANK\\mikhail.baranov",
-                            Email = "mikhail.baranov@test.local",
+                            DisplayName = "Михаил Баранчик",
+                            DomainLogin = "TBANK\\mikhail.baranchik",
+                            Email = "mikhail.baranchik@test.local",
                             PasswordHash = "DEV_PASSWORD_HASH",
                             UpdatedAtUtc = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
                         },
@@ -160,46 +163,6 @@ namespace CollaborationSystem.Infrastructure.Persistence.Migrations
                             DisplayName = "Мария Соколова",
                             DomainLogin = "TBANK\\maria.sokolova",
                             Email = "maria.sokolova@test.local",
-                            PasswordHash = "DEV_PASSWORD_HASH",
-                            UpdatedAtUtc = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
-                        },
-                        new
-                        {
-                            Id = new Guid("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"),
-                            CreatedAtUtc = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            DisplayName = "Эльмир Нуруллин",
-                            DomainLogin = "TBANK\\elmir.nurullin",
-                            Email = "elmir.nurullin@test.local",
-                            PasswordHash = "DEV_PASSWORD_HASH",
-                            UpdatedAtUtc = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
-                        },
-                        new
-                        {
-                            Id = new Guid("cccccccc-cccc-cccc-cccc-cccccccccccc"),
-                            CreatedAtUtc = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            DisplayName = "Никита Малышонков",
-                            DomainLogin = "TBANK\\nikita.malyshonkov",
-                            Email = "nikita.malyshonkov@test.local",
-                            PasswordHash = "DEV_PASSWORD_HASH",
-                            UpdatedAtUtc = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
-                        },
-                        new
-                        {
-                            Id = new Guid("dddddddd-dddd-dddd-dddd-dddddddddddd"),
-                            CreatedAtUtc = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            DisplayName = "Заварзин Всеволод",
-                            DomainLogin = "TBANK\\vsevolod.zavarzin",
-                            Email = "vsevolod.zavarzin@test.local",
-                            PasswordHash = "DEV_PASSWORD_HASH",
-                            UpdatedAtUtc = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
-                        },
-                        new
-                        {
-                            Id = new Guid("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee"),
-                            CreatedAtUtc = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            DisplayName = "Тарасов Александр",
-                            DomainLogin = "TBANK\\alexander.tarasov",
-                            Email = "alexander.tarasov@test.local",
                             PasswordHash = "DEV_PASSWORD_HASH",
                             UpdatedAtUtc = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
                         });

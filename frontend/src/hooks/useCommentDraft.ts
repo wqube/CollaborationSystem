@@ -5,6 +5,7 @@ import {
   deleteDraft,
   findCommentDraft,
 } from '../shared/api/drafts';
+import { createUuid } from '../shared/utils/createUuid';
 
 const AUTOSAVE_DELAY_MS = 1500;
 const SAVED_STATUS_VISIBLE_MS = 2000;
@@ -72,7 +73,7 @@ export function useCommentDraft(
       timerRef.current = setTimeout(async () => {
         if (!text.trim()) return;
         setSaveStatus('saving');
-        const currentDraftId = draftId || crypto.randomUUID();
+        const currentDraftId = draftId || createUuid();
         try {
           await saveCommentDraft(projectId, currentDraftId, {
             suggestionId,

@@ -188,12 +188,24 @@ Dev-сервисы:
 Переменные окружения backend, локальный запуск API и ручное применение миграций
 описаны в `backend/README.md`.
 
-Тестовые пользователи для локального dev-стенда:
+Тестовые пользователи для локального dev-стенда и защиты:
 
-| Роль | Email | Пароль |
+| Пользователь | Email | Пароль |
 |---|---|---|
-| Пользователь | `test@test.local` | `password` |
-| Администратор | `admin@test.local` | `password` |
+| Test User | `test@test.local` | `password` |
+| Admin User | `admin@test.local` | `password` |
+| Михаил Баранов | `mikhail.baranov@test.local` | `password` |
+| Анна Иванова | `anna.ivanova@test.local` | `password` |
+| Дмитрий Петров | `dmitry.petrov@test.local` | `password` |
+| Екатерина Смирнова | `ekaterina.smirnova@test.local` | `password` |
+| Иван Кузнецов | `ivan.kuznetsov@test.local` | `password` |
+| София Попова | `sofia.popova@test.local` | `password` |
+| Алексей Волков | `alexey.volkov@test.local` | `password` |
+| Мария Соколова | `maria.sokolova@test.local` | `password` |
+| Эльмир Нуруллин | `elmir.nurullin@test.local` | `password` |
+| Никита Малышонков | `nikita.malyshonkov@test.local` | `password` |
+| Заварзин Всеволод | `vsevolod.zavarzin@test.local` | `password` |
+| Тарасов Александр | `alexander.tarasov@test.local` | `password` |
 
 Если авторизация не проходит:
 1. Открыть DevTools -> Application -> Cookies и проверить `refreshToken` для `http://localhost:5227`.
@@ -204,3 +216,55 @@ Dev-сервисы:
    docker compose -f docker-compose.dev.yml down -v
    docker compose -f docker-compose.dev.yml up --build
    ```
+
+
+## Автотесты и CI
+
+В репозитории используются два слоя автотестов:
+
+- **Backend API и бизнес-логика** — `xUnit` в `backend/tests/CollaborationSystem.Tests`
+- **Frontend unit/component tests** — `Vitest` в `frontend/src/tests`
+
+### Локальный запуск тестов
+
+**Frontend**
+
+```bash
+cd frontend
+npm ci
+npm test
+```
+
+**Backend**
+
+```bash
+# Docker должен быть запущен, потому что integration tests используют Testcontainers
+dotnet test backend/tests/CollaborationSystem.Tests/CollaborationSystem.Tests.csproj
+```
+
+### Что проверяют добавленные автотесты
+
+На backend покрыты сценарии:
+- авторизация и refresh/logout flow;
+- создание проекта, участников, предложений и голосование;
+- получение списка пользователей;
+- удаление проекта;
+- создание, обновление и удаление комментариев;
+- сохранение и удаление черновиков;
+- защита от снятия роли у последнего администратора.
+
+На frontend дополнительно покрыт сценарий подтверждения смены роли участника в `MembersModal`.
+
+### CI и развёртывание на виртуальной машине
+
+Файл `.github/workflows/ci.yml` описывает полный прогон на `ubuntu-latest`:
+
+1. устанавливает Node.js и запускает frontend-тесты;
+2. устанавливает .NET 10 и запускает backend-тесты;
+3. поднимает весь dev-стенд через `docker-compose.dev.yml`;
+4. проверяет доступность backend (`/health`) и frontend после старта.
+
+Таким образом workflow одновременно показывает:
+- как проект разворачивается на виртуальной машине GitHub Actions;
+- как автоматически запускаются тесты;
+- как выполняется финальная smoke-проверка после развёртывания.

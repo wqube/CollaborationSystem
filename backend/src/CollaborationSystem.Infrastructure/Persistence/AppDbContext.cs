@@ -180,6 +180,126 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
                 DomainLogin = "TBANK\\admin.user",
                 CreatedAtUtc = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc),
                 UpdatedAtUtc = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)
+            },
+            new AppUser
+            {
+                Id = Guid.Parse("33333333-3333-3333-3333-333333333333"),
+                Email = "mikhail.baranov@test.local",
+                DisplayName = "Михаил Баранов",
+                PasswordHash = "DEV_PASSWORD_HASH",
+                DomainLogin = "TBANK\\mikhail.baranov",
+                CreatedAtUtc = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                UpdatedAtUtc = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)
+            },
+            new AppUser
+            {
+                Id = Guid.Parse("44444444-4444-4444-4444-444444444444"),
+                Email = "anna.ivanova@test.local",
+                DisplayName = "Анна Иванова",
+                PasswordHash = "DEV_PASSWORD_HASH",
+                DomainLogin = "TBANK\\anna.ivanova",
+                CreatedAtUtc = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                UpdatedAtUtc = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)
+            },
+            new AppUser
+            {
+                Id = Guid.Parse("55555555-5555-5555-5555-555555555555"),
+                Email = "dmitry.petrov@test.local",
+                DisplayName = "Дмитрий Петров",
+                PasswordHash = "DEV_PASSWORD_HASH",
+                DomainLogin = "TBANK\\dmitry.petrov",
+                CreatedAtUtc = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                UpdatedAtUtc = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)
+            },
+            new AppUser
+            {
+                Id = Guid.Parse("66666666-6666-6666-6666-666666666666"),
+                Email = "ekaterina.smirnova@test.local",
+                DisplayName = "Екатерина Смирнова",
+                PasswordHash = "DEV_PASSWORD_HASH",
+                DomainLogin = "TBANK\\ekaterina.smirnova",
+                CreatedAtUtc = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                UpdatedAtUtc = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)
+            },
+            new AppUser
+            {
+                Id = Guid.Parse("77777777-7777-7777-7777-777777777777"),
+                Email = "ivan.kuznetsov@test.local",
+                DisplayName = "Иван Кузнецов",
+                PasswordHash = "DEV_PASSWORD_HASH",
+                DomainLogin = "TBANK\\ivan.kuznetsov",
+                CreatedAtUtc = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                UpdatedAtUtc = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)
+            },
+            new AppUser
+            {
+                Id = Guid.Parse("88888888-8888-8888-8888-888888888888"),
+                Email = "sofia.popova@test.local",
+                DisplayName = "София Попова",
+                PasswordHash = "DEV_PASSWORD_HASH",
+                DomainLogin = "TBANK\\sofia.popova",
+                CreatedAtUtc = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                UpdatedAtUtc = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)
+            },
+            new AppUser
+            {
+                Id = Guid.Parse("99999999-9999-9999-9999-999999999999"),
+                Email = "alexey.volkov@test.local",
+                DisplayName = "Алексей Волков",
+                PasswordHash = "DEV_PASSWORD_HASH",
+                DomainLogin = "TBANK\\alexey.volkov",
+                CreatedAtUtc = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                UpdatedAtUtc = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)
+            },
+            new AppUser
+            {
+                Id = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
+                Email = "maria.sokolova@test.local",
+                DisplayName = "Мария Соколова",
+                PasswordHash = "DEV_PASSWORD_HASH",
+                DomainLogin = "TBANK\\maria.sokolova",
+                CreatedAtUtc = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                UpdatedAtUtc = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)
+            },
+            new AppUser
+            {
+                Id = Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"),
+                Email = "elmir.nurullin@test.local",
+                DisplayName = "Эльмир Нуруллин",
+                PasswordHash = "DEV_PASSWORD_HASH",
+                DomainLogin = "TBANK\\elmir.nurullin",
+                CreatedAtUtc = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                UpdatedAtUtc = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)
+            },
+            new AppUser
+            {
+                Id = Guid.Parse("cccccccc-cccc-cccc-cccc-cccccccccccc"),
+                Email = "nikita.malyshonkov@test.local",
+                DisplayName = "Никита Малышонков",
+                PasswordHash = "DEV_PASSWORD_HASH",
+                DomainLogin = "TBANK\\nikita.malyshonkov",
+                CreatedAtUtc = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                UpdatedAtUtc = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)
+            },
+            new AppUser
+            {
+                Id = Guid.Parse("dddddddd-dddd-dddd-dddd-dddddddddddd"),
+                Email = "vsevolod.zavarzin@test.local",
+                DisplayName = "Заварзин Всеволод",
+                PasswordHash = "DEV_PASSWORD_HASH",
+                DomainLogin = "TBANK\\vsevolod.zavarzin",
+                CreatedAtUtc = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                UpdatedAtUtc = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)
+            },
+            new AppUser
+            {
+                Id = Guid.Parse("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee"),
+                Email = "alexander.tarasov@test.local",
+                DisplayName = "Тарасов Александр",
+                PasswordHash = "DEV_PASSWORD_HASH",
+                DomainLogin = "TBANK\\alexander.tarasov",
+                CreatedAtUtc = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                UpdatedAtUtc = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)
             });
     }
 }
